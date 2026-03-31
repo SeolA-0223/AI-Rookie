@@ -22,3 +22,6 @@
 
 ## 테스트
 - `node --test tests/*.test.js`
+
+## 협업
+- PR 기반 흐름: `docs/06_pr_workflow.md`
