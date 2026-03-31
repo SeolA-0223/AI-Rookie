@@ -35,3 +35,8 @@ gh pr checks <pr-number>
 gh pr merge <pr-number> --squash --delete-branch
 ```
 
+If `gh` is unavailable, open PR directly:
+```text
+https://github.com/<owner>/<repo>/pull/new/<branch>
+```
+

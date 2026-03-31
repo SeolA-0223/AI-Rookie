@@ -1,31 +1,31 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 18:01:16 KST
+Auto-updated: 2026-03-31 18:02:40 KST
 
 1) Branch Sync
 - Current branch: feat/pr-guardrails-docs
 - Upstream: origin/feat/pr-guardrails-docs
-- Latest commit at update time: 98af62b (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: modernize pull request template checks
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23789151198)
+- Latest commit at update time: aac494e (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: use stable branch actions link in PR summary
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23789240383)
 - PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/pr-guardrails-docs
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## feat/pr-guardrails-docs...origin/feat/pr-guardrails-docs
-- M  docs/10_pr_summary.md
+- M  docs/06_pr_workflow.md
 
 3) Recent Commits (max 8)
-- 98af62b (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: modernize pull request template checks
+- aac494e (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: use stable branch actions link in PR summary
+- 98af62b docs: modernize pull request template checks
 - fa62419 docs: update PR summary with latest CI run link
 - 43f0f76 docs: refresh handover snapshot after CI success
 - a478e39 docs: add PR summary for guardrails branch
 - d9255b5 docs: refresh handover snapshot for PR branch
 - 0b9e64c docs: document local git guardrails for PR workflow
 - 96be106 (origin/main, origin/feat/review-20260331-1628, main, feat/review-20260331-1628) chore: add hooks doctor health check
-- f29fc46 chore: add pre-push guard for main branch
 
 4) Staged Files
-- docs/10_pr_summary.md
+- docs/06_pr_workflow.md
 
 5) Unstaged Files
 - (none)
