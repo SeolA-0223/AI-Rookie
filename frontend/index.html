@@ -1,0 +1,38 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Rookie Dashboard</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="hero">
+        <h1>Regulation Catch Dashboard</h1>
+        <p>Detect changes, map impacts, and draft follow-up documents.</p>
+      </header>
+
+      <section class="panel" id="summary-panel">
+        <h2>Change Summary</h2>
+        <div id="summary-cards" class="cards"></div>
+      </section>
+
+      <section class="panel" id="impact-panel">
+        <h2>Impacted Documents</h2>
+        <ul id="impact-list"></ul>
+      </section>
+
+      <section class="panel" id="risk-panel">
+        <h2>Risk Priority</h2>
+        <ul id="risk-list"></ul>
+      </section>
+
+      <section class="panel" id="draft-panel">
+        <h2>Draft Preview</h2>
+        <pre id="draft-view"></pre>
+      </section>
+    </main>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
