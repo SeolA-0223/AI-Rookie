@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -23,5 +23,8 @@ jobs:
         with:
           node-version: 24
 
-      - name: Run tests
-        run: node --test tests/*.test.js
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run test and eval checks
+        run: npm run check

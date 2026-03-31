@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node backend/src/server.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test --test-isolation=none tests/*.test.js",
+    "eval": "node scripts/evaluate.js",
+    "smoke": "node scripts/smoke.js",
+    "check": "npm run test && npm run eval"
   }
 }

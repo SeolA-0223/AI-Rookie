@@ -1,63 +1,223 @@
-﻿const sampleResponse = {
-  changes: [
-    { id: "c1", title: "Age Requirement", changeType: "요건", summary: "Age expanded from 29 to 34" },
-    { id: "c2", title: "Required Documents", changeType: "서류", summary: "Income proof added" },
-    { id: "c3", title: "Application Deadline", changeType: "기한", summary: "Deadline moved to April 15" },
-    { id: "c4", title: "Support Amount", changeType: "금액", summary: "Support increased" }
-  ],
-  mapped: [
-    { changeId: "c1", docs: ["Citizen Guide", "FAQ"] },
-    { changeId: "c2", docs: ["Checklist", "FAQ"] },
-    { changeId: "c3", docs: ["Citizen Guide", "Internal Notice"] }
-  ],
-  risks: [
-    { changeId: "c1", level: "빨강", reason: "Eligibility guidance risk" },
-    { changeId: "c2", level: "노랑", reason: "Document omission risk" },
-    { changeId: "c4", level: "파랑", reason: "Low operational risk" }
-  ],
-  drafts: {
-    internalNoticeDraft: "[Internal Notice Draft]\n- Age and document rules updated"
+﻿const ANALYZE_ENDPOINT = "/analyze";
+const BUTTON_LABEL = "Run Analysis";
+const BUTTON_LOADING_LABEL = "Analyzing...";
+
+const runButton = document.getElementById("analyze-btn");
+const statusView = document.getElementById("status-msg");
+
+function setStatus(message, type = "neutral") {
+  if (!statusView) {
+    return;
   }
-};
+  statusView.textContent = message;
+  statusView.className = `status status-${type}`;
+}
 
-function renderSummary(changes) {
+function setLoading(loading) {
+  if (!runButton) {
+    return;
+  }
+  runButton.disabled = loading;
+  runButton.textContent = loading ? BUTTON_LOADING_LABEL : BUTTON_LABEL;
+}
+
+function createEmptyMessage(tagName, text) {
+  const element = document.createElement(tagName);
+  element.className = "empty";
+  element.textContent = text;
+  return element;
+}
+
+function renderSummary(changes = []) {
   const container = document.getElementById("summary-cards");
-  container.innerHTML = changes
-    .map(
-      (change) => `
-      <article class="card">
-        <h3>${change.title}</h3>
-        <p><strong>${change.changeType}</strong></p>
-        <p>${change.summary}</p>
-      </article>
-    `
-    )
-    .join("");
+  if (!container) {
+    return;
+  }
+  container.innerHTML = "";
+
+  if (!changes.length) {
+    container.append(createEmptyMessage("p", "No detected changes."));
+    return;
+  }
+
+  for (const change of changes) {
+    const card = document.createElement("article");
+    card.className = "card";
+
+    const title = document.createElement("h3");
+    title.textContent = change.title ?? "(Untitled)";
+
+    const type = document.createElement("p");
+    const typeStrong = document.createElement("strong");
+    typeStrong.textContent = change.changeType ?? "기타";
+    type.append(typeStrong);
+
+    const summary = document.createElement("p");
+    summary.textContent = change.summary ?? "No summary available.";
+
+    card.append(title, type, summary);
+    container.append(card);
+  }
 }
 
-function renderImpact(mapped) {
+function renderImpact(mapped = []) {
   const container = document.getElementById("impact-list");
-  container.innerHTML = mapped
-    .map((row) => `<li>${row.changeId}: ${row.docs.join(", ")}</li>`)
-    .join("");
+  if (!container) {
+    return;
+  }
+  container.innerHTML = "";
+
+  if (!mapped.length) {
+    container.append(createEmptyMessage("li", "No impacted internal documents."));
+    return;
+  }
+
+  for (const item of mapped) {
+    const impactedDocs = Array.isArray(item.impactedDocuments)
+      ? item.impactedDocuments.map((document) => `${document.title} (${document.score})`)
+      : [];
+    const legacyDocs = Array.isArray(item.docs) ? item.docs : [];
+    const docs = impactedDocs.length > 0 ? impactedDocs.join(", ") : legacyDocs.join(", ");
+
+    const row = document.createElement("li");
+    row.textContent = `${item.changeId}: ${docs || "No matched documents"}`;
+    container.append(row);
+  }
 }
 
-function renderRisks(risks) {
+function riskClassForLevel(level) {
+  if (level === "빨강") {
+    return "risk-red";
+  }
+  if (level === "노랑") {
+    return "risk-yellow";
+  }
+  return "risk-blue";
+}
+
+function renderRisks(risks = []) {
   const container = document.getElementById("risk-list");
-  container.innerHTML = risks
-    .map((risk) => {
-      const cls = risk.level === "빨강" ? "risk-red" : risk.level === "노랑" ? "risk-yellow" : "risk-blue";
-      return `<li class="${cls}">${risk.changeId} - ${risk.level}: ${risk.reason}</li>`;
-    })
-    .join("");
+  if (!container) {
+    return;
+  }
+  container.innerHTML = "";
+
+  if (!risks.length) {
+    container.append(createEmptyMessage("li", "No risk classifications."));
+    return;
+  }
+
+  for (const item of risks) {
+    const level = item.risk?.level ?? item.level ?? "파랑";
+    const reason = item.risk?.reason ?? item.reason ?? "No reason provided.";
+
+    const row = document.createElement("li");
+    row.className = riskClassForLevel(level);
+    row.textContent = `${item.changeId} - ${level}: ${reason}`;
+    container.append(row);
+  }
 }
 
-function renderDraft(drafts) {
+function renderDraft(drafts = {}) {
   const draftView = document.getElementById("draft-view");
-  draftView.textContent = drafts.internalNoticeDraft;
+  if (!draftView) {
+    return;
+  }
+
+  const preferredOrder = ["internalNoticeDraft", "citizenGuideDraft", "faqDraft", "comparisonTable"];
+  const keys = preferredOrder.filter((key) => typeof drafts[key] === "string");
+  const dynamicKeys = Object.keys(drafts).filter((key) => !keys.includes(key));
+
+  const allKeys = [...keys, ...dynamicKeys];
+  if (!allKeys.length) {
+    draftView.textContent = "No draft output.";
+    return;
+  }
+
+  draftView.textContent = allKeys.map((key) => `[${key}]\n${drafts[key]}`).join("\n\n");
 }
 
-renderSummary(sampleResponse.changes);
-renderImpact(sampleResponse.mapped);
-renderRisks(sampleResponse.risks);
-renderDraft(sampleResponse.drafts);
+function normalizeAnalyzeResponse(result = {}) {
+  const analysis = result.analysis ?? {};
+  return {
+    changes: analysis.changes ?? result.changes ?? [],
+    mapped: analysis.impactedDocuments ?? result.mapped ?? [],
+    risks: analysis.risks ?? result.risks ?? [],
+    traces: analysis.traces ?? result.traces ?? [],
+    drafts: result.drafts ?? {}
+  };
+}
+
+function renderResult(result) {
+  const normalized = normalizeAnalyzeResponse(result);
+  renderSummary(normalized.changes);
+  renderImpact(normalized.mapped);
+  renderRisks(normalized.risks);
+  renderDraft(normalized.drafts);
+  return normalized;
+}
+
+function parseErrorMessage(errorBody) {
+  if (!errorBody || typeof errorBody !== "object") {
+    return "";
+  }
+
+  if (typeof errorBody.error === "string") {
+    return errorBody.error;
+  }
+
+  if (errorBody.error && typeof errorBody.error === "object") {
+    const { message, details } = errorBody.error;
+    if (typeof message === "string" && message) {
+      if (Array.isArray(details) && details.length > 0) {
+        return `${message} (${details[0].path}: ${details[0].message})`;
+      }
+      return message;
+    }
+  }
+
+  if (typeof errorBody.detail === "string") {
+    return errorBody.detail;
+  }
+
+  return "";
+}
+
+async function runAnalyze() {
+  setLoading(true);
+  setStatus("Analyzing regulation changes...", "loading");
+
+  try {
+    const response = await fetch(ANALYZE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const errorBody = await response.json();
+        detail = parseErrorMessage(errorBody);
+      } catch {
+        detail = "";
+      }
+      throw new Error(detail || `Request failed with ${response.status}`);
+    }
+
+    const result = await response.json();
+    const normalized = renderResult(result);
+    setStatus(`Analysis completed. ${normalized.changes.length} change(s) detected.`, "success");
+  } catch (error) {
+    renderResult({ changes: [], mapped: [], risks: [], drafts: {} });
+    setStatus(`Analysis failed: ${error.message}`, "error");
+  } finally {
+    setLoading(false);
+  }
+}
+
+if (runButton) {
+  runButton.addEventListener("click", runAnalyze);
+}
+
+runAnalyze();

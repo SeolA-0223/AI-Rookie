@@ -1,0 +1,51 @@
+{
+  "evaluatedAt": "2026-03-31T04:40:32.710Z",
+  "sampleData": {
+    "before": "data/samples/regulation_before.json",
+    "after": "data/samples/regulation_after.json",
+    "internalDocs": "data/samples/internal_docs.json"
+  },
+  "artifact": "data/eval/metrics.json",
+  "runtimeMs": 1,
+  "metrics": {
+    "changeDetection": {
+      "expectedChangedClauses": 4,
+      "predictedChangedClauses": 4,
+      "truePositives": 4,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "mapping": {
+      "rows": 4,
+      "rowsWithImpactedDocuments": 4,
+      "coverageRate": 1,
+      "avgImpactedDocumentsPerChange": 2.75
+    },
+    "risk": {
+      "rows": 4,
+      "distribution": {
+        "빨강": 2,
+        "노랑": 1,
+        "파랑": 1
+      },
+      "highRiskRate": 0.5
+    },
+    "traceability": {
+      "traces": 4,
+      "completeTraces": 4,
+      "completenessRate": 1
+    },
+    "drafts": {
+      "requiredSections": 4,
+      "generatedSections": 4,
+      "completenessRate": 1
+    }
+  },
+  "checks": {
+    "noMissingChanges": true,
+    "noMissingMappings": true,
+    "allTracesComplete": true,
+    "allDraftSectionsGenerated": true
+  }
+}

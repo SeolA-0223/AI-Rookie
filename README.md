@@ -11,17 +11,23 @@
 - `tests`: Node 테스트
 
 ## 실행
-1. API 서버 실행
-   - `node backend/src/server.js`
-2. 헬스체크
-   - `GET http://localhost:3000/health`
-3. 분석 실행
-   - `POST http://localhost:3000/analyze`
+1. 의존성 설치
+   - `npm install`
+2. API 서버 실행
+   - `npm run start`
+3. 스모크 체크
+   - `npm run smoke`
 
 `/analyze`는 body가 없어도 샘플 데이터를 사용해 결과를 반환합니다.
 
-## 테스트
-- `node --test tests/*.test.js`
+## 테스트/점검
+- `npm run test`
+- `npm run eval`
+- `npm run check`
+- 평가 산출물: `data/eval/metrics.json`
 
 ## 협업
+- 로컬 실행 가이드: `docs/07_local_run.md`
+- 평가 리포트: `docs/03_eval_report.md`
+- 데모 스크립트: `docs/04_demo_script.md`
 - PR 기반 흐름: `docs/06_pr_workflow.md`

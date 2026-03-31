@@ -1,19 +1,203 @@
 ﻿openapi: 3.1.0
 info:
   title: AI-Rookie API
-  version: 0.1.0
+  version: 0.2.0
 paths:
   /health:
     get:
       summary: Health check
       responses:
         "200":
-          description: OK
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                required:
+                  - status
+                  - service
   /analyze:
     post:
       summary: Analyze regulation changes and suggest follow-up actions
       requestBody:
-        required: true
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeRequest"
       responses:
         "200":
           description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyzeResponse"
+        "400":
+          description: Invalid request payload or JSON
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: Request body too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Pipeline input validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    Clause:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        text:
+          type: string
+      required:
+        - id
+        - title
+        - text
+    RegulationDocument:
+      type: object
+      properties:
+        clauses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Clause"
+      required:
+        - clauses
+    InternalDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        text:
+          type: string
+      required:
+        - id
+        - type
+        - title
+        - text
+    AnalyzeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        before:
+          $ref: "#/components/schemas/RegulationDocument"
+        after:
+          $ref: "#/components/schemas/RegulationDocument"
+        internalDocs:
+          type: array
+          items:
+            $ref: "#/components/schemas/InternalDocument"
+    AnalyzeResponse:
+      type: object
+      properties:
+        meta:
+          type: object
+          properties:
+            schemaVersion:
+              type: string
+            generatedAt:
+              type: string
+              format: date-time
+            totalChanges:
+              type: integer
+            highRiskChangeCount:
+              type: integer
+            changeTypeBreakdown:
+              type: object
+              additionalProperties:
+                type: integer
+        analysis:
+          type: object
+          properties:
+            changes:
+              type: array
+              items:
+                type: object
+            impactedDocuments:
+              type: array
+              items:
+                type: object
+            risks:
+              type: array
+              items:
+                type: object
+            traces:
+              type: array
+              items:
+                type: object
+        drafts:
+          type: object
+          additionalProperties:
+            type: string
+        changes:
+          type: array
+          items:
+            type: object
+        mapped:
+          type: array
+          items:
+            type: object
+        risks:
+          type: array
+          items:
+            type: object
+        traces:
+          type: array
+          items:
+            type: object
+      required:
+        - drafts
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - path
+                  - message
+          required:
+            - code
+            - message
+            - details
+      required:
+        - error
