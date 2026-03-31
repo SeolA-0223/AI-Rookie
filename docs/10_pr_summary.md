@@ -21,7 +21,7 @@ Align local collaboration behavior with PR-first workflow and keep handover auto
 ## Validation
 - `npm run hooks:doctor` -> OK
 - GitHub Actions (branch `feat/pr-guardrails-docs`) -> success
-  - https://github.com/SeolA-0223/AI-Rookie/actions/runs/23788775614
+  - https://github.com/SeolA-0223/AI-Rookie/actions/runs/23788961621
 
 ## PR Link
 - https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/pr-guardrails-docs
