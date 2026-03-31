@@ -50,6 +50,20 @@ function To-Bullets {
     ForEach-Object { "- $($_.Trim())" }
 }
 
+function Filter-HandoverPathFromList {
+  param([string]$Text)
+
+  if ([string]::IsNullOrWhiteSpace($Text)) {
+    return ""
+  }
+
+  return (($Text -split "\r?\n") |
+    Where-Object {
+      $line = $_.Trim()
+      -not [string]::IsNullOrWhiteSpace($line) -and $line -ne "docs/09_handover_status.txt"
+    }) -join "`n"
+}
+
 function Convert-RemoteToGithubUrl {
   param([string]$RemoteUrl)
 
@@ -106,14 +120,16 @@ $upstream = Invoke-Git -Args @("rev-parse", "--abbrev-ref", "--symbolic-full-nam
 $latestCommit = Invoke-Git -Args @("log", "-1", "--oneline", "--decorate") -Fallback "(none)"
 $recentCommits = Invoke-Git -Args @("log", "--oneline", "--decorate", "-n", "8") -Fallback ""
 $statusShortBranch = Invoke-Git -Args @("status", "--short", "--branch") -Fallback "(status unavailable)"
-$stagedFiles = Invoke-Git -Args @("diff", "--cached", "--name-only") -Fallback ""
-$unstagedFiles = Invoke-Git -Args @("diff", "--name-only") -Fallback ""
+$stagedFiles = Filter-HandoverPathFromList -Text (Invoke-Git -Args @("diff", "--cached", "--name-only") -Fallback "")
+$unstagedFiles = Filter-HandoverPathFromList -Text (Invoke-Git -Args @("diff", "--name-only") -Fallback "")
 $untrackedFiles = Invoke-Git -Args @("ls-files", "--others", "--exclude-standard") -Fallback ""
 $isClean = [string]::IsNullOrWhiteSpace((Invoke-Git -Args @("status", "--porcelain") -Fallback ""))
 
 $remoteUrl = Invoke-Git -Args @("remote", "get-url", "origin") -Fallback ""
 $githubRepoUrl = Convert-RemoteToGithubUrl -RemoteUrl $remoteUrl
-$prUrl = if (-not [string]::IsNullOrWhiteSpace($githubRepoUrl) -and $branch -ne "HEAD" -and $branch -ne "(unknown)") {
+$prUrl = if ($branch -eq "main") {
+  "(not applicable on main)"
+} elseif (-not [string]::IsNullOrWhiteSpace($githubRepoUrl) -and $branch -ne "HEAD" -and $branch -ne "(unknown)") {
   "$githubRepoUrl/pull/new/$branch"
 } else {
   "(unavailable)"
@@ -126,7 +142,7 @@ $lines = @(
   "1) Branch Sync"
   "- Current branch: $branch"
   "- Upstream: $upstream"
-  "- Latest commit: $latestCommit"
+  "- Latest commit at update time: $latestCommit"
   "- PR link: $prUrl"
   ""
   "2) Working Tree"

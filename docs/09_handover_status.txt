@@ -1,33 +1,33 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 17:25:27 KST
+Auto-updated: 2026-03-31 17:29:44 KST
 
 1) Branch Sync
-- Current branch: main
-- Upstream: origin/main
-- Latest commit: 4a14f84 (HEAD -> main, origin/main, origin/feat/review-20260331-1628, feat/review-20260331-1628) docs: refresh handover snapshot
-- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/main
+- Current branch: feat/review-20260331-1628
+- Upstream: origin/feat/review-20260331-1628
+- Latest commit at update time: 3ee2942 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) docs: refresh handover snapshot on main
+- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## main...origin/main
-- M docs/09_handover_status.txt
+- ## feat/review-20260331-1628...origin/feat/review-20260331-1628
+- M scripts/update-handover.ps1
 
 3) Recent Commits (max 8)
-- 4a14f84 (HEAD -> main, origin/main, origin/feat/review-20260331-1628, feat/review-20260331-1628) docs: refresh handover snapshot
+- 3ee2942 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) docs: refresh handover snapshot on main
+- 4a14f84 docs: refresh handover snapshot
 - f0ddcee chore: enforce LF for git hooks
 - b1cbce4 docs: refresh handover snapshot
 - 56b1b5c ci: align status check name and stabilize handover hook
 - 4d15047 docs: refresh auto handover snapshot
 - f06809b chore: automate handover updates with pre-commit hook
 - 97f0908 docs: add handover status memo
-- ccfee8c docs: add release notes draft
 
 4) Staged Files
 - (none)
 
 5) Unstaged Files
-- docs/09_handover_status.txt
+- (none)
 
 6) Untracked Files
 - (none)
