@@ -1,34 +1,29 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 17:15:13 KST
+Auto-updated: 2026-03-31 17:15:29 KST
 
 1) Branch Sync
 - Current branch: feat/review-20260331-1628
 - Upstream: origin/feat/review-20260331-1628
-- Latest commit: 4d15047 (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) docs: refresh auto handover snapshot
+- Latest commit: 56b1b5c (HEAD -> feat/review-20260331-1628) ci: align status check name and stabilize handover hook
 - PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
 
 2) Working Tree
-- Clean: no
+- Clean: yes
 - git status --short --branch
-- ## feat/review-20260331-1628...origin/feat/review-20260331-1628
-- MM .githooks/pre-commit
-- M  .github/workflows/ci.yml
-- M  docs/09_handover_status.txt
+- ## feat/review-20260331-1628...origin/feat/review-20260331-1628 [ahead 1]
 
 3) Recent Commits (max 8)
-- 4d15047 (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) docs: refresh auto handover snapshot
+- 56b1b5c (HEAD -> feat/review-20260331-1628) ci: align status check name and stabilize handover hook
+- 4d15047 (origin/feat/review-20260331-1628) docs: refresh auto handover snapshot
 - f06809b chore: automate handover updates with pre-commit hook
 - 97f0908 docs: add handover status memo
 - ccfee8c docs: add release notes draft
 - e91c062 (origin/main, main) feat: integrate backend hardening and eval workflow
 - 3880629 (feat/parallel-frontend-live-api, feat/parallel-eval-assets, feat/parallel-devex, feat/parallel-backend-hardening) chore: add PR template and workflow guide (#1)
 - 0f68979 ci: force actions runtime to node24
-- 4e089fa ci: add GitHub Actions test workflow
 
 4) Staged Files
-- .githooks/pre-commit
-- .github/workflows/ci.yml
-- docs/09_handover_status.txt
+- (none)
 
 5) Unstaged Files
 - (none)
