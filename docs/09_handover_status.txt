@@ -1,30 +1,32 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 17:36:30 KST
+Auto-updated: 2026-03-31 17:38:18 KST
 
 1) Branch Sync
-- Current branch: feat/review-20260331-1628
-- Upstream: origin/feat/review-20260331-1628
-- Latest commit at update time: e6ad752 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: refine auto handover output formatting
-- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
+- Current branch: main
+- Upstream: origin/main
+- Latest commit at update time: 35f7b73 (HEAD -> main, origin/main, origin/feat/review-20260331-1628, feat/review-20260331-1628) docs: update handover manual notes
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23788257876)
+- PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## feat/review-20260331-1628...origin/feat/review-20260331-1628
+- ## main...origin/main
 - M  docs/09_handover_status.txt
+- M  scripts/update-handover.ps1
 
 3) Recent Commits (max 8)
-- e6ad752 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: refine auto handover output formatting
+- 35f7b73 (HEAD -> main, origin/main, origin/feat/review-20260331-1628, feat/review-20260331-1628) docs: update handover manual notes
+- e6ad752 chore: refine auto handover output formatting
 - 3ee2942 docs: refresh handover snapshot on main
 - 4a14f84 docs: refresh handover snapshot
 - f0ddcee chore: enforce LF for git hooks
 - b1cbce4 docs: refresh handover snapshot
 - 56b1b5c ci: align status check name and stabilize handover hook
 - 4d15047 docs: refresh auto handover snapshot
-- f06809b chore: automate handover updates with pre-commit hook
 
 4) Staged Files
-- (none)
+- scripts/update-handover.ps1
 
 5) Unstaged Files
 - (none)

@@ -83,6 +83,34 @@ function Convert-RemoteToGithubUrl {
   return ""
 }
 
+function Get-LatestCiSummary {
+  param(
+    [string]$GithubRepoUrl,
+    [string]$BranchName
+  )
+
+  if ([string]::IsNullOrWhiteSpace($GithubRepoUrl) -or [string]::IsNullOrWhiteSpace($BranchName)) {
+    return "(unavailable)"
+  }
+
+  $repoPath = $GithubRepoUrl -replace "^https://github.com/", ""
+  $apiUrl = "https://api.github.com/repos/$repoPath/actions/runs?branch=$BranchName&per_page=1"
+
+  try {
+    $response = Invoke-RestMethod -Method Get -Uri $apiUrl -Headers @{ "User-Agent" = "ai-rookie-handover" } -TimeoutSec 8
+    if ($null -eq $response.workflow_runs -or $response.workflow_runs.Count -eq 0) {
+      return "(no runs found)"
+    }
+
+    $run = $response.workflow_runs[0]
+    $status = if ([string]::IsNullOrWhiteSpace($run.status)) { "unknown" } else { $run.status }
+    $conclusion = if ([string]::IsNullOrWhiteSpace($run.conclusion)) { "n/a" } else { $run.conclusion }
+    return "$($run.name): $status/$conclusion ($($run.html_url))"
+  } catch {
+    return "(unavailable)"
+  }
+}
+
 $manualStart = "### [MANUAL NOTES START]"
 $manualEnd = "### [MANUAL NOTES END]"
 
@@ -127,6 +155,7 @@ $isClean = [string]::IsNullOrWhiteSpace((Invoke-Git -Args @("status", "--porcela
 
 $remoteUrl = Invoke-Git -Args @("remote", "get-url", "origin") -Fallback ""
 $githubRepoUrl = Convert-RemoteToGithubUrl -RemoteUrl $remoteUrl
+$latestCiSummary = Get-LatestCiSummary -GithubRepoUrl $githubRepoUrl -BranchName $branch
 $prUrl = if ($branch -eq "main") {
   "(not applicable on main)"
 } elseif (-not [string]::IsNullOrWhiteSpace($githubRepoUrl) -and $branch -ne "HEAD" -and $branch -ne "(unknown)") {
@@ -143,6 +172,7 @@ $lines = @(
   "- Current branch: $branch"
   "- Upstream: $upstream"
   "- Latest commit at update time: $latestCommit"
+  "- Latest CI run: $latestCiSummary"
   "- PR link: $prUrl"
   ""
   "2) Working Tree"
