@@ -10,6 +10,7 @@
     "smoke": "node scripts/smoke.js",
     "check": "npm run test && npm run eval",
     "handover:update": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/update-handover.ps1",
-    "hooks:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1"
+    "hooks:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1",
+    "hooks:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/hooks-doctor.ps1"
   }
 }

@@ -1,34 +1,35 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 17:44:16 KST
+Auto-updated: 2026-03-31 17:47:00 KST
 
 1) Branch Sync
 - Current branch: feat/review-20260331-1628
 - Upstream: origin/feat/review-20260331-1628
-- Latest commit at update time: f163723 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: include latest CI status in handover snapshot
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23788325537)
+- Latest commit at update time: f29fc46 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: add pre-push guard for main branch
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23788557915)
 - PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## feat/review-20260331-1628...origin/feat/review-20260331-1628
-- A  .githooks/pre-push
 - M  README.md
-- M  docs/09_handover_status.txt
+- M  package.json
+- A  scripts/hooks-doctor.ps1
 
 3) Recent Commits (max 8)
-- f163723 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: include latest CI status in handover snapshot
+- f29fc46 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: add pre-push guard for main branch
+- f163723 chore: include latest CI status in handover snapshot
 - 35f7b73 docs: update handover manual notes
 - e6ad752 chore: refine auto handover output formatting
 - 3ee2942 docs: refresh handover snapshot on main
 - 4a14f84 docs: refresh handover snapshot
 - f0ddcee chore: enforce LF for git hooks
 - b1cbce4 docs: refresh handover snapshot
-- 56b1b5c ci: align status check name and stabilize handover hook
 
 4) Staged Files
-- .githooks/pre-push
 - README.md
+- package.json
+- scripts/hooks-doctor.ps1
 
 5) Unstaged Files
 - (none)

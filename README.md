@@ -30,6 +30,7 @@
 - 인수인계 파일: `docs/09_handover_status.txt`
 - 수동 갱신: `npm run handover:update`
 - Git 훅 설치(1회): `npm run hooks:install`
+  - 훅 상태 점검: `npm run hooks:doctor`
   - 설치 후 커밋할 때마다 pre-commit 훅이 인수인계 파일을 자동 갱신/스테이징합니다.
   - pre-push 훅이 `main` 직접 푸시를 기본 차단합니다(기능 브랜치 + PR 유도).
   - `main` 푸시 1회 예외 허용: ``$env:ALLOW_MAIN_PUSH=1; git push origin main``
