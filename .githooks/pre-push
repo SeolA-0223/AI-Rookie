@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ "${ALLOW_MAIN_PUSH:-0}" = "1" ]; then
+  exit 0
+fi
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ -z "${remote_ref:-}" ]; then
+    continue
+  fi
+
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "[pre-push] Direct push to main is blocked."
+    echo "[pre-push] Use feature branch + PR workflow instead."
+    echo "[pre-push] One-time override:"
+    echo "  ALLOW_MAIN_PUSH=1 git push ..."
+    exit 1
+  fi
+done
+
+exit 0
