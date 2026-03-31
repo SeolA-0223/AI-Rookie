@@ -1,74 +1,53 @@
-﻿[AI-Rookie 작업 인수인계 메모]
-업데이트 시각: 2026-03-31 (KST)
+﻿[AI-Rookie Auto Handover]
+Auto-updated: 2026-03-31 16:51:03 KST
 
-1) 현재 진행 상태
-- 현재 작업 브랜치: feat/review-20260331-1628
-- 워킹트리 상태: clean (미커밋 변경 없음)
-- 최신 커밋:
-  - ccfee8c (feat/review-20260331-1628): docs: add release notes draft
-  - e91c062 (main): feat: integrate backend hardening and eval workflow
-- 원격 반영 상태:
-  - origin/main -> e91c062 반영 완료
-  - origin/feat/review-20260331-1628 -> ccfee8c 반영 완료
+1) Branch Sync
+- Current branch: feat/review-20260331-1628
+- Upstream: origin/feat/review-20260331-1628
+- Latest commit: 97f0908 (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) docs: add handover status memo
+- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
 
-2) 이번 턴까지 완료된 핵심 작업
-- backend hardening 통합
-  - /analyze 요청 검증(JSON/필드/용량 1MB)
-  - 에러 응답 표준화(code/message/details)
-  - pipeline 입력 유효성 검사 추가
-- pipeline 응답 확장 + 호환성 유지
-  - 신규: meta, analysis
-  - 레거시 호환: changes, mapped, risks, traces 유지
-- frontend live API 연동
-  - 버튼 실행 + 로딩/성공/실패 상태 표시
-  - 구/신 응답 스키마 동시 처리
-- devex/eval 정리
-  - scripts/evaluate.js, scripts/smoke.js 추가
-  - npm scripts 정리(test/eval/smoke/check)
-  - 평가/데모/로컬실행 문서 추가
-  - OpenAPI 계약(shared/contracts/api.yaml) 확장
+2) Working Tree
+- Clean: no
+- git status --short --branch
+- ## feat/review-20260331-1628...origin/feat/review-20260331-1628
+- M README.md
+- M docs/09_handover_status.txt
+- M package.json
+- ?? .githooks/
+- ?? scripts/setup-hooks.ps1
+- ?? scripts/update-handover.ps1
 
-3) 검증 결과 (완료)
-- npm run test: PASS (7/7)
-- npm run eval: PASS (metrics 생성)
-- npm run check: PASS
-- npm run smoke: PASS
+3) Recent Commits (max 8)
+- 97f0908 (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) docs: add handover status memo
+- ccfee8c docs: add release notes draft
+- e91c062 (origin/main, main) feat: integrate backend hardening and eval workflow
+- 3880629 (feat/parallel-frontend-live-api, feat/parallel-eval-assets, feat/parallel-devex, feat/parallel-backend-hardening) chore: add PR template and workflow guide (#1)
+- 0f68979 ci: force actions runtime to node24
+- 4e089fa ci: add GitHub Actions test workflow
+- 62172d7 feat: integrate end-to-end pipeline and api server
+- 205b24b merge: feat/frontend-dashboard
 
-4) 이어서 해야 할 작업 (TODO)
-[우선순위 높음]
-- PR 생성/정리
-  - 링크: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
-  - 현재 main에 핵심 통합 커밋(e91c062)이 이미 반영되어 있으므로,
-    이 PR은 릴리즈 노트 커밋(ccfee8c) 중심 확인용으로 다뤄야 함.
+4) Staged Files
+- (none)
 
-- 브랜치 보호 규칙 점검
-  - push 시 원격 메시지에서 "Required status check 'test' is expected" 확인됨.
-  - 현재 .github/workflows/ci.yml의 job 이름은 check.
-  - 필요 시 아래 중 하나로 정합성 맞추기:
-    1) CI job 이름을 test로 변경
-    2) GitHub branch protection의 required check를 check로 변경
+5) Unstaged Files
+- (none)
 
-[우선순위 중간]
-- Release Note 보완
-  - 파일: docs/08_release_notes.md
-  - 실제 배포 버전명/배포 일자/담당자/리스크 항목 추가
+6) Untracked Files
+- .githooks/pre-commit
+- scripts/setup-hooks.ps1
+- scripts/update-handover.ps1
 
-- README/문서 링크 QA
-  - README의 실행/검증 명령과 docs 내용이 최신 상태인지 최종 검수
+7) Manual Notes
+### [MANUAL NOTES START]
+- Add next-turn tasks here
+- Add blockers/risk notes here
+### [MANUAL NOTES END]
 
-5) 바로 이어서 작업할 때 권장 명령
-- 브랜치 확인
-  - git status --short --branch
-- main으로 이동
-  - git switch main
-- 작업 브랜치로 복귀
-  - git switch feat/review-20260331-1628
-- 최신 커밋 확인
-  - git log --oneline --decorate -n 10
+8) Quick Commands
+- status: git status --short --branch
+- check: npm run check
+- smoke: npm run smoke
+- manual refresh: npm run handover:update
 
-6) 참고 파일
-- 릴리즈 노트: docs/08_release_notes.md
-- 로컬 실행 가이드: docs/07_local_run.md
-- 평가 리포트: docs/03_eval_report.md
-- 데모 스크립트: docs/04_demo_script.md
-- 평가 산출물: data/eval/metrics.json

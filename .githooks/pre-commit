@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+if [ "${SKIP_HANDOVER_HOOK:-0}" = "1" ]; then
+  exit 0
+fi
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/update-handover.ps1
+git add docs/09_handover_status.txt

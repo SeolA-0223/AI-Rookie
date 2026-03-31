@@ -26,6 +26,13 @@
 - `npm run check`
 - 평가 산출물: `data/eval/metrics.json`
 
+## 자동 인수인계
+- 인수인계 파일: `docs/09_handover_status.txt`
+- 수동 갱신: `npm run handover:update`
+- Git 훅 설치(1회): `npm run hooks:install`
+  - 설치 후 커밋할 때마다 pre-commit 훅이 인수인계 파일을 자동 갱신/스테이징합니다.
+  - 훅 일시 비활성화(PowerShell): ``$env:SKIP_HANDOVER_HOOK=1; git commit ...``
+
 ## 협업
 - 로컬 실행 가이드: `docs/07_local_run.md`
 - 평가 리포트: `docs/03_eval_report.md`
