@@ -1,4 +1,4 @@
-## Summary
+﻿## Summary
 - 
 
 ## Why
@@ -8,11 +8,12 @@
 - 
 
 ## Test
-- [ ] `node --test tests/*.test.js`
+- [ ] `npm run check`
+- [ ] `npm run hooks:doctor`
 - [ ] Manual check (`/health`, `/analyze`) if backend touched
 
 ## Checklist
-- [ ] Scope is within MVP (복지/청년지원, 2~3개 지자체)
-- [ ] Change types remain focused (요건/서류/기한/금액)
+- [ ] Scope is single-purpose and reviewable
+- [ ] `docs/09_handover_status.txt` is refreshed
 - [ ] Docs/README updated if behavior changed
-
+- [ ] No direct push to `main` was used (or override reason documented)
