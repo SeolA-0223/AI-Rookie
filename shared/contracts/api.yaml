@@ -1,0 +1,19 @@
+﻿openapi: 3.1.0
+info:
+  title: AI-Rookie API
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+  /analyze:
+    post:
+      summary: Analyze regulation changes and suggest follow-up actions
+      requestBody:
+        required: true
+      responses:
+        "200":
+          description: Analysis result

@@ -1,0 +1,25 @@
+﻿{
+  "version": "before",
+  "clauses": [
+    {
+      "id": "c1",
+      "title": "Age Requirement",
+      "text": "Applicants must be between 19 and 29 years old."
+    },
+    {
+      "id": "c2",
+      "title": "Required Documents",
+      "text": "Submit ID card and resident registration copy."
+    },
+    {
+      "id": "c3",
+      "title": "Application Deadline",
+      "text": "Applications close on March 31."
+    },
+    {
+      "id": "c4",
+      "title": "Support Amount",
+      "text": "Support amount is up to 500000 KRW."
+    }
+  ]
+}

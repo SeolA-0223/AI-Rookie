@@ -1,0 +1,32 @@
+﻿[
+  {
+    "id": "d1",
+    "type": "guide",
+    "title": "Citizen Guide",
+    "text": "Guide for age, required documents, and deadline for application."
+  },
+  {
+    "id": "d2",
+    "type": "faq",
+    "title": "FAQ",
+    "text": "FAQ about age limits, missing documents, and support amount."
+  },
+  {
+    "id": "d3",
+    "type": "checklist",
+    "title": "Internal Checklist",
+    "text": "Checklist for verifying eligibility and required files before submission."
+  },
+  {
+    "id": "d4",
+    "type": "notice",
+    "title": "Internal Notice",
+    "text": "Official notice for updated policy conditions and deadlines."
+  },
+  {
+    "id": "d5",
+    "type": "script",
+    "title": "Call Script",
+    "text": "Response script for citizens asking about eligibility and timeline."
+  }
+]
