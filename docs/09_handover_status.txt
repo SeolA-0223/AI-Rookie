@@ -1,29 +1,34 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 16:58:22 KST
+Auto-updated: 2026-03-31 17:15:13 KST
 
 1) Branch Sync
 - Current branch: feat/review-20260331-1628
 - Upstream: origin/feat/review-20260331-1628
-- Latest commit: f06809b (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) chore: automate handover updates with pre-commit hook
+- Latest commit: 4d15047 (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) docs: refresh auto handover snapshot
 - PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
 
 2) Working Tree
-- Clean: yes
+- Clean: no
 - git status --short --branch
 - ## feat/review-20260331-1628...origin/feat/review-20260331-1628
+- MM .githooks/pre-commit
+- M  .github/workflows/ci.yml
+- M  docs/09_handover_status.txt
 
 3) Recent Commits (max 8)
-- f06809b (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) chore: automate handover updates with pre-commit hook
+- 4d15047 (HEAD -> feat/review-20260331-1628, origin/feat/review-20260331-1628) docs: refresh auto handover snapshot
+- f06809b chore: automate handover updates with pre-commit hook
 - 97f0908 docs: add handover status memo
 - ccfee8c docs: add release notes draft
 - e91c062 (origin/main, main) feat: integrate backend hardening and eval workflow
 - 3880629 (feat/parallel-frontend-live-api, feat/parallel-eval-assets, feat/parallel-devex, feat/parallel-backend-hardening) chore: add PR template and workflow guide (#1)
 - 0f68979 ci: force actions runtime to node24
 - 4e089fa ci: add GitHub Actions test workflow
-- 62172d7 feat: integrate end-to-end pipeline and api server
 
 4) Staged Files
-- (none)
+- .githooks/pre-commit
+- .github/workflows/ci.yml
+- docs/09_handover_status.txt
 
 5) Unstaged Files
 - (none)
@@ -33,8 +38,9 @@ Auto-updated: 2026-03-31 16:58:22 KST
 
 7) Manual Notes
 ### [MANUAL NOTES START]
-- Add next-turn tasks here
-- Add blockers/risk notes here
+- Open PR from feat/review-20260331-1628 and request review.
+- Verify branch protection required check name now matches CI job "test".
+- After PR merge, sync local/remote main and regenerate handover snapshot.
 ### [MANUAL NOTES END]
 
 8) Quick Commands

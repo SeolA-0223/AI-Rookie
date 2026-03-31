@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 set -eu
 
 if [ "${SKIP_HANDOVER_HOOK:-0}" = "1" ]; then
