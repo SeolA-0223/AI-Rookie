@@ -1,31 +1,31 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 18:02:40 KST
+Auto-updated: 2026-03-31 18:06:24 KST
 
 1) Branch Sync
-- Current branch: feat/pr-guardrails-docs
-- Upstream: origin/feat/pr-guardrails-docs
-- Latest commit at update time: aac494e (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: use stable branch actions link in PR summary
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23789240383)
-- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/pr-guardrails-docs
+- Current branch: main
+- Upstream: origin/main
+- Latest commit at update time: e2da9b4 (HEAD -> main, origin/main, origin/feat/pr-guardrails-docs, feat/pr-guardrails-docs) docs: add non-gh PR creation fallback link
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23789367872)
+- PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## feat/pr-guardrails-docs...origin/feat/pr-guardrails-docs
-- M  docs/06_pr_workflow.md
+- ## main...origin/main
+- M  docs/09_handover_status.txt
 
 3) Recent Commits (max 8)
-- aac494e (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: use stable branch actions link in PR summary
+- e2da9b4 (HEAD -> main, origin/main, origin/feat/pr-guardrails-docs, feat/pr-guardrails-docs) docs: add non-gh PR creation fallback link
+- aac494e docs: use stable branch actions link in PR summary
 - 98af62b docs: modernize pull request template checks
 - fa62419 docs: update PR summary with latest CI run link
 - 43f0f76 docs: refresh handover snapshot after CI success
 - a478e39 docs: add PR summary for guardrails branch
 - d9255b5 docs: refresh handover snapshot for PR branch
 - 0b9e64c docs: document local git guardrails for PR workflow
-- 96be106 (origin/main, origin/feat/review-20260331-1628, main, feat/review-20260331-1628) chore: add hooks doctor health check
 
 4) Staged Files
-- docs/06_pr_workflow.md
+- (none)
 
 5) Unstaged Files
 - (none)
