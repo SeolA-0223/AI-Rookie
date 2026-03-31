@@ -6,9 +6,13 @@ import { mapImpactDocuments } from "../backend/src/mapping/mapImpactDocuments.js
 import { classifyRisk } from "../backend/src/risk/classifyRisk.js";
 import { buildTrace } from "../backend/src/trace/buildTrace.js";
 
-const before = JSON.parse(fs.readFileSync("data/samples/regulation_before.json", "utf8"));
-const after = JSON.parse(fs.readFileSync("data/samples/regulation_after.json", "utf8"));
-const docs = JSON.parse(fs.readFileSync("data/samples/internal_docs.json", "utf8"));
+function readJson(path) {
+  return JSON.parse(fs.readFileSync(path, "utf8").replace(/^\uFEFF/, ""));
+}
+
+const before = readJson("data/samples/regulation_before.json");
+const after = readJson("data/samples/regulation_after.json");
+const docs = readJson("data/samples/internal_docs.json");
 
 test("mapImpactDocuments returns linked docs for each change", () => {
   const changes = detectChanges(before.clauses, after.clauses);
