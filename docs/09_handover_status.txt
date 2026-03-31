@@ -1,35 +1,31 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-03-31 17:47:00 KST
+Auto-updated: 2026-03-31 17:48:39 KST
 
 1) Branch Sync
-- Current branch: feat/review-20260331-1628
-- Upstream: origin/feat/review-20260331-1628
-- Latest commit at update time: f29fc46 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: add pre-push guard for main branch
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23788557915)
-- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/review-20260331-1628
+- Current branch: feat/pr-guardrails-docs
+- Upstream: (none)
+- Latest commit at update time: 96be106 (HEAD -> feat/pr-guardrails-docs, origin/main, origin/feat/review-20260331-1628, main, feat/review-20260331-1628) chore: add hooks doctor health check
+- Latest CI run: (no runs found)
+- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/pr-guardrails-docs
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## feat/review-20260331-1628...origin/feat/review-20260331-1628
-- M  README.md
-- M  package.json
-- A  scripts/hooks-doctor.ps1
+- ## feat/pr-guardrails-docs
+- M  docs/06_pr_workflow.md
 
 3) Recent Commits (max 8)
-- f29fc46 (HEAD -> feat/review-20260331-1628, origin/main, origin/feat/review-20260331-1628, main) chore: add pre-push guard for main branch
+- 96be106 (HEAD -> feat/pr-guardrails-docs, origin/main, origin/feat/review-20260331-1628, main, feat/review-20260331-1628) chore: add hooks doctor health check
+- f29fc46 chore: add pre-push guard for main branch
 - f163723 chore: include latest CI status in handover snapshot
 - 35f7b73 docs: update handover manual notes
 - e6ad752 chore: refine auto handover output formatting
 - 3ee2942 docs: refresh handover snapshot on main
 - 4a14f84 docs: refresh handover snapshot
 - f0ddcee chore: enforce LF for git hooks
-- b1cbce4 docs: refresh handover snapshot
 
 4) Staged Files
-- README.md
-- package.json
-- scripts/hooks-doctor.ps1
+- docs/06_pr_workflow.md
 
 5) Unstaged Files
 - (none)
