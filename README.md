@@ -41,3 +41,4 @@
 - 평가 리포트: `docs/03_eval_report.md`
 - 데모 스크립트: `docs/04_demo_script.md`
 - PR 기반 흐름: `docs/06_pr_workflow.md`
+- 진행 보드(계획+현황): `docs/11_progress_board.md`
