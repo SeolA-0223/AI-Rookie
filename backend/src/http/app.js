@@ -1,3 +1,5 @@
+ console.log("supabase key suffix:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-6));
+
 import process from "node:process";
 import fs from "node:fs";
 import path from "node:path";
