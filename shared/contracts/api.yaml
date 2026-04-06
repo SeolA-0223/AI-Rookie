@@ -61,8 +61,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /history:
+    get:
+      summary: List recent analysis runs saved to Supabase
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: Recent analysis runs and storage status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryResponse"
 components:
   schemas:
+    StorageStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        provider:
+          type: string
+        projectRef:
+          type:
+            - string
+            - "null"
+        missingEnv:
+          type: array
+          items:
+            type: string
+      required:
+        - enabled
+        - provider
+        - missingEnv
     Clause:
       type: object
       properties:
@@ -132,6 +168,8 @@ components:
               type: object
               additionalProperties:
                 type: integer
+            storage:
+              $ref: "#/components/schemas/StorageStatus"
         analysis:
           type: object
           properties:
@@ -173,6 +211,53 @@ components:
             type: object
       required:
         - drafts
+    HistoryRun:
+      type: object
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+        totalChanges:
+          type: integer
+        highRiskChangeCount:
+          type: integer
+        changeTypeBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        result:
+          $ref: "#/components/schemas/AnalyzeResponse"
+      required:
+        - id
+        - createdAt
+        - source
+        - totalChanges
+        - highRiskChangeCount
+        - changeTypeBreakdown
+        - result
+    HistoryResponse:
+      type: object
+      properties:
+        storage:
+          $ref: "#/components/schemas/StorageStatus"
+        runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryRun"
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+      required:
+        - storage
+        - runs
     ErrorResponse:
       type: object
       properties:

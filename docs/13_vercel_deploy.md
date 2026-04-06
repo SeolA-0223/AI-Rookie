@@ -1,0 +1,27 @@
+# Vercel Deploy
+
+## Import settings
+- Import the GitHub repository at the repo root
+- `Application Preset: Other` is expected for this project
+- Build Command: leave empty
+- Output Directory: leave empty
+
+## Required environment variables
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+## Runtime shape
+- Static dashboard entrypoint: `/`
+- Vercel functions:
+  - `/api/health`
+  - `/api/history`
+  - `/api/analyze`
+- Backward-compatible rewrites:
+  - `/health` -> `/api/health`
+  - `/history` -> `/api/history`
+  - `/analyze` -> `/api/analyze`
+
+## Notes
+- The dashboard uses `/api/analyze` and `/api/history`
+- Root `index.html` serves the dashboard on Vercel
+- Local `npm run start` still supports both `/api/*` and legacy root API paths

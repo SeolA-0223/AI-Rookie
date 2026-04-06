@@ -55,6 +55,7 @@ async function main() {
 
   const health = await fetchJson("/health");
   assert(health.status === "ok", "Unexpected /health status value.");
+  assert(typeof health.storage === "object" && health.storage !== null, "Missing storage object in /health response.");
   console.log("Health endpoint check passed.");
 
   const analyze = await fetchJson("/analyze", {
@@ -64,6 +65,11 @@ async function main() {
   });
   const normalized = validateAnalyzeResponse(analyze);
   console.log(`Analyze endpoint check passed. Detected ${normalized.changes.length} changes.`);
+
+  const history = await fetchJson("/history");
+  assert(Array.isArray(history.runs), "Missing runs[] in /history response.");
+  assert(typeof history.storage === "object" && history.storage !== null, "Missing storage object in /history response.");
+  console.log(`History endpoint check passed. Loaded ${history.runs.length} saved run(s).`);
 
   console.log("Smoke check passed.");
 }

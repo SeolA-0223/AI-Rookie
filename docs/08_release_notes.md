@@ -22,6 +22,10 @@
   - 대시보드에서 실시간 `/analyze` 호출
   - 로딩/성공/실패 상태 표시
   - 구/신 응답 스키마 동시 처리
+- Supabase persistence
+  - `GET /history` 추가
+  - 선택적 Supabase 저장 계층 추가 (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
+  - Supabase CLI 초기화 및 `analysis_runs` 마이그레이션 추가
 - DevEx / Evaluation
   - `npm run test`, `npm run eval`, `npm run smoke`, `npm run check` 스크립트 정리
   - CI에서 `npm run check` 실행

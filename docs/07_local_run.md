@@ -27,9 +27,10 @@ npm run start
 ```
 
 Default server URL is `http://127.0.0.1:3000`.
+If `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, analysis runs will also be saved to Supabase.
 
 ## 5) Run smoke check (in another terminal)
-Hits `GET /health` and `POST /analyze` and validates response shape.
+Hits `GET /health`, `POST /analyze`, and `GET /history` and validates response shape.
 
 ```bash
 npm run smoke
@@ -48,3 +49,6 @@ Runs tests + eval (does not include smoke).
 ```bash
 npm run check
 ```
+
+## 7) Supabase setup
+See `docs/12_supabase_setup.md` for remote project creation, migration push, and runtime env vars.

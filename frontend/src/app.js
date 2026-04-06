@@ -1,9 +1,12 @@
-﻿const ANALYZE_ENDPOINT = "/analyze";
+const ANALYZE_ENDPOINT = "/api/analyze";
+const HISTORY_ENDPOINT = "/api/history?limit=6";
 const BUTTON_LABEL = "Run Analysis";
 const BUTTON_LOADING_LABEL = "Analyzing...";
 
 const runButton = document.getElementById("analyze-btn");
 const statusView = document.getElementById("status-msg");
+const historyStatusView = document.getElementById("history-status");
+const historyListView = document.getElementById("history-list");
 
 function setStatus(message, type = "neutral") {
   if (!statusView) {
@@ -19,6 +22,14 @@ function setLoading(loading) {
   }
   runButton.disabled = loading;
   runButton.textContent = loading ? BUTTON_LOADING_LABEL : BUTTON_LABEL;
+}
+
+function setHistoryStatus(message, type = "neutral") {
+  if (!historyStatusView) {
+    return;
+  }
+  historyStatusView.textContent = message;
+  historyStatusView.className = `subtle subtle-${type}`;
 }
 
 function createEmptyMessage(tagName, text) {
@@ -137,6 +148,22 @@ function renderDraft(drafts = {}) {
   draftView.textContent = allKeys.map((key) => `[${key}]\n${drafts[key]}`).join("\n\n");
 }
 
+function formatRunTime(value) {
+  if (!value) {
+    return "Unknown time";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
 function normalizeAnalyzeResponse(result = {}) {
   const analysis = result.analysis ?? {};
   return {
@@ -155,6 +182,81 @@ function renderResult(result) {
   renderRisks(normalized.risks);
   renderDraft(normalized.drafts);
   return normalized;
+}
+
+function renderHistoryItem(run) {
+  const item = document.createElement("article");
+  item.className = "history-item";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "history-button";
+
+  const title = document.createElement("strong");
+  title.textContent = `${formatRunTime(run.createdAt)} · ${run.source === "custom" ? "Custom Input" : "Sample Input"}`;
+
+  const meta = document.createElement("p");
+  meta.textContent = `${run.totalChanges} changes · ${run.highRiskChangeCount} high risk`;
+
+  const breakdown = document.createElement("p");
+  const changeTypes = Object.entries(run.changeTypeBreakdown ?? {})
+    .map(([type, count]) => `${type} ${count}`)
+    .join(" / ");
+  breakdown.textContent = changeTypes || "No change breakdown available.";
+
+  button.append(title, meta, breakdown);
+  button.addEventListener("click", () => {
+    renderResult(run.result ?? {});
+    setStatus(`Loaded saved analysis ${run.id}.`, "success");
+  });
+
+  item.append(button);
+  return item;
+}
+
+function renderHistory(payload = {}) {
+  if (!historyListView) {
+    return;
+  }
+
+  historyListView.innerHTML = "";
+  const runs = Array.isArray(payload.runs) ? payload.runs : [];
+  const storage = payload.storage ?? {};
+
+  if (!storage.enabled) {
+    historyListView.append(createEmptyMessage("p", "Supabase is not configured yet."));
+    setHistoryStatus("Supabase persistence is disabled.", "neutral");
+    return;
+  }
+
+  if (!runs.length) {
+    historyListView.append(createEmptyMessage("p", "No saved analyses yet."));
+    setHistoryStatus("Supabase connected. Waiting for the first saved run.", "success");
+    return;
+  }
+
+  for (const run of runs) {
+    historyListView.append(renderHistoryItem(run));
+  }
+  setHistoryStatus(`Supabase connected. Showing ${runs.length} recent run(s).`, "success");
+}
+
+async function loadHistory() {
+  try {
+    const response = await fetch(HISTORY_ENDPOINT);
+    if (!response.ok) {
+      throw new Error(`History request failed with ${response.status}`);
+    }
+
+    const payload = await response.json();
+    renderHistory(payload);
+  } catch (error) {
+    if (historyListView) {
+      historyListView.innerHTML = "";
+      historyListView.append(createEmptyMessage("p", "Unable to load analysis history."));
+    }
+    setHistoryStatus(`History unavailable: ${error.message}`, "error");
+  }
 }
 
 function parseErrorMessage(errorBody) {
@@ -208,9 +310,11 @@ async function runAnalyze() {
     const result = await response.json();
     const normalized = renderResult(result);
     setStatus(`Analysis completed. ${normalized.changes.length} change(s) detected.`, "success");
+    await loadHistory();
   } catch (error) {
     renderResult({ changes: [], mapped: [], risks: [], drafts: {} });
     setStatus(`Analysis failed: ${error.message}`, "error");
+    await loadHistory();
   } finally {
     setLoading(false);
   }
