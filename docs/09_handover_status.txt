@@ -1,49 +1,21 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-04-06 14:10:16 KST
+Auto-updated: 2026-04-06 14:40:36 KST
 
 1) Branch Sync
-- Current branch: feat/pr-guardrails-docs
-- Upstream: origin/feat/pr-guardrails-docs
-- Latest commit at update time: ab585c8 (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: add progress board and refresh handover snapshot
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24018128902)
-- PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/pr-guardrails-docs
+- Current branch: main
+- Upstream: origin/main
+- Latest commit at update time: 4bae04e (HEAD -> main, origin/main, origin/HEAD) feat: add supabase persistence and vercel support (#2)
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24019709312)
+- PR link: (not applicable on main)
 
 2) Working Tree
-- Clean: no
+- Clean: yes
 - git status --short --branch
-- ## feat/pr-guardrails-docs...origin/feat/pr-guardrails-docs
-- A  .env.example
-- M  .gitignore
-- M  README.md
-- A  api/analyze.js
-- A  api/health.js
-- A  api/history.js
-- A  backend/src/http/app.js
-- A  backend/src/persistence/analysisStore.js
-- M  backend/src/server.js
-- M  data/eval/metrics.json
-- M  docs/07_local_run.md
-- M  docs/08_release_notes.md
-- A  docs/12_supabase_setup.md
-- A  docs/13_vercel_deploy.md
-- M  frontend/index.html
-- M  frontend/src/app.js
-- M  frontend/src/styles.css
-- A  index.html
-- A  package-lock.json
-- M  package.json
-- M  scripts/smoke.js
-- M  shared/contracts/api.yaml
-- A  supabase/.gitignore
-- A  supabase/config.toml
-- A  supabase/migrations/20260406132000_create_analysis_runs.sql
-- A  supabase/seed.sql
-- A  tests/analysis-store.test.js
-- A  vercel.json
+- ## main...origin/main
 
 3) Recent Commits (max 8)
-- ab585c8 (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: add progress board and refresh handover snapshot
-- f304996 (origin/main, origin/HEAD, main) docs: refresh handover snapshot on main
+- 4bae04e (HEAD -> main, origin/main, origin/HEAD) feat: add supabase persistence and vercel support (#2)
+- f304996 docs: refresh handover snapshot on main
 - e2da9b4 docs: add non-gh PR creation fallback link
 - aac494e docs: use stable branch actions link in PR summary
 - 98af62b docs: modernize pull request template checks
@@ -52,34 +24,7 @@ Auto-updated: 2026-04-06 14:10:16 KST
 - a478e39 docs: add PR summary for guardrails branch
 
 4) Staged Files
-- .env.example
-- .gitignore
-- README.md
-- api/analyze.js
-- api/health.js
-- api/history.js
-- backend/src/http/app.js
-- backend/src/persistence/analysisStore.js
-- backend/src/server.js
-- data/eval/metrics.json
-- docs/07_local_run.md
-- docs/08_release_notes.md
-- docs/12_supabase_setup.md
-- docs/13_vercel_deploy.md
-- frontend/index.html
-- frontend/src/app.js
-- frontend/src/styles.css
-- index.html
-- package-lock.json
-- package.json
-- scripts/smoke.js
-- shared/contracts/api.yaml
-- supabase/.gitignore
-- supabase/config.toml
-- supabase/migrations/20260406132000_create_analysis_runs.sql
-- supabase/seed.sql
-- tests/analysis-store.test.js
-- vercel.json
+- (none)
 
 5) Unstaged Files
 - (none)
