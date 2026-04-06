@@ -1,36 +1,85 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-04-06 13:02:08 KST
+Auto-updated: 2026-04-06 14:10:16 KST
 
 1) Branch Sync
 - Current branch: feat/pr-guardrails-docs
 - Upstream: origin/feat/pr-guardrails-docs
-- Latest commit at update time: f304996 (HEAD -> feat/pr-guardrails-docs, origin/main, origin/feat/pr-guardrails-docs, origin/HEAD, main) docs: refresh handover snapshot on main
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/23789449007)
+- Latest commit at update time: ab585c8 (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: add progress board and refresh handover snapshot
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24018128902)
 - PR link: https://github.com/SeolA-0223/AI-Rookie/pull/new/feat/pr-guardrails-docs
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## feat/pr-guardrails-docs...origin/feat/pr-guardrails-docs
+- A  .env.example
+- M  .gitignore
 - M  README.md
-- M  docs/09_handover_status.txt
-- A  docs/11_progress_board.docx
-- A  docs/11_progress_board.md
+- A  api/analyze.js
+- A  api/health.js
+- A  api/history.js
+- A  backend/src/http/app.js
+- A  backend/src/persistence/analysisStore.js
+- M  backend/src/server.js
+- M  data/eval/metrics.json
+- M  docs/07_local_run.md
+- M  docs/08_release_notes.md
+- A  docs/12_supabase_setup.md
+- A  docs/13_vercel_deploy.md
+- M  frontend/index.html
+- M  frontend/src/app.js
+- M  frontend/src/styles.css
+- A  index.html
+- A  package-lock.json
+- M  package.json
+- M  scripts/smoke.js
+- M  shared/contracts/api.yaml
+- A  supabase/.gitignore
+- A  supabase/config.toml
+- A  supabase/migrations/20260406132000_create_analysis_runs.sql
+- A  supabase/seed.sql
+- A  tests/analysis-store.test.js
+- A  vercel.json
 
 3) Recent Commits (max 8)
-- f304996 (HEAD -> feat/pr-guardrails-docs, origin/main, origin/feat/pr-guardrails-docs, origin/HEAD, main) docs: refresh handover snapshot on main
+- ab585c8 (HEAD -> feat/pr-guardrails-docs, origin/feat/pr-guardrails-docs) docs: add progress board and refresh handover snapshot
+- f304996 (origin/main, origin/HEAD, main) docs: refresh handover snapshot on main
 - e2da9b4 docs: add non-gh PR creation fallback link
 - aac494e docs: use stable branch actions link in PR summary
 - 98af62b docs: modernize pull request template checks
 - fa62419 docs: update PR summary with latest CI run link
 - 43f0f76 docs: refresh handover snapshot after CI success
 - a478e39 docs: add PR summary for guardrails branch
-- d9255b5 docs: refresh handover snapshot for PR branch
 
 4) Staged Files
+- .env.example
+- .gitignore
 - README.md
-- docs/11_progress_board.docx
-- docs/11_progress_board.md
+- api/analyze.js
+- api/health.js
+- api/history.js
+- backend/src/http/app.js
+- backend/src/persistence/analysisStore.js
+- backend/src/server.js
+- data/eval/metrics.json
+- docs/07_local_run.md
+- docs/08_release_notes.md
+- docs/12_supabase_setup.md
+- docs/13_vercel_deploy.md
+- frontend/index.html
+- frontend/src/app.js
+- frontend/src/styles.css
+- index.html
+- package-lock.json
+- package.json
+- scripts/smoke.js
+- shared/contracts/api.yaml
+- supabase/.gitignore
+- supabase/config.toml
+- supabase/migrations/20260406132000_create_analysis_runs.sql
+- supabase/seed.sql
+- tests/analysis-store.test.js
+- vercel.json
 
 5) Unstaged Files
 - (none)

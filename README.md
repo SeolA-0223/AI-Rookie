@@ -19,6 +19,7 @@
    - `npm run smoke`
 
 `/analyze`는 body가 없어도 샘플 데이터를 사용해 결과를 반환합니다.
+`/history`는 Supabase가 연결된 경우 최근 분석 이력을 반환합니다.
 
 ## 테스트/점검
 - `npm run test`
@@ -42,3 +43,5 @@
 - 데모 스크립트: `docs/04_demo_script.md`
 - PR 기반 흐름: `docs/06_pr_workflow.md`
 - 진행 보드(계획+현황): `docs/11_progress_board.md`
+- Supabase 연동 가이드: `docs/12_supabase_setup.md`
+- Vercel 배포 가이드: `docs/13_vercel_deploy.md`

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "ai-rookie",
   "version": "0.1.0",
   "private": true,
@@ -12,5 +12,8 @@
     "handover:update": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/update-handover.ps1",
     "hooks:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1",
     "hooks:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/hooks-doctor.ps1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1"
   }
 }
