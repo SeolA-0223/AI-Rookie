@@ -1,80 +1,31 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-04-07 10:13:40 KST
+Auto-updated: 2026-04-07 10:14:02 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 8484161 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after korea-law-mcp wiring
+- Latest commit at update time: 9ce9d3b (HEAD -> main) feat: add codex harness workflow and source dashboard
 - Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24058878335)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## main...origin/main
-- M  .githooks/pre-commit
-- A  AGENTS.md
-- A  QA_REPORT.md
-- M  README.md
-- A  SELF_CHECK.md
-- A  SPEC.md
-- A  agents/evaluation_criteria.md
-- A  agents/evaluator.md
-- A  agents/generator.md
-- A  agents/planner.md
-- M  backend/src/http/app.js
-- M  data/eval/metrics.json
-- M  docs/06_pr_workflow.md
-- M  docs/07_local_run.md
+- ## main...origin/main [ahead 1]
 - M  docs/09_handover_status.txt
-- M  docs/11_progress_board.md
-- A  docs/15_harness_workflow.md
-- M  frontend/index.html
-- M  frontend/src/app.js
-- M  frontend/src/styles.css
-- M  index.html
-- A  output/README.md
-- M  package.json
-- A  scripts/harness-check.js
-- M  scripts/smoke.js
-- A  tests/http-app.test.js
 
 3) Recent Commits (max 8)
-- 8484161 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after korea-law-mcp wiring
+- 9ce9d3b (HEAD -> main) feat: add codex harness workflow and source dashboard
+- 8484161 (origin/main, origin/HEAD) docs: refresh handover after korea-law-mcp wiring
 - f68e126 feat: wire korea-law-mcp source adapter
 - d05d0c3 docs: refresh handover after provider scaffolding
 - 88b9b1a feat: add provider-based storage and law source adapters
 - 5889c07 chore: upgrade github actions to v6
 - 34f91d5 chore: update github actions runtime versions
 - ca68985 chore: remove supabase key suffix log
-- 72265fb chore: log supabase suffix for redeploy
 
 4) Staged Files
-- .githooks/pre-commit
-- AGENTS.md
-- QA_REPORT.md
-- README.md
-- SELF_CHECK.md
-- SPEC.md
-- agents/evaluation_criteria.md
-- agents/evaluator.md
-- agents/generator.md
-- agents/planner.md
-- backend/src/http/app.js
-- data/eval/metrics.json
-- docs/06_pr_workflow.md
-- docs/07_local_run.md
-- docs/11_progress_board.md
-- docs/15_harness_workflow.md
-- frontend/index.html
-- frontend/src/app.js
-- frontend/src/styles.css
-- index.html
-- output/README.md
-- package.json
-- scripts/harness-check.js
-- scripts/smoke.js
-- tests/http-app.test.js
+- (none)
 
 5) Unstaged Files
 - (none)
