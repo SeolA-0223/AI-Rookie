@@ -1,62 +1,31 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-08 01:02:40 KST
+Auto-updated: 2026-04-08 01:03:25 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: c9c5595 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after municipality case packs
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24084264832)
+- Latest commit at update time: 0cf7a60 (HEAD -> main, origin/main, origin/HEAD) feat: recommend ordinance pairs from source search
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24091336110)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  QA_REPORT.md
-- M  README.md
-- M  SELF_CHECK.md
-- M  SPEC.md
-- M  backend/src/http/app.js
-- M  backend/src/sources/lawSource.js
-- M  data/eval/metrics.json
-- M  docs/07_local_run.md
 - M  docs/09_handover_status.txt
-- M  docs/11_progress_board.md
-- M  frontend/index.html
-- M  frontend/src/app.js
-- M  frontend/src/styles.css
-- M  scripts/smoke.js
-- M  shared/contracts/api.yaml
-- M  tests/http-app.test.js
-- M  tests/law-source.test.js
 
 3) Recent Commits (max 8)
-- c9c5595 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after municipality case packs
+- 0cf7a60 (HEAD -> main, origin/main, origin/HEAD) feat: recommend ordinance pairs from source search
+- c9c5595 docs: refresh handover after municipality case packs
 - 1ad3f48 feat: add municipality case pack samples
 - 93a9bfa docs: refresh handover after search helper rollout
 - 1a0ad83 feat: add korea-law-mcp search helper
 - 7235f30 docs: refresh handover after source-status rollout
 - c97551e feat: add request-level law source status
 - 44b021b fix: align korea-law-mcp adapter with public contract
-- ec6da07 docs: refresh handover after harness retrofit
 
 4) Staged Files
-- QA_REPORT.md
-- README.md
-- SELF_CHECK.md
-- SPEC.md
-- backend/src/http/app.js
-- backend/src/sources/lawSource.js
-- data/eval/metrics.json
-- docs/07_local_run.md
-- docs/11_progress_board.md
-- frontend/index.html
-- frontend/src/app.js
-- frontend/src/styles.css
-- scripts/smoke.js
-- shared/contracts/api.yaml
-- tests/http-app.test.js
-- tests/law-source.test.js
+- (none)
 
 5) Unstaged Files
 - (none)
