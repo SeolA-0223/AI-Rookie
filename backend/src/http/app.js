@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
+import { createLawSource, SourceResolutionError } from "../sources/lawSource.js";
 
 try {
   process.loadEnvFile();
@@ -12,8 +13,9 @@ try {
 }
 
 const MAX_BODY_BYTES = 1024 * 1024;
-const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs"]);
+const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs", "source"]);
 const analysisStore = createAnalysisStore();
+const lawSource = createLawSource();
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const STATIC_ROOT_FILE = path.join(REPO_ROOT, "index.html");
 const STATIC_FRONTEND_ROOT = path.join(REPO_ROOT, "frontend");
@@ -173,15 +175,46 @@ function validateAnalyzeRequest(payload) {
   if ("internalDocs" in payload && !Array.isArray(payload.internalDocs)) {
     details.push({ path: "body.internalDocs", message: "must be an array" });
   }
+  if ("source" in payload && !isPlainObject(payload.source)) {
+    details.push({ path: "body.source", message: "must be an object" });
+  }
+  if (isPlainObject(payload.source) && "provider" in payload.source && typeof payload.source.provider !== "string") {
+    details.push({ path: "body.source.provider", message: "must be a string" });
+  }
+  if (isPlainObject(payload.source) && "beforeId" in payload.source && typeof payload.source.beforeId !== "string") {
+    details.push({ path: "body.source.beforeId", message: "must be a string" });
+  }
+  if (isPlainObject(payload.source) && "afterId" in payload.source && typeof payload.source.afterId !== "string") {
+    details.push({ path: "body.source.afterId", message: "must be a string" });
+  }
+  if ("source" in payload && ("before" in payload || "after" in payload)) {
+    details.push({ path: "body.source", message: "cannot be combined with body.before or body.after" });
+  }
 
   return details;
 }
 
-function buildAnalyzeInput(payload) {
+async function buildAnalyzeInput(payload) {
+  const internalDocs = payload.internalDocs ?? readSample(SAMPLE_INTERNAL_DOCS_FILE);
+
+  if (payload.source) {
+    const resolvedPair = await lawSource.resolveRegulationPair(payload.source);
+    return {
+      beforeDoc: resolvedPair.beforeDoc,
+      afterDoc: resolvedPair.afterDoc,
+      internalDocs,
+      sourceMeta: resolvedPair.meta
+    };
+  }
+
   return {
     beforeDoc: payload.before ?? readSample(SAMPLE_BEFORE_FILE),
     afterDoc: payload.after ?? readSample(SAMPLE_AFTER_FILE),
-    internalDocs: payload.internalDocs ?? readSample(SAMPLE_INTERNAL_DOCS_FILE)
+    internalDocs,
+    sourceMeta:
+      "before" in payload || "after" in payload
+        ? { provider: "inline", mode: "request" }
+        : { provider: "local-fixture", mode: "sample" }
   };
 }
 
@@ -189,7 +222,8 @@ export async function handleHealth(req, res) {
   sendJson(res, 200, {
     status: "ok",
     service: "ai-rookie",
-    storage: analysisStore.getStorageStatus()
+    storage: analysisStore.getStorageStatus(),
+    source: lawSource.getSourceStatus()
   });
 }
 
@@ -209,9 +243,10 @@ export async function handleAnalyze(req, res) {
       return;
     }
 
-    const { beforeDoc, afterDoc, internalDocs } = buildAnalyzeInput(payload);
+    const { beforeDoc, afterDoc, internalDocs, sourceMeta } = await buildAnalyzeInput(payload);
     const source = detectRunSource(payload);
     const result = runPipeline({ beforeDoc, afterDoc, internalDocs });
+    result.meta.inputSource = sourceMeta;
     const persistence = await analysisStore.saveRun({
       source,
       requestPayload: {
@@ -244,6 +279,10 @@ export async function handleAnalyze(req, res) {
     }
     if (error instanceof PipelineValidationError) {
       sendError(res, 422, error.code, error.message, error.details);
+      return;
+    }
+    if (error instanceof SourceResolutionError) {
+      sendError(res, error.statusCode, error.code, error.message, error.details);
       return;
     }
 

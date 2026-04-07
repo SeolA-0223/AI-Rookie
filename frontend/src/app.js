@@ -222,23 +222,24 @@ function renderHistory(payload = {}) {
   historyListView.innerHTML = "";
   const runs = Array.isArray(payload.runs) ? payload.runs : [];
   const storage = payload.storage ?? {};
+  const providerName = storage.provider ?? "storage";
 
   if (!storage.enabled) {
-    historyListView.append(createEmptyMessage("p", "Supabase is not configured yet."));
-    setHistoryStatus("Supabase persistence is disabled.", "neutral");
+    historyListView.append(createEmptyMessage("p", `${providerName} storage is not configured yet.`));
+    setHistoryStatus(`${providerName} storage is disabled.`, "neutral");
     return;
   }
 
   if (!runs.length) {
     historyListView.append(createEmptyMessage("p", "No saved analyses yet."));
-    setHistoryStatus("Supabase connected. Waiting for the first saved run.", "success");
+    setHistoryStatus(`${providerName} storage connected. Waiting for the first saved run.`, "success");
     return;
   }
 
   for (const run of runs) {
     historyListView.append(renderHistoryItem(run));
   }
-  setHistoryStatus(`Supabase connected. Showing ${runs.length} recent run(s).`, "success");
+  setHistoryStatus(`${providerName} storage connected. Showing ${runs.length} recent run(s).`, "success");
 }
 
 async function loadHistory() {

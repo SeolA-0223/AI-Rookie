@@ -1,4 +1,4 @@
-# Vercel Deploy
+﻿# Vercel Deploy
 
 ## Import settings
 - Import the GitHub repository at the repo root
@@ -7,8 +7,15 @@
 - Output Directory: leave empty
 
 ## Required environment variables
+- `STORAGE_PROVIDER=supabase`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+
+## Optional law source variables
+- `LAW_SOURCE_PROVIDER=local-fixture`
+- `KOREA_LAW_MCP_BASE_URL`
+
+Leave `LAW_SOURCE_PROVIDER` as `local-fixture` unless you are deploying a reachable Korea-law-mcp HTTP service behind `KOREA_LAW_MCP_BASE_URL`.
 
 ## Runtime shape
 - Static dashboard entrypoint: `/`

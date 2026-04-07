@@ -18,9 +18,15 @@ paths:
                     type: string
                   service:
                     type: string
+                  storage:
+                    $ref: "#/components/schemas/StorageStatus"
+                  source:
+                    $ref: "#/components/schemas/LawSourceStatus"
                 required:
                   - status
                   - service
+                  - storage
+                  - source
   /analyze:
     post:
       summary: Analyze regulation changes and suggest follow-up actions
@@ -63,7 +69,7 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
   /history:
     get:
-      summary: List recent analysis runs saved to Supabase
+      summary: List recent analysis runs saved to the configured storage backend
       parameters:
         - in: query
           name: limit
@@ -87,6 +93,11 @@ components:
           type: boolean
         provider:
           type: string
+          enum:
+            - local
+            - supabase
+            - municipal
+            - unsupported
         projectRef:
           type:
             - string
@@ -141,6 +152,8 @@ components:
       type: object
       additionalProperties: false
       properties:
+        source:
+          $ref: "#/components/schemas/AnalyzeSourceRequest"
         before:
           $ref: "#/components/schemas/RegulationDocument"
         after:
@@ -149,6 +162,47 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/InternalDocument"
+    AnalyzeSourceRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum:
+            - local-fixture
+            - korea-law-mcp
+        beforeId:
+          type: string
+        afterId:
+          type: string
+    LawSourceStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        provider:
+          type: string
+          enum:
+            - local-fixture
+            - korea-law-mcp
+            - unsupported
+        mode:
+          type: string
+        missingEnv:
+          type: array
+          items:
+            type: string
+      required:
+        - enabled
+        - provider
+        - mode
+        - missingEnv
+    AnalyzeInputSource:
+      type: object
+      properties:
+        provider:
+          type: string
+        mode:
+          type: string
     AnalyzeResponse:
       type: object
       properties:
@@ -170,6 +224,8 @@ components:
                 type: integer
             storage:
               $ref: "#/components/schemas/StorageStatus"
+            inputSource:
+              $ref: "#/components/schemas/AnalyzeInputSource"
         analysis:
           type: object
           properties:

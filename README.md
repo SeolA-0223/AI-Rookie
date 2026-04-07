@@ -19,7 +19,19 @@
    - `npm run smoke`
 
 `/analyze`는 body가 없어도 샘플 데이터를 사용해 결과를 반환합니다.
-`/history`는 Supabase가 연결된 경우 최근 분석 이력을 반환합니다.
+`/history`는 현재 설정된 저장소 provider의 최근 분석 이력을 반환합니다.
+
+## 저장소 provider
+- 기본값은 `local`이며 외부 DB 없이 API를 실행할 수 있습니다.
+- `STORAGE_PROVIDER=supabase`로 설정하면 Supabase에 분석 이력을 저장합니다.
+- `STORAGE_PROVIDER=municipal`은 향후 지자체 DB 어댑터를 붙이기 위한 자리만 마련되어 있습니다.
+- `STORAGE_PROVIDER`를 비워두고 `SUPABASE_URL`이 있으면 기존 배포와 호환되도록 `supabase`를 자동 선택합니다.
+
+## 법령 소스 provider
+- 기본값은 `local-fixture`이며 샘플 전/후 규정 문서를 사용합니다.
+- `/analyze`는 기존처럼 `before`/`after` 직접 입력도 받을 수 있습니다.
+- `LAW_SOURCE_PROVIDER=korea-law-mcp`는 향후 Korea-law-mcp 연동을 위한 어댑터 자리까지 준비되어 있습니다.
+- 현재 `korea-law-mcp`는 환경변수와 어댑터 인터페이스만 정리된 상태이며, 실제 원격 fetch 구현은 다음 단계입니다.
 
 ## 테스트/점검
 - `npm run test`
@@ -45,3 +57,4 @@
 - 진행 보드(계획+현황): `docs/11_progress_board.md`
 - Supabase 연동 가이드: `docs/12_supabase_setup.md`
 - Vercel 배포 가이드: `docs/13_vercel_deploy.md`
+- Source adapter 계획: `docs/14_source_adapter_plan.md`

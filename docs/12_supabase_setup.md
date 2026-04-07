@@ -13,11 +13,13 @@
 This repository now loads `.env` automatically at server startup.
 
 ```powershell
+$env:STORAGE_PROVIDER="supabase"
 $env:SUPABASE_URL="https://pxqfnokmxqcilohnsseb.supabase.co"
 $env:SUPABASE_SERVICE_ROLE_KEY="<your-service-role-key>"
 ```
 
 `.env.example` contains the same structure and local `.env` is gitignored.
+If `STORAGE_PROVIDER` is omitted but `SUPABASE_URL` is set, the runtime still auto-detects `supabase` for backward compatibility.
 
 ## Database schema
 This repository includes:

@@ -47,6 +47,7 @@ function validateAnalyzeResponse(body) {
   assert(Array.isArray(normalized.risks), "Missing risks[] in /analyze response.");
   assert(Array.isArray(normalized.traces), "Missing traces[] in /analyze response.");
   assert(typeof normalized.drafts === "object" && normalized.drafts !== null, "Missing drafts object in /analyze response.");
+  assert(typeof body.meta?.inputSource === "object" && body.meta.inputSource !== null, "Missing meta.inputSource in /analyze response.");
   return normalized;
 }
 
@@ -56,6 +57,7 @@ async function main() {
   const health = await fetchJson("/health");
   assert(health.status === "ok", "Unexpected /health status value.");
   assert(typeof health.storage === "object" && health.storage !== null, "Missing storage object in /health response.");
+  assert(typeof health.source === "object" && health.source !== null, "Missing source object in /health response.");
   console.log("Health endpoint check passed.");
 
   const analyze = await fetchJson("/analyze", {

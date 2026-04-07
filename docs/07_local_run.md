@@ -1,4 +1,4 @@
-# Local Run Guide
+﻿# Local Run Guide
 
 ## Prerequisites
 - Node.js 20+ (Node.js 24 recommended to match CI)
@@ -27,7 +27,29 @@ npm run start
 ```
 
 Default server URL is `http://127.0.0.1:3000`.
-If `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, analysis runs will also be saved to Supabase.
+Default storage provider is `local`.
+If you set `STORAGE_PROVIDER=supabase` with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, analysis runs will also be saved to Supabase.
+If `STORAGE_PROVIDER` is empty and `SUPABASE_URL` is set, the runtime keeps the previous auto-detect behavior and selects `supabase`.
+Default law source provider is `local-fixture`, which serves the sample regulation pair.
+
+If you want to exercise the source-adapter path, send a request with a `source` object instead of inline `before`/`after` payloads:
+
+```json
+{
+  "source": {
+    "provider": "local-fixture"
+  }
+}
+```
+
+`korea-law-mcp` is reserved as the next adapter slot:
+
+```powershell
+$env:LAW_SOURCE_PROVIDER="korea-law-mcp"
+$env:KOREA_LAW_MCP_BASE_URL="http://127.0.0.1:8080"
+```
+
+At the moment, that adapter returns a controlled `not implemented` error until the actual MCP transport is wired in.
 
 ## 5) Run smoke check (in another terminal)
 Hits `GET /health`, `POST /analyze`, and `GET /history` and validates response shape.
