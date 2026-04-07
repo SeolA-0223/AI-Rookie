@@ -42,14 +42,28 @@ If you want to exercise the source-adapter path, send a request with a `source` 
 }
 ```
 
-`korea-law-mcp` is reserved as the next adapter slot:
+`korea-law-mcp` uses a Streamable HTTP MCP endpoint. If the endpoint is running locally, the adapter auto-resolves `/mcp` when only the host/port is provided:
 
 ```powershell
 $env:LAW_SOURCE_PROVIDER="korea-law-mcp"
 $env:KOREA_LAW_MCP_BASE_URL="http://127.0.0.1:8080"
+$env:KOREA_LAW_MCP_DETAIL_TOOL_NAME="get_ordinance_detail"
+$env:KOREA_LAW_MCP_ID_ARGUMENT_NAME="ID"
 ```
 
-At the moment, that adapter returns a controlled `not implemented` error until the actual MCP transport is wired in.
+Then call `/analyze` with source IDs:
+
+```json
+{
+  "source": {
+    "provider": "korea-law-mcp",
+    "beforeId": "ordinance-before-id",
+    "afterId": "ordinance-after-id"
+  }
+}
+```
+
+If your MCP server exposes a different tool contract, change `KOREA_LAW_MCP_DETAIL_TOOL_NAME` and `KOREA_LAW_MCP_ID_ARGUMENT_NAME` instead of patching the API code first.
 
 ## 5) Run smoke check (in another terminal)
 Hits `GET /health`, `POST /analyze`, and `GET /history` and validates response shape.

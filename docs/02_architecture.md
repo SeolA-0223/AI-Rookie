@@ -17,9 +17,10 @@
   - `municipal` placeholder
 - Law source provider
   - `local-fixture`
-  - `korea-law-mcp` placeholder
+  - `korea-law-mcp` via Streamable HTTP MCP
 
 ## Design Intent
 - 분석 파이프라인은 저장 방식과 법령 수집 방식을 몰라야 한다.
 - API는 provider factory만 호출하고 구현 세부사항을 직접 import하지 않는다.
-- 향후 Korea-law-mcp 또는 지자체 DB를 붙일 때는 adapter 파일만 추가/교체하는 방향으로 확장한다.
+- Korea-law-mcp tool name이나 ID argument name이 달라도 env 설정만 바꿔 adapter를 재사용할 수 있어야 한다.
+- 향후 지자체 DB를 붙일 때는 storage adapter만 추가/교체하는 방향으로 확장한다.

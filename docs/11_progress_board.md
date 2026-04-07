@@ -1,6 +1,6 @@
 ﻿# 진행 보드 (Plan + Progress)
 
-기준 시각: 2026-04-07 09:40 KST
+기준 시각: 2026-04-07 10:02 KST
 
 ## 한눈에 보기
 | 구분 | 상태 | 내용 |
@@ -8,7 +8,7 @@
 | 배포 체인 | 완료 | GitHub -> Vercel -> Supabase 정상 동작 확인 |
 | 분석 파이프라인 MVP | 완료 | 변경 탐지, 영향 매핑, 위험도 분류, 초안 생성, trace 제공 |
 | 저장소 분리 | 완료 | `local` / `supabase` / `municipal` provider 구조 정리 |
-| 법령 소스 분리 | 진행 중 | `local-fixture` / `korea-law-mcp` adapter 구조 정리, 실제 MCP fetch 미구현 |
+| 법령 소스 분리 | 완료 | `local-fixture` / `korea-law-mcp` adapter 구조 + 실제 MCP HTTP fetch 구현 |
 | 제품 고도화 | 다음 작업 | 실제 지자체 사례 입력과 대시보드 개선 |
 
 ## 완료된 작업
@@ -16,21 +16,22 @@
 - [x] GitHub Actions CI 정비 및 `v6` 업그레이드
 - [x] Supabase 저장 계층 연결 및 Vercel 배포 확인
 - [x] 저장소 provider 분리 (`local`, `supabase`, `municipal` placeholder)
-- [x] 법령 소스 provider 분리 (`local-fixture`, `korea-law-mcp` placeholder)
+- [x] 법령 소스 provider 분리 (`local-fixture`, `korea-law-mcp`)
+- [x] `korea-law-mcp` Streamable HTTP transport 연동 + mock 서버 테스트 추가
 - [x] 테스트/스모크 체크 갱신 (`npm run check`, `npm run smoke` 통과)
 
 ## 지금 진행 중
-- [ ] `korea-law-mcp` 실제 transport contract 확정
-- [ ] 실제 법령 source fetch 구현
-- [ ] 제품 진행 문서를 현재 아키텍처 기준으로 지속 정리
+- [ ] 실제 Korea-law-mcp 서버의 tool contract 확인 및 env 기본값 보정
+- [ ] 복지·청년지원 실제 지자체 사례 데이터 수집
+- [ ] 프론트 source 입력 UI 설계/구현
 
 ## 다음 작업 (우선순위)
-1. `korea-law-mcp` HTTP 또는 MCP transport 명세 확정
-2. `backend/src/sources/providers/koreaLawMcpSource.js`에 실제 fetch 구현
-3. 복지·청년지원 도메인 기준 실제 지자체 사례 2~3건 수집
-4. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 확장
-5. 대시보드에서 `source` 기반 분석 실행 UI 추가
-6. 평가셋을 샘플 1세트에서 다중 사례로 확장
+1. 실제 Korea-law-mcp 서버의 tool name / argument name / 응답 shape 확인
+2. 복지·청년지원 도메인 기준 실제 지자체 사례 2~3건 수집
+3. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
+4. 대시보드에서 `source` 기반 분석 실행 UI 추가
+5. 평가셋을 샘플 1세트에서 다중 사례로 확장
+6. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
 
 ## 작업 루틴 (인수인계 기준)
 1. 코드/문서 수정

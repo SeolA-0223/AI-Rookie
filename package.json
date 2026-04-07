@@ -14,6 +14,8 @@
     "hooks:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/hooks-doctor.ps1"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.101.1"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@supabase/supabase-js": "^2.101.1",
+    "zod": "^4.1.5"
   }
 }

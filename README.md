@@ -30,8 +30,9 @@
 ## 법령 소스 provider
 - 기본값은 `local-fixture`이며 샘플 전/후 규정 문서를 사용합니다.
 - `/analyze`는 기존처럼 `before`/`after` 직접 입력도 받을 수 있습니다.
-- `LAW_SOURCE_PROVIDER=korea-law-mcp`는 향후 Korea-law-mcp 연동을 위한 어댑터 자리까지 준비되어 있습니다.
-- 현재 `korea-law-mcp`는 환경변수와 어댑터 인터페이스만 정리된 상태이며, 실제 원격 fetch 구현은 다음 단계입니다.
+- `LAW_SOURCE_PROVIDER=korea-law-mcp`를 쓰면 Streamable HTTP MCP endpoint에서 전/후 문서를 가져옵니다.
+- 기본 tool contract는 `get_ordinance_detail` + `ID` 인자입니다.
+- 실제 서버 구현이 다르면 `KOREA_LAW_MCP_DETAIL_TOOL_NAME`, `KOREA_LAW_MCP_ID_ARGUMENT_NAME`으로 맞출 수 있습니다.
 
 ## 테스트/점검
 - `npm run test`
