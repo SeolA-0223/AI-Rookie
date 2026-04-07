@@ -54,6 +54,54 @@ paths:
                 required:
                   - requestedProvider
                   - source
+  /source-search:
+    get:
+      summary: Search ordinance candidates for a request-selected law source provider
+      parameters:
+        - in: query
+          name: provider
+          schema:
+            type: string
+            enum:
+              - local-fixture
+              - korea-law-mcp
+          description: Optional source provider to search against. Defaults to the runtime default provider.
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          description: Ordinance title or keyword query.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+      responses:
+        "200":
+          description: Search candidates for the selected source provider
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestedProvider:
+                    type: string
+                  query:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LawSourceSearchResult"
+                  meta:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - requestedProvider
+                  - query
+                  - results
+                  - meta
   /analyze:
     post:
       summary: Analyze regulation changes and suggest follow-up actions
@@ -228,11 +276,37 @@ components:
             type: string
         idArgumentName:
           type: string
+        searchToolNames:
+          type: array
+          items:
+            type: string
+        searchQueryArgumentName:
+          type: string
       required:
         - enabled
         - provider
         - mode
         - missingEnv
+    LawSourceSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        jurisdiction:
+          type: string
+        effectiveDate:
+          type: string
+        promulgationDate:
+          type: string
+        referenceUrl:
+          type: string
+        summary:
+          type: string
+      required:
+        - id
+        - title
     AnalyzeInputSource:
       type: object
       properties:

@@ -1,31 +1,78 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-07 20:00:10 KST
+Auto-updated: 2026-04-07 22:08:11 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: c97551e (HEAD -> main) feat: add request-level law source status
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24059702436)
+- Latest commit at update time: 7235f30 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after source-status rollout
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24077951488)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## main...origin/main [ahead 1]
+- ## main...origin/main
+- M  .env.example
+- M  QA_REPORT.md
+- M  README.md
+- M  SELF_CHECK.md
+- M  SPEC.md
+- A  api/source-search.js
+- M  backend/src/http/app.js
+- M  backend/src/sources/lawSource.js
+- M  backend/src/sources/providers/koreaLawMcpSource.js
+- M  backend/src/sources/providers/localFixtureLawSource.js
+- M  backend/src/sources/shared.js
+- M  docs/07_local_run.md
 - M  docs/09_handover_status.txt
+- M  docs/11_progress_board.md
+- M  docs/13_vercel_deploy.md
+- M  docs/14_source_adapter_plan.md
+- M  frontend/index.html
+- M  frontend/src/app.js
+- M  frontend/src/styles.css
+- M  index.html
+- M  scripts/smoke.js
+- M  shared/contracts/api.yaml
+- M  tests/http-app.test.js
+- M  tests/law-source.test.js
+- M  vercel.json
 
 3) Recent Commits (max 8)
-- c97551e (HEAD -> main) feat: add request-level law source status
-- 44b021b (origin/main, origin/HEAD) fix: align korea-law-mcp adapter with public contract
+- 7235f30 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after source-status rollout
+- c97551e feat: add request-level law source status
+- 44b021b fix: align korea-law-mcp adapter with public contract
 - ec6da07 docs: refresh handover after harness retrofit
 - 9ce9d3b feat: add codex harness workflow and source dashboard
 - 8484161 docs: refresh handover after korea-law-mcp wiring
 - f68e126 feat: wire korea-law-mcp source adapter
 - d05d0c3 docs: refresh handover after provider scaffolding
-- 88b9b1a feat: add provider-based storage and law source adapters
 
 4) Staged Files
-- (none)
+- .env.example
+- QA_REPORT.md
+- README.md
+- SELF_CHECK.md
+- SPEC.md
+- api/source-search.js
+- backend/src/http/app.js
+- backend/src/sources/lawSource.js
+- backend/src/sources/providers/koreaLawMcpSource.js
+- backend/src/sources/providers/localFixtureLawSource.js
+- backend/src/sources/shared.js
+- docs/07_local_run.md
+- docs/11_progress_board.md
+- docs/13_vercel_deploy.md
+- docs/14_source_adapter_plan.md
+- frontend/index.html
+- frontend/src/app.js
+- frontend/src/styles.css
+- index.html
+- scripts/smoke.js
+- shared/contracts/api.yaml
+- tests/http-app.test.js
+- tests/law-source.test.js
+- vercel.json
 
 5) Unstaged Files
 - (none)
@@ -35,9 +82,9 @@ Auto-updated: 2026-04-07 20:00:10 KST
 
 7) Manual Notes
 ### [MANUAL NOTES START]
-- Request-level source capability reporting is now implemented through `/source-status`, and the dashboard queries the selected provider directly.
-- Korea-law MCP source status now exposes tool-order and `ID` argument hints for request-level troubleshooting.
-- Next implementation order: validate against a real `korea-law-mcp` deployment -> replace sample data with 2~3 municipality youth/welfare cases -> add an ordinance ID lookup helper on top of `search_local_ordinance`.
+- Korea-law MCP search helper is now implemented through `/source-search`, and the dashboard can search ordinance titles and apply candidate IDs to `Before` / `After`.
+- Korea-law MCP source status now exposes both detail-tool and search-tool metadata for request-level troubleshooting.
+- Next implementation order: validate against a real `korea-law-mcp` deployment -> replace sample data with 2~3 municipality youth/welfare cases -> add before/after recommendation rules on top of search results.
 ### [MANUAL NOTES END]
 
 8) Quick Commands

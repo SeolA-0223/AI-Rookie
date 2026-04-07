@@ -23,6 +23,15 @@ export function createLocalFixtureLawSource({
     getSourceStatus() {
       return status;
     },
+    async searchRegulations() {
+      return {
+        results: [],
+        meta: {
+          provider: "local-fixture",
+          mode: "sample"
+        }
+      };
+    },
     async resolveRegulationPair() {
       return {
         beforeDoc,

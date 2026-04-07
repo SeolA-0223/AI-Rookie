@@ -65,6 +65,11 @@ async function main() {
   assert(typeof sourceStatus.source === "object" && sourceStatus.source !== null, "Missing source object in /source-status response.");
   console.log(`Source status endpoint check passed. Provider ${sourceStatus.source.provider} enabled=${sourceStatus.source.enabled}.`);
 
+  const sourceSearch = await fetchJson("/source-search?provider=local-fixture&query=sample");
+  assert(sourceSearch.requestedProvider === "local-fixture", "Unexpected requestedProvider in /source-search response.");
+  assert(Array.isArray(sourceSearch.results), "Missing results[] in /source-search response.");
+  console.log(`Source search endpoint check passed. Loaded ${sourceSearch.results.length} candidate(s).`);
+
   const analyze = await fetchJson("/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

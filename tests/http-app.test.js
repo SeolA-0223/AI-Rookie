@@ -67,3 +67,17 @@ test("buildSourceStatusPayload reports request-selected source provider status",
   assert.equal(payload.source.enabled, false);
   assert.deepEqual(payload.source.missingEnv, ["KOREA_LAW_MCP_BASE_URL"]);
 });
+
+test("buildSourceSearchPayload returns empty local-fixture search results", async () => {
+  const moduleUrl = new URL(`../backend/src/http/app.js?case=search-${Date.now()}`, import.meta.url);
+  const { buildSourceSearchPayload } = await import(moduleUrl);
+  const payload = await buildSourceSearchPayload({
+    provider: "local-fixture",
+    query: "sample"
+  });
+
+  assert.equal(payload.requestedProvider, "local-fixture");
+  assert.equal(payload.query, "sample");
+  assert.deepEqual(payload.results, []);
+  assert.equal(payload.meta.provider, "local-fixture");
+});

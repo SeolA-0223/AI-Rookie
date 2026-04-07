@@ -15,7 +15,9 @@ export function createLawSource({
   provider = process.env.LAW_SOURCE_PROVIDER,
   koreaLawMcpBaseUrl = process.env.KOREA_LAW_MCP_BASE_URL,
   koreaLawMcpToolName = process.env.KOREA_LAW_MCP_DETAIL_TOOL_NAME,
-  koreaLawMcpIdArgumentName = process.env.KOREA_LAW_MCP_ID_ARGUMENT_NAME
+  koreaLawMcpIdArgumentName = process.env.KOREA_LAW_MCP_ID_ARGUMENT_NAME,
+  koreaLawMcpSearchToolName = process.env.KOREA_LAW_MCP_SEARCH_TOOL_NAME,
+  koreaLawMcpSearchQueryArgumentName = process.env.KOREA_LAW_MCP_SEARCH_QUERY_ARGUMENT_NAME
 } = {}) {
   const resolvedProvider = resolveLawSourceProvider({ provider });
 
@@ -27,7 +29,9 @@ export function createLawSource({
     return createKoreaLawMcpSource({
       baseUrl: koreaLawMcpBaseUrl,
       toolName: koreaLawMcpToolName,
-      idArgumentName: koreaLawMcpIdArgumentName
+      idArgumentName: koreaLawMcpIdArgumentName,
+      searchToolName: koreaLawMcpSearchToolName,
+      searchQueryArgumentName: koreaLawMcpSearchQueryArgumentName
     });
   }
 
@@ -39,4 +43,11 @@ export function createLawSource({
 
 export function getLawSourceStatus(options = {}) {
   return createLawSource(options).getSourceStatus();
+}
+
+export async function searchLawSource(options = {}) {
+  return createLawSource(options).searchRegulations({
+    query: options.query,
+    limit: options.limit
+  });
 }

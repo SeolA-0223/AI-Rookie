@@ -61,6 +61,23 @@
             />
           </label>
         </div>
+        <div id="source-search-group" class="source-search" hidden>
+          <label class="field">
+            <span class="field-label">Search Ordinance</span>
+            <div class="field-inline">
+              <input
+                id="source-search-query"
+                class="field-input"
+                type="text"
+                placeholder="Seoul youth support ordinance"
+                autocomplete="off"
+              />
+              <button id="source-search-btn" class="secondary-btn" type="button">Find IDs</button>
+            </div>
+          </label>
+          <p id="source-search-status" class="subtle">Search by ordinance name to find usable IDs.</p>
+          <div id="source-search-results" class="search-results"></div>
+        </div>
         <p id="source-help" class="source-help">The bundled sample regulation pair is selected by default.</p>
       </section>
 

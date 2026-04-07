@@ -1,4 +1,5 @@
 const HEALTH_ENDPOINT = "/api/health";
+const SOURCE_SEARCH_ENDPOINT = "/api/source-search";
 const SOURCE_STATUS_ENDPOINT = "/api/source-status";
 const ANALYZE_ENDPOINT = "/api/analyze";
 const HISTORY_ENDPOINT = "/api/history?limit=6";
@@ -16,9 +17,15 @@ const sourceBeforeGroup = document.getElementById("source-before-group");
 const sourceAfterGroup = document.getElementById("source-after-group");
 const sourceBeforeIdField = document.getElementById("source-before-id");
 const sourceAfterIdField = document.getElementById("source-after-id");
+const sourceSearchGroup = document.getElementById("source-search-group");
+const sourceSearchQueryField = document.getElementById("source-search-query");
+const sourceSearchButton = document.getElementById("source-search-btn");
+const sourceSearchStatusView = document.getElementById("source-search-status");
+const sourceSearchResultsView = document.getElementById("source-search-results");
 
 let latestHealth = null;
 let latestRequestedSourceStatus = null;
+let latestSourceSearchResult = null;
 
 function setStatus(message, type = "neutral") {
   if (!statusView) {
@@ -60,6 +67,22 @@ function setSourceHelp(message, type = "neutral") {
   sourceHelpView.className = `source-help subtle subtle-${type}`;
 }
 
+function setSourceSearchStatus(message, type = "neutral") {
+  if (!sourceSearchStatusView) {
+    return;
+  }
+  sourceSearchStatusView.textContent = message;
+  sourceSearchStatusView.className = `subtle subtle-${type}`;
+}
+
+function setSourceSearchLoading(loading) {
+  if (!sourceSearchButton) {
+    return;
+  }
+  sourceSearchButton.disabled = loading;
+  sourceSearchButton.textContent = loading ? "Searching..." : "Find IDs";
+}
+
 function formatMissingEnv(missingEnv = []) {
   if (!Array.isArray(missingEnv) || !missingEnv.length) {
     return "";
@@ -73,6 +96,73 @@ function createEmptyMessage(tagName, text) {
   element.className = "empty";
   element.textContent = text;
   return element;
+}
+
+function renderSourceSearchResults(results = []) {
+  if (!sourceSearchResultsView) {
+    return;
+  }
+
+  sourceSearchResultsView.innerHTML = "";
+
+  if (!results.length) {
+    sourceSearchResultsView.append(createEmptyMessage("p", "No ordinance candidates found for the current query."));
+    return;
+  }
+
+  for (const result of results) {
+    const card = document.createElement("article");
+    card.className = "search-result";
+
+    const title = document.createElement("h3");
+    title.textContent = result.title ?? result.id ?? "Untitled ordinance";
+
+    const idLine = document.createElement("p");
+    idLine.className = "search-meta";
+    idLine.textContent = `ID: ${result.id ?? "Unavailable"}`;
+
+    const jurisdictionParts = [result.jurisdiction, result.effectiveDate && `Effective ${result.effectiveDate}`, result.promulgationDate && `Promulgated ${result.promulgationDate}`]
+      .filter(Boolean)
+      .join(" / ");
+
+    const meta = document.createElement("p");
+    meta.className = "search-meta";
+    meta.textContent = jurisdictionParts || "No ordinance metadata returned.";
+
+    const summary = document.createElement("p");
+    summary.textContent = result.summary || "No summary returned.";
+
+    const actions = document.createElement("div");
+    actions.className = "search-actions";
+
+    const beforeButton = document.createElement("button");
+    beforeButton.type = "button";
+    beforeButton.className = "secondary-btn";
+    beforeButton.textContent = "Use as Before";
+    beforeButton.disabled = !result.id;
+    beforeButton.addEventListener("click", () => {
+      if (sourceBeforeIdField) {
+        sourceBeforeIdField.value = result.id ?? "";
+      }
+      setSourceSearchStatus(`Selected ${result.id} as the before ordinance ID.`, "success");
+    });
+
+    const afterButton = document.createElement("button");
+    afterButton.type = "button";
+    afterButton.className = "secondary-btn";
+    afterButton.textContent = "Use as After";
+    afterButton.disabled = !result.id;
+    afterButton.addEventListener("click", () => {
+      if (sourceAfterIdField) {
+        sourceAfterIdField.value = result.id ?? "";
+      }
+      setSourceSearchStatus(`Selected ${result.id} as the after ordinance ID.`, "success");
+    });
+
+    actions.append(beforeButton, afterButton);
+    card.append(title, idLine, meta, summary, actions);
+    sourceSearchResultsView.append(card);
+  }
 }
 
 function formatProviderLabel(provider) {
@@ -382,6 +472,9 @@ function updateSourceControls() {
   if (sourceAfterGroup) {
     sourceAfterGroup.hidden = !usesMcp;
   }
+  if (sourceSearchGroup) {
+    sourceSearchGroup.hidden = !usesMcp;
+  }
 
   if (provider === "local-fixture") {
     const localFixtureEnabled = selectedSource?.enabled ?? true;
@@ -390,16 +483,24 @@ function updateSourceControls() {
       "Uses the repository sample regulation pair. No source IDs are required for the default demo flow.",
       localFixtureEnabled ? "neutral" : "error"
     );
+    setSourceSearchStatus("Search is only used for Korea Law MCP lookups.", "neutral");
+    renderSourceSearchResults([]);
     return;
   }
 
   if (selectedSource?.enabled) {
     const toolNames = Array.isArray(selectedSource.detailToolNames) ? selectedSource.detailToolNames.join(" -> ") : "configured detail tool";
     const idArgumentName = selectedSource.idArgumentName ?? "ID";
+    const searchToolName = Array.isArray(selectedSource.searchToolNames) ? selectedSource.searchToolNames.join(" -> ") : "search_local_ordinance";
+    const searchQueryArgumentName = selectedSource.searchQueryArgumentName ?? "query";
 
     setSourceStatus("Korea Law MCP request path is configured.", "success");
     setSourceHelp(
-      `Enter before/after ordinance IDs. The server will try ${toolNames} with the ${idArgumentName} argument.`,
+      `Search by ordinance name or enter before/after ordinance IDs directly. The server will try ${toolNames} with the ${idArgumentName} argument.`,
+      "neutral"
+    );
+    setSourceSearchStatus(
+      `Search uses ${searchToolName} with the ${searchQueryArgumentName} argument. Choose candidates below to fill Before/After IDs.`,
       "neutral"
     );
     return;
@@ -414,6 +515,8 @@ function updateSourceControls() {
       `Set the MCP endpoint configuration before using ordinance IDs.${detail}`,
       "error"
     );
+    setSourceSearchStatus("Search is unavailable until Korea Law MCP is configured.", "error");
+    renderSourceSearchResults([]);
     return;
   }
 
@@ -421,17 +524,19 @@ function updateSourceControls() {
   if (defaultSource.provider === "korea-law-mcp" && defaultSource.enabled) {
     setSourceStatus("Korea Law MCP is configured on the server.", "success");
     setSourceHelp(
-      "Enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP detail tool.",
+      "Search by ordinance name or enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP tools.",
       "neutral"
     );
+    setSourceSearchStatus("Search is ready for Korea Law MCP.", "neutral");
     return;
   }
 
   setSourceStatus("Korea Law MCP will be selected per request.", "neutral");
   setSourceHelp(
-    "Enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP detail tool.",
+    "Search by ordinance name or enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP tools.",
     "neutral"
   );
+  setSourceSearchStatus("Search the selected ordinance provider to discover usable IDs.", "neutral");
 }
 
 async function loadSelectedSourceStatus() {
@@ -450,6 +555,56 @@ async function loadSelectedSourceStatus() {
   }
 
   updateSourceControls();
+}
+
+async function runSourceSearch() {
+  const provider = sourceProviderField?.value ?? "local-fixture";
+  const query = sourceSearchQueryField?.value.trim() ?? "";
+
+  if (provider !== "korea-law-mcp") {
+    setSourceSearchStatus("Search is only available for Korea Law MCP.", "neutral");
+    renderSourceSearchResults([]);
+    return;
+  }
+
+  if (!query) {
+    setSourceSearchStatus("Enter an ordinance name or keyword before searching.", "error");
+    renderSourceSearchResults([]);
+    return;
+  }
+
+  setSourceSearchLoading(true);
+  setSourceSearchStatus("Searching ordinance candidates...", "neutral");
+
+  try {
+    const response = await fetch(
+      `${SOURCE_SEARCH_ENDPOINT}?provider=${encodeURIComponent(provider)}&query=${encodeURIComponent(query)}&limit=6`
+    );
+
+    if (!response.ok) {
+      let detail = "";
+      try {
+        const errorBody = await response.json();
+        detail = parseErrorMessage(errorBody);
+      } catch {
+        detail = "";
+      }
+      throw new Error(detail || `Source search failed with ${response.status}`);
+    }
+
+    latestSourceSearchResult = await response.json();
+    renderSourceSearchResults(latestSourceSearchResult.results ?? []);
+    setSourceSearchStatus(
+      `Loaded ${(latestSourceSearchResult.results ?? []).length} ordinance candidate(s).`,
+      "success"
+    );
+  } catch (error) {
+    latestSourceSearchResult = null;
+    renderSourceSearchResults([]);
+    setSourceSearchStatus(`Search failed: ${error.message}`, "error");
+  } finally {
+    setSourceSearchLoading(false);
+  }
 }
 
 function buildAnalyzePayload() {
@@ -519,8 +674,25 @@ async function init() {
   if (sourceProviderField) {
     sourceProviderField.addEventListener("change", () => {
       setSourceStatus("Checking selected source provider...", "neutral");
+      latestSourceSearchResult = null;
+      renderSourceSearchResults([]);
       updateSourceControls();
       void loadSelectedSourceStatus();
+    });
+  }
+
+  if (sourceSearchButton) {
+    sourceSearchButton.addEventListener("click", () => {
+      void runSourceSearch();
+    });
+  }
+
+  if (sourceSearchQueryField) {
+    sourceSearchQueryField.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void runSourceSearch();
+      }
     });
   }
 

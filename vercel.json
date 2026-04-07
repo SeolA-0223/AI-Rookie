@@ -13,6 +13,10 @@
       "destination": "/api/source-status"
     },
     {
+      "source": "/source-search",
+      "destination": "/api/source-search"
+    },
+    {
       "source": "/analyze",
       "destination": "/api/analyze"
     }

@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
-import { createLawSource, getLawSourceStatus, resolveLawSourceProvider, SourceResolutionError } from "../sources/lawSource.js";
+import { createLawSource, getLawSourceStatus, resolveLawSourceProvider, searchLawSource, SourceResolutionError } from "../sources/lawSource.js";
 
 try {
   process.loadEnvFile();
@@ -25,6 +25,7 @@ const SAMPLE_INTERNAL_DOCS_FILE = fileURLToPath(new URL("../../../data/samples/i
 const ROUTES = {
   health: new Set(["/health", "/api/health"]),
   history: new Set(["/history", "/api/history"]),
+  sourceSearch: new Set(["/source-search", "/api/source-search"]),
   sourceStatus: new Set(["/source-status", "/api/source-status"]),
   analyze: new Set(["/analyze", "/api/analyze"])
 };
@@ -195,6 +196,15 @@ function validateAnalyzeRequest(payload) {
   return details;
 }
 
+function parseSourceSearchLimit(value) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed)) {
+    return 8;
+  }
+
+  return Math.min(Math.max(parsed, 1), 10);
+}
+
 export async function buildAnalyzeInput(payload) {
   const internalDocs = payload.internalDocs ?? readSample(SAMPLE_INTERNAL_DOCS_FILE);
 
@@ -233,6 +243,39 @@ export function buildSourceStatusPayload({ provider } = {}) {
   };
 }
 
+export async function buildSourceSearchPayload({ provider, query, limit } = {}) {
+  const requestedProvider = resolveLawSourceProvider({ provider });
+  const normalizedQuery = typeof query === "string" ? query.trim() : "";
+
+  if (!normalizedQuery) {
+    return {
+      requestedProvider,
+      query: "",
+      results: [],
+      meta: {
+        provider: requestedProvider,
+        mode: "search"
+      }
+    };
+  }
+
+  const searchResult = await searchLawSource({
+    provider: requestedProvider,
+    query: normalizedQuery,
+    limit
+  });
+
+  return {
+    requestedProvider,
+    query: normalizedQuery,
+    results: Array.isArray(searchResult.results) ? searchResult.results : [],
+    meta: searchResult.meta ?? {
+      provider: requestedProvider,
+      mode: "search"
+    }
+  };
+}
+
 export async function handleHealth(req, res) {
   sendJson(res, 200, {
     status: "ok",
@@ -247,6 +290,37 @@ export async function handleSourceStatus(req, res) {
   sendJson(res, 200, buildSourceStatusPayload({
     provider: requestUrl.searchParams.get("provider")
   }));
+}
+
+export async function handleSourceSearch(req, res) {
+  try {
+    const requestUrl = getRequestUrl(req);
+    const query = requestUrl.searchParams.get("query");
+
+    if (typeof query !== "string" || query.trim() === "") {
+      sendError(res, 400, "INVALID_REQUEST", "Source search request is invalid.", [
+        {
+          path: "query",
+          message: "is required"
+        }
+      ]);
+      return;
+    }
+
+    const payload = await buildSourceSearchPayload({
+      provider: requestUrl.searchParams.get("provider"),
+      query,
+      limit: parseSourceSearchLimit(requestUrl.searchParams.get("limit"))
+    });
+    sendJson(res, 200, payload);
+  } catch (error) {
+    if (error instanceof SourceResolutionError) {
+      sendError(res, error.statusCode, error.code, error.message, error.details);
+      return;
+    }
+
+    sendError(res, 500, "INTERNAL_ERROR", "Unexpected server error.");
+  }
 }
 
 export async function handleHistory(req, res) {
@@ -326,6 +400,11 @@ export async function routeRequest(req, res) {
 
   if (req.method === "GET" && ROUTES.history.has(pathname)) {
     await handleHistory(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && ROUTES.sourceSearch.has(pathname)) {
+    await handleSourceSearch(req, res);
     return;
   }
 

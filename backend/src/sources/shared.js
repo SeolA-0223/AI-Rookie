@@ -67,6 +67,30 @@ export function createUnavailableLawSource({
         code: "SOURCE_PROVIDER_UNSUPPORTED",
         message: "Requested source provider is not supported."
       });
+    },
+    async searchRegulations() {
+      if (reason === "missing_env") {
+        throw new SourceResolutionError({
+          code: "SOURCE_PROVIDER_MISCONFIGURED",
+          message: "Source provider is missing required environment variables.",
+          details: missingEnv.map((name) => ({
+            path: `env.${name}`,
+            message: "is required"
+          }))
+        });
+      }
+
+      if (reason === "not_implemented") {
+        throw new SourceResolutionError({
+          code: "SOURCE_PROVIDER_NOT_IMPLEMENTED",
+          message: "Source provider adapter exists but search is not implemented yet."
+        });
+      }
+
+      throw new SourceResolutionError({
+        code: "SOURCE_PROVIDER_UNSUPPORTED",
+        message: "Requested source provider is not supported."
+      });
     }
   };
 }

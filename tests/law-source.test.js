@@ -8,6 +8,7 @@ import * as z from "zod/v4";
 import {
   createLawSource,
   resolveLawSourceProvider,
+  searchLawSource,
   SourceResolutionError
 } from "../backend/src/sources/lawSource.js";
 
@@ -55,6 +56,8 @@ test("createLawSource validates korea-law-mcp request ids", async () => {
   assert.equal(status.transport, "streamable-http");
   assert.deepEqual(status.detailToolNames, ["get_local_ordinance_detail", "get_ordinance_detail"]);
   assert.equal(status.idArgumentName, "ID");
+  assert.deepEqual(status.searchToolNames, ["search_local_ordinance"]);
+  assert.equal(status.searchQueryArgumentName, "query");
 
   await assert.rejects(() => source.resolveRegulationPair({}), (error) => {
     assert.ok(error instanceof SourceResolutionError);
@@ -77,7 +80,11 @@ test("createLawSource rejects unsupported providers", async () => {
   });
 });
 
-async function startMockKoreaLawMcpServer(documentsById, toolNames = ["get_local_ordinance_detail"]) {
+async function startMockKoreaLawMcpServer({
+  documentsById,
+  detailToolNames = ["get_local_ordinance_detail"],
+  searchResultsByQuery = {}
+}) {
   const app = createMcpExpressApp();
 
   app.post("/mcp", async (req, res) => {
@@ -86,7 +93,7 @@ async function startMockKoreaLawMcpServer(documentsById, toolNames = ["get_local
       version: "1.0.0"
     });
 
-    for (const toolName of toolNames) {
+    for (const toolName of detailToolNames) {
       server.registerTool(toolName, {
         description: "Returns a mock regulation document.",
         inputSchema: {
@@ -107,6 +114,20 @@ async function startMockKoreaLawMcpServer(documentsById, toolNames = ["get_local
         };
       });
     }
+
+    server.registerTool("search_local_ordinance", {
+      description: "Searches mock ordinance metadata.",
+      inputSchema: {
+        query: z.string()
+      }
+    }, async ({ query }) => {
+      const results = searchResultsByQuery[query] ?? [];
+
+      return {
+        content: [{ type: "text", text: JSON.stringify({ results }) }],
+        structuredContent: { results }
+      };
+    });
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined
@@ -166,32 +187,34 @@ async function startMockKoreaLawMcpServer(documentsById, toolNames = ["get_local
 
 test("createLawSource prefers get_local_ordinance_detail when the documented tool is available", async () => {
   const server = await startMockKoreaLawMcpServer({
-    before: {
-      title: "Youth Support Ordinance",
-      version: "before",
-      clauses: [
-        {
-          id: "c1",
-          title: "Age Requirement",
-          text: "Applicants must be between 19 and 29 years old."
-        }
-      ]
-    },
-    after: {
-      title: "Youth Support Ordinance",
-      version: "after",
-      clauses: [
-        {
-          id: "c1",
-          title: "Age Requirement",
-          text: "Applicants must be between 19 and 34 years old."
-        },
-        {
-          id: "c2",
-          title: "Support Amount",
-          text: "Support amount is up to 700000 KRW."
-        }
-      ]
+    documentsById: {
+      before: {
+        title: "Youth Support Ordinance",
+        version: "before",
+        clauses: [
+          {
+            id: "c1",
+            title: "Age Requirement",
+            text: "Applicants must be between 19 and 29 years old."
+          }
+        ]
+      },
+      after: {
+        title: "Youth Support Ordinance",
+        version: "after",
+        clauses: [
+          {
+            id: "c1",
+            title: "Age Requirement",
+            text: "Applicants must be between 19 and 34 years old."
+          },
+          {
+            id: "c2",
+            title: "Support Amount",
+            text: "Support amount is up to 700000 KRW."
+          }
+        ]
+      }
     }
   });
 
@@ -220,9 +243,63 @@ test("createLawSource prefers get_local_ordinance_detail when the documented too
   }
 });
 
+test("searchLawSource normalizes ordinance search results through korea-law-mcp", async () => {
+  const server = await startMockKoreaLawMcpServer({
+    documentsById: {},
+    searchResultsByQuery: {
+      "seoul youth support": [
+        {
+          id: "seoul-001",
+          ordinanceTitle: "Seoul Youth Support Ordinance",
+          localGovernment: "Seoul",
+          effectiveDate: "2026-01-01",
+          promulgationDate: "2025-12-20",
+          detailUrl: "https://example.com/ordinances/seoul-001",
+          summary: "Updated support rules for youth programs."
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "korea-law-mcp",
+      koreaLawMcpBaseUrl: server.baseUrl,
+      query: "seoul youth support",
+      limit: 5
+    });
+
+    assert.equal(result.meta.provider, "korea-law-mcp");
+    assert.equal(result.meta.toolName, "search_local_ordinance");
+    assert.equal(result.meta.queryArgumentName, "query");
+    assert.equal(result.results.length, 1);
+    assert.deepEqual(result.results[0], {
+      id: "seoul-001",
+      title: "Seoul Youth Support Ordinance",
+      jurisdiction: "Seoul",
+      effectiveDate: "2026-01-01",
+      promulgationDate: "2025-12-20",
+      referenceUrl: "https://example.com/ordinances/seoul-001",
+      summary: "Updated support rules for youth programs."
+    });
+  } finally {
+    await server.close();
+  }
+});
+
+test("createLawSource returns empty search results for local fixture source", async () => {
+  const result = await searchLawSource({
+    provider: "local-fixture",
+    query: "sample"
+  });
+
+  assert.equal(result.meta.provider, "local-fixture");
+  assert.deepEqual(result.results, []);
+});
+
 test("createLawSource falls back to get_ordinance_detail when only the legacy generic tool is exposed", async () => {
-  const server = await startMockKoreaLawMcpServer(
-    {
+  const server = await startMockKoreaLawMcpServer({
+    documentsById: {
       before: {
         title: "Youth Support Ordinance",
         version: "before",
@@ -246,8 +323,8 @@ test("createLawSource falls back to get_ordinance_detail when only the legacy ge
         ]
       }
     },
-    ["get_ordinance_detail"]
-  );
+    detailToolNames: ["get_ordinance_detail"]
+  });
 
   try {
     const source = createLawSource({

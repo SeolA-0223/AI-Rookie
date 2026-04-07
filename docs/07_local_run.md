@@ -50,6 +50,8 @@ $env:LAW_SOURCE_PROVIDER="korea-law-mcp"
 $env:KOREA_LAW_MCP_BASE_URL="http://127.0.0.1:8080"
 $env:KOREA_LAW_MCP_DETAIL_TOOL_NAME="get_local_ordinance_detail"
 $env:KOREA_LAW_MCP_ID_ARGUMENT_NAME="ID"
+$env:KOREA_LAW_MCP_SEARCH_TOOL_NAME="search_local_ordinance"
+$env:KOREA_LAW_MCP_SEARCH_QUERY_ARGUMENT_NAME="query"
 ```
 
 Then call `/analyze` with source IDs:
@@ -64,18 +66,19 @@ Then call `/analyze` with source IDs:
 }
 ```
 
-If your MCP server exposes a different tool contract, change `KOREA_LAW_MCP_DETAIL_TOOL_NAME` and `KOREA_LAW_MCP_ID_ARGUMENT_NAME` instead of patching the API code first.
+If your MCP server exposes a different tool contract, change `KOREA_LAW_MCP_DETAIL_TOOL_NAME`, `KOREA_LAW_MCP_ID_ARGUMENT_NAME`, `KOREA_LAW_MCP_SEARCH_TOOL_NAME`, and `KOREA_LAW_MCP_SEARCH_QUERY_ARGUMENT_NAME` instead of patching the API code first.
 If the tool-name override is left blank, AI-Rookie first tries `get_local_ordinance_detail` and then falls back to `get_ordinance_detail`.
 
 The same flow is available in the dashboard:
 
 1. Open `/`
 2. In `Analysis Source`, choose `Korea Law MCP`
-3. Enter `Before ID` and `After ID`
-4. Click `Run Analysis`
+3. Search by ordinance title if you need candidate IDs
+4. Use search results to fill `Before ID` and `After ID`
+5. Click `Run Analysis`
 
 ## 5) Run smoke check (in another terminal)
-Hits `GET /health`, `GET /source-status`, `POST /analyze`, and `GET /history` and validates response shape.
+Hits `GET /health`, `GET /source-status`, `GET /source-search`, `POST /analyze`, and `GET /history` and validates response shape.
 
 ```bash
 npm run smoke
@@ -92,6 +95,12 @@ To inspect the request-selected source provider directly:
 
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=korea-law-mcp"
+```
+
+To search ordinance candidates directly:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:3000/source-search?provider=korea-law-mcp&query=서울시%20청년%20지원%20조례"
 ```
 
 ## 6) Local quick check
