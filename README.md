@@ -58,7 +58,7 @@
 ## 테스트/점검
 - `npm run harness:check`
 - `npm run test`
-- `npm run eval`
+- `npm run eval` (`data/samples/*` + `data/cases/*` suite)
 - `npm run check`
 - `npm run smoke`
 - 평가 산출물: `data/eval/metrics.json`

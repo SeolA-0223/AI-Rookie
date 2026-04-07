@@ -1,12 +1,12 @@
 {
-  "evaluatedAt": "2026-04-07T15:58:23.383Z",
+  "evaluatedAt": "2026-04-07T16:09:19.319Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
     "internalDocs": "data/samples/internal_docs.json"
   },
   "artifact": "data/eval/metrics.json",
-  "runtimeMs": 1,
+  "runtimeMs": 2,
   "metrics": {
     "changeDetection": {
       "expectedChangedClauses": 4,
@@ -47,5 +47,198 @@
     "noMissingMappings": true,
     "allTracesComplete": true,
     "allDraftSectionsGenerated": true
+  },
+  "caseSuite": {
+    "summary": {
+      "evaluatedCaseCount": 3,
+      "passedCaseCount": 3,
+      "suiteRuntimeMs": 1,
+      "averageF1": 1,
+      "averageMappingCoverage": 1,
+      "averageTraceCompleteness": 1,
+      "averageDraftCompleteness": 1,
+      "averageHighRiskRate": 0.5,
+      "allCasesPassed": true,
+      "failingCases": []
+    },
+    "cases": [
+      {
+        "caseId": "bucheon_youth_rent_support",
+        "title": "Bucheon Newlyweds and Youth Jeonse-Wolse Loan Interest Support Ordinance",
+        "municipality": "Bucheon, Gyeonggi-do",
+        "domain": "youth-housing",
+        "officialSource": {
+          "effectiveDate": "2023-02-06",
+          "ordinanceNo": "Bucheon City Ordinance No. 3927",
+          "url": "https://www.law.go.kr/ordinInfoP.do?ordinSeq=1782147"
+        },
+        "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth housing-support scenario, not verbatim statutory text.",
+        "sampleData": {
+          "before": "data/cases/bucheon_youth_rent_support/before.json",
+          "after": "data/cases/bucheon_youth_rent_support/after.json",
+          "internalDocs": "data/cases/bucheon_youth_rent_support/internal_docs.json"
+        },
+        "runtimeMs": 0,
+        "metrics": {
+          "changeDetection": {
+            "expectedChangedClauses": 4,
+            "predictedChangedClauses": 4,
+            "truePositives": 4,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "mapping": {
+            "rows": 4,
+            "rowsWithImpactedDocuments": 4,
+            "coverageRate": 1,
+            "avgImpactedDocumentsPerChange": 2.75
+          },
+          "risk": {
+            "rows": 4,
+            "distribution": {
+              "빨강": 2,
+              "노랑": 1,
+              "파랑": 1
+            },
+            "highRiskRate": 0.5
+          },
+          "traceability": {
+            "traces": 4,
+            "completeTraces": 4,
+            "completenessRate": 1
+          },
+          "drafts": {
+            "requiredSections": 4,
+            "generatedSections": 4,
+            "completenessRate": 1
+          }
+        },
+        "checks": {
+          "noMissingChanges": true,
+          "noMissingMappings": true,
+          "allTracesComplete": true,
+          "allDraftSectionsGenerated": true
+        }
+      },
+      {
+        "caseId": "seoul_youth_basic_ordinance",
+        "title": "Seoul Youth Basic Ordinance",
+        "municipality": "Seoul Metropolitan City",
+        "domain": "youth-policy-foundation",
+        "officialSource": {
+          "effectiveDate": "2023-07-24",
+          "ordinanceNo": "Seoul Metropolitan City Ordinance No. 8862",
+          "url": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=1840747"
+        },
+        "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth basic-policy scenario, not verbatim statutory text.",
+        "sampleData": {
+          "before": "data/cases/seoul_youth_basic_ordinance/before.json",
+          "after": "data/cases/seoul_youth_basic_ordinance/after.json",
+          "internalDocs": "data/cases/seoul_youth_basic_ordinance/internal_docs.json"
+        },
+        "runtimeMs": 1,
+        "metrics": {
+          "changeDetection": {
+            "expectedChangedClauses": 4,
+            "predictedChangedClauses": 4,
+            "truePositives": 4,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "mapping": {
+            "rows": 4,
+            "rowsWithImpactedDocuments": 4,
+            "coverageRate": 1,
+            "avgImpactedDocumentsPerChange": 2.5
+          },
+          "risk": {
+            "rows": 4,
+            "distribution": {
+              "빨강": 2,
+              "노랑": 1,
+              "파랑": 1
+            },
+            "highRiskRate": 0.5
+          },
+          "traceability": {
+            "traces": 4,
+            "completeTraces": 4,
+            "completenessRate": 1
+          },
+          "drafts": {
+            "requiredSections": 4,
+            "generatedSections": 4,
+            "completenessRate": 1
+          }
+        },
+        "checks": {
+          "noMissingChanges": true,
+          "noMissingMappings": true,
+          "allTracesComplete": true,
+          "allDraftSectionsGenerated": true
+        }
+      },
+      {
+        "caseId": "ulsan_youth_job_support",
+        "title": "Ulsan Youth Job Support Ordinance",
+        "municipality": "Ulsan Metropolitan City",
+        "domain": "youth-employment",
+        "officialSource": {
+          "effectiveDate": "2024-03-07",
+          "ordinanceNo": "Ulsan Metropolitan City Ordinance No. 2897",
+          "url": "https://www.law.go.kr/LSW/ordinInfoP.do?chrClsCd=010202&gubun=ELIS&ordinSeq=1910937"
+        },
+        "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth job-support scenario, not verbatim statutory text.",
+        "sampleData": {
+          "before": "data/cases/ulsan_youth_job_support/before.json",
+          "after": "data/cases/ulsan_youth_job_support/after.json",
+          "internalDocs": "data/cases/ulsan_youth_job_support/internal_docs.json"
+        },
+        "runtimeMs": 0,
+        "metrics": {
+          "changeDetection": {
+            "expectedChangedClauses": 4,
+            "predictedChangedClauses": 4,
+            "truePositives": 4,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "mapping": {
+            "rows": 4,
+            "rowsWithImpactedDocuments": 4,
+            "coverageRate": 1,
+            "avgImpactedDocumentsPerChange": 2.75
+          },
+          "risk": {
+            "rows": 4,
+            "distribution": {
+              "빨강": 2,
+              "노랑": 1,
+              "파랑": 1
+            },
+            "highRiskRate": 0.5
+          },
+          "traceability": {
+            "traces": 4,
+            "completeTraces": 4,
+            "completenessRate": 1
+          },
+          "drafts": {
+            "requiredSections": 4,
+            "generatedSections": 4,
+            "completenessRate": 1
+          }
+        },
+        "checks": {
+          "noMissingChanges": true,
+          "noMissingMappings": true,
+          "allTracesComplete": true,
+          "allDraftSectionsGenerated": true
+        }
+      }
+    ]
   }
 }

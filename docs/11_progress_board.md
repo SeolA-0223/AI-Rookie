@@ -1,6 +1,6 @@
 ﻿# 진행 보드 (Plan + Progress)
 
-기준 시각: 2026-04-08 01:05 KST
+기준 시각: 2026-04-08 01:12 KST
 
 ## 한눈에 보기
 | 구분 | 상태 | 내용 |
@@ -16,6 +16,7 @@
 | Source Search Helper | 완료 | `/source-search`와 대시보드 후보 선택으로 ID 탐색 보조 |
 | Before/After 추천 | 완료 | 검색 결과의 동일 조례군과 날짜 메타데이터를 사용해 추천 pair 계산 |
 | 실사례 케이스 팩 | 완료 | 울산/부천/서울 청년·복지 중심 normalized case pack 3종 추가 |
+| 다중 사례 평가 | 완료 | `npm run eval`이 `data/cases/*` 전체를 평가하고 aggregate summary를 생성 |
 | 제품 고도화 | 다음 작업 | live MCP 계약 검증과 다중 사례 평가 확장 |
 
 ## 완료된 작업
@@ -33,6 +34,7 @@
 - [x] 지자체 실사례 기반 normalized case pack 3종 추가 (`울산`, `부천`, `서울`)
 - [x] 기본 `local-fixture` 샘플을 울산 청년 구직지원 사례로 교체
 - [x] 변경 탐지/영향 매핑 키워드를 새 샘플 기준으로 정리
+- [x] `npm run eval`을 기본 샘플 + `data/cases/*` suite 평가로 확장
 - [x] 루트 하네스 구조 추가 (`AGENTS.md`, `agents/*`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`)
 - [x] `harness:check`와 pre-commit guard 추가
 - [x] 대시보드 source 선택 UI 추가
@@ -40,16 +42,15 @@
 
 ## 지금 진행 중
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
-- [ ] 다중 사례 평가 루프 설계 (`data/cases/*` 전체)
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
 
 ## 다음 작업 (우선순위)
 1. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
-2. 평가셋을 샘플 1세트에서 다중 사례로 확장
-3. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
-4. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
-5. 케이스 팩 전환 UI 또는 CLI 보조 흐름 추가
-6. 실제 MCP 서버 응답을 기준으로 recommendation heuristic 보정
+2. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
+3. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
+4. 케이스 팩 전환 UI 또는 CLI 보조 흐름 추가
+5. 실제 MCP 서버 응답을 기준으로 recommendation heuristic 보정
+6. live MCP 검증 이후 source-search ranking 회귀 테스트 강화
 
 ## 작업 루틴 (인수인계 기준)
 1. 코드/문서 수정

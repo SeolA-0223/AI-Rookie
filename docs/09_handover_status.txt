@@ -1,31 +1,50 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-08 01:03:25 KST
+Auto-updated: 2026-04-08 01:09:40 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 0cf7a60 (HEAD -> main, origin/main, origin/HEAD) feat: recommend ordinance pairs from source search
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24091336110)
+- Latest commit at update time: 9577404 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after search recommendations
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24091369617)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
+- M  QA_REPORT.md
+- M  README.md
+- M  SELF_CHECK.md
+- M  SPEC.md
+- M  data/eval/metrics.json
+- M  docs/03_eval_report.md
+- M  docs/07_local_run.md
 - M  docs/09_handover_status.txt
+- M  docs/11_progress_board.md
+- M  scripts/evaluate.js
+- A  tests/evaluate.test.js
 
 3) Recent Commits (max 8)
-- 0cf7a60 (HEAD -> main, origin/main, origin/HEAD) feat: recommend ordinance pairs from source search
+- 9577404 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after search recommendations
+- 0cf7a60 feat: recommend ordinance pairs from source search
 - c9c5595 docs: refresh handover after municipality case packs
 - 1ad3f48 feat: add municipality case pack samples
 - 93a9bfa docs: refresh handover after search helper rollout
 - 1a0ad83 feat: add korea-law-mcp search helper
 - 7235f30 docs: refresh handover after source-status rollout
 - c97551e feat: add request-level law source status
-- 44b021b fix: align korea-law-mcp adapter with public contract
 
 4) Staged Files
-- (none)
+- QA_REPORT.md
+- README.md
+- SELF_CHECK.md
+- SPEC.md
+- data/eval/metrics.json
+- docs/03_eval_report.md
+- docs/07_local_run.md
+- docs/11_progress_board.md
+- scripts/evaluate.js
+- tests/evaluate.test.js
 
 5) Unstaged Files
 - (none)
@@ -35,9 +54,10 @@ Auto-updated: 2026-04-08 01:03:25 KST
 
 7) Manual Notes
 ### [MANUAL NOTES START]
-- `/source-search` now returns `recommendation` when the result set contains a plausible ordinance timeline pair, and the dashboard can apply that pair with `Use Recommended Pair`.
+- `npm run eval` now writes both the default sample report and a `caseSuite` over all municipality case packs. Current summary: `evaluatedCaseCount=3`, `passedCaseCount=3`, `allCasesPassed=true`.
+- `/source-search` still returns `recommendation` when the result set contains a plausible ordinance timeline pair, and the dashboard can apply that pair with `Use Recommended Pair`.
 - Live `korea-law-mcp` verification is still open. Public README evidence exists, but no reachable public HTTP deployment was found, and this workspace currently lacks a usable Python/uv runtime to launch the upstream server locally.
-- Next implementation order: secure a real MCP runtime for contract verification -> extend evaluation from one sample to all `data/cases/*` packs -> refine recommendation scoring against real response shapes.
+- Next implementation order: secure a real MCP runtime for contract verification -> refine recommendation scoring against real response shapes -> decide whether `caseSuite` should surface in UI or stay maintainer-only.
 ### [MANUAL NOTES END]
 
 8) Quick Commands

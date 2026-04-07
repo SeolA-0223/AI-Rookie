@@ -15,11 +15,17 @@ npm run test
 ```
 
 ## 3) Run pipeline evaluation
-Runs the pipeline against sample data, prints metrics JSON, and updates `data/eval/metrics.json`.
+Runs the pipeline against the default sample data and every municipality case pack under `data/cases/*`, prints metrics JSON, and updates `data/eval/metrics.json`.
 
 ```bash
 npm run eval
 ```
+
+`data/eval/metrics.json` now keeps:
+
+- the default sample report at the top level
+- `caseSuite.summary` for aggregate pass/fail and average metrics
+- `caseSuite.cases[]` for per-case metrics and checks
 
 ## 4) Start API server
 ```bash

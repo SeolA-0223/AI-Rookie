@@ -1,76 +1,42 @@
 # Evaluation Report
 
 ## Goal
-샘플 정책 데이터 기준으로 파이프라인 품질을 정량 확인합니다.
+Validate that the pipeline stays stable on both the default sample and the municipality-oriented case packs under `data/cases/*`.
 
 ## Run
 ```bash
 npm run eval
 ```
 
-실행 시 콘솔에 metrics JSON이 출력되고, `data/eval/metrics.json` 파일이 생성됩니다.
+The command prints the report JSON and writes the latest artifact to `data/eval/metrics.json`.
+
+## Report Shape
+- Top-level `metrics` and `checks`: default sample fixture results
+- `caseSuite.summary`: aggregate result across all municipality case packs
+- `caseSuite.cases[]`: per-case metrics, checks, and source metadata
 
 ## Metric Definitions
 | Metric | Definition | Formula |
-|---|---|---|
-| `changeDetection.precision` | 탐지된 변경 중 실제 변경 비율 | `truePositives / predictedChangedClauses` |
-| `changeDetection.recall` | 실제 변경 중 탐지된 비율 | `truePositives / expectedChangedClauses` |
-| `changeDetection.f1` | Precision/Recall 조화 평균 | `2PR / (P + R)` |
-| `mapping.coverageRate` | 변경 건 중 영향 문서가 1개 이상 연결된 비율 | `rowsWithImpactedDocuments / rows` |
-| `mapping.avgImpactedDocumentsPerChange` | 변경 건당 평균 연결 문서 수 | `sum(impactedDocuments) / rows` |
-| `risk.highRiskRate` | 전체 위험도 중 빨강 비율 | `count(빨강) / rows` |
-| `traceability.completenessRate` | 근거, 문서 연결, 위험도 정보가 모두 있는 trace 비율 | `completeTraces / traces` |
-| `drafts.completenessRate` | 필수 초안 섹션 생성 비율 | `generatedSections / requiredSections` |
+| --- | --- | --- |
+| `changeDetection.precision` | Share of predicted clause changes that were actually changed | `truePositives / predictedChangedClauses` |
+| `changeDetection.recall` | Share of actual clause changes that were detected | `truePositives / expectedChangedClauses` |
+| `changeDetection.f1` | Harmonic mean of precision and recall | `2PR / (P + R)` |
+| `mapping.coverageRate` | Share of changed rows linked to at least one impacted document | `rowsWithImpactedDocuments / rows` |
+| `mapping.avgImpactedDocumentsPerChange` | Average impacted documents per change row | `sum(impactedDocuments) / rows` |
+| `risk.highRiskRate` | Share of risk rows marked `빨강` | `count(빨강) / rows` |
+| `traceability.completenessRate` | Share of traces with evidence, impacted docs, and risk | `completeTraces / traces` |
+| `drafts.completenessRate` | Share of required draft sections that were generated | `generatedSections / requiredSections` |
 
-## Sample Results
-아래 값은 샘플 데이터(`regulation_before/after`, `internal_docs`)를 기준으로 `npm run eval` 실행 시 생성됩니다.
+## Latest Result Snapshot
+Current `data/eval/metrics.json` reports:
 
-```json
-{
-  "metrics": {
-    "changeDetection": {
-      "expectedChangedClauses": 4,
-      "predictedChangedClauses": 4,
-      "truePositives": 4,
-      "precision": 1,
-      "recall": 1,
-      "f1": 1
-    },
-    "mapping": {
-      "rows": 4,
-      "rowsWithImpactedDocuments": 4,
-      "coverageRate": 1,
-      "avgImpactedDocumentsPerChange": 2.75
-    },
-    "risk": {
-      "rows": 4,
-      "distribution": {
-        "빨강": 2,
-        "노랑": 1,
-        "파랑": 1
-      },
-      "highRiskRate": 0.5
-    },
-    "traceability": {
-      "traces": 4,
-      "completeTraces": 4,
-      "completenessRate": 1
-    },
-    "drafts": {
-      "requiredSections": 4,
-      "generatedSections": 4,
-      "completenessRate": 1
-    }
-  },
-  "checks": {
-    "noMissingChanges": true,
-    "noMissingMappings": true,
-    "allTracesComplete": true,
-    "allDraftSectionsGenerated": true
-  }
-}
-```
+- default sample `f1=1`, `mapping.coverageRate=1`, `traceability.completenessRate=1`, `drafts.completenessRate=1`
+- `caseSuite.summary.evaluatedCaseCount=3`
+- `caseSuite.summary.passedCaseCount=3`
+- `caseSuite.summary.allCasesPassed=true`
+- `caseSuite.summary.averageF1=1`
+- `caseSuite.summary.averageMappingCoverage=1`
 
 ## Notes
-- 현재 평가는 샘플 데이터 1세트 기준입니다.
-- 실제 운영 전에는 지역/정책별 다중 평가셋으로 확대해 회귀 감시 지표로 사용해야 합니다.
+- The municipality case packs are normalized demo excerpts, not verbatim ordinance text.
+- The evaluation suite is useful for regression detection, but it is still synthetic until a real `korea-law-mcp` runtime is validated against live upstream responses.
