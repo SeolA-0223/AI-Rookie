@@ -2,16 +2,16 @@
 
 ## Request Summary
 
-Refactor AI-Rookie so future work follows a reusable Codex harness structure based on the `Harness Engineering` reference materials, then continue the next product iteration by making the dashboard drive source-based analysis instead of only hardcoded sample runs.
+Validate the public `korea-law-mcp` / `mcp-kr-legislation` contract, align the AI-Rookie source adapter with the currently documented ordinance-detail tools, and keep the harness/task files updated for this new iteration.
 
 ## CPS
 
 - Context:
-  AI-Rookie already has provider-based storage and law-source adapters, but the working process is still ad hoc and the dashboard cannot drive the new source-provider path.
+  AI-Rookie already has a Streamable HTTP MCP adapter and source-driven dashboard flow, but the adapter defaults were based on an inferred single tool name.
 - Problem:
-  Future sessions can easily drift because the repo lacks a root orchestrator, strict role files, and automatic harness checks. Separately, the frontend still hides the source-adapter work from users.
+  The public `mcp-kr-legislation` documentation shows both `get_local_ordinance_detail` and `get_ordinance_detail`, so a single hardcoded default is brittle.
 - Solution:
-  Add a root harness layer (`AGENTS.md`, role docs, task docs, automated checks) and use that structure to deliver one concrete scoped feature: a source-driven analysis flow in the dashboard.
+  Align the adapter with the public contract by preferring the documented local-ordinance tool, falling back to the generic ordinance tool, and updating tests/docs/handover to match.
 
 ## Target Users
 
@@ -22,61 +22,52 @@ Refactor AI-Rookie so future work follows a reusable Codex harness structure bas
 
 ## Goals
 
-- Make future Codex sessions start from an explicit planner-generator-evaluator workflow
-- Add lightweight automation that blocks commits when harness files are missing
-- Expose source-provider selection in the dashboard so the adapter architecture is usable
-- Keep existing storage, pipeline, and deployed API behavior intact
+- Confirm the currently documented ordinance-detail tools exposed by `mcp-kr-legislation`
+- Make the adapter robust to either documented tool name without manual env edits
+- Keep existing dashboard and source-provider flows intact
+- Update task docs and handover for the new iteration
 
 ## Non-Goals
 
-- Rebuild the repo into a full OpenHarness runtime
 - Connect to a real municipality DB in this task
-- Fully redesign the product scope beyond youth/welfare regulation-change support
+- Redesign the dashboard UI again
+- Prove the live MCP deployment contract beyond what the public repository documents
 
 ## Workstreams
 
-1. Add a root `AGENTS.md` that orchestrates planner, generator, and evaluator behavior for this repo.
-2. Add `agents/planner.md`, `agents/generator.md`, `agents/evaluator.md`, and `agents/evaluation_criteria.md` tailored to AI-Rookie.
-3. Add task-state files `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, plus `output/README.md`.
-4. Add `scripts/harness-check.js` and wire it into package scripts and pre-commit flow.
-5. Document the harness workflow in repo-level docs.
-6. Update backend request handling so source provider selection can be chosen per analyze request.
-7. Update the dashboard to select between `local-fixture` and `korea-law-mcp`.
-8. Show clear hints/status for source usage, including MCP before/after IDs when needed.
-9. Keep history, smoke checks, tests, and handover aligned with the new workflow.
+1. Verify the public `mcp-kr-legislation` README contract for HTTP transport and ordinance-detail tools.
+2. Update the Korea-law MCP adapter to prefer `get_local_ordinance_detail` and fall back to `get_ordinance_detail`.
+3. Preserve env overrides for custom servers.
+4. Add tests for both the preferred tool and the fallback tool path.
+5. Update docs, spec, self-check, QA report, and handover to reflect the new contract understanding.
 
 ## File Touch Plan
 
-- Harness:
-  `AGENTS.md`, `agents/*`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, `output/README.md`
-- Automation:
-  `scripts/harness-check.js`, `.githooks/pre-commit`, `package.json`
-- Product:
-  `backend/src/http/app.js`, `index.html`, `frontend/index.html`, `frontend/src/app.js`, `frontend/src/styles.css`
-- Docs and handover:
-  `README.md`, `docs/11_progress_board.md`, `docs/09_handover_status.txt`, `docs/15_harness_workflow.md`
+- Adapter:
+  `backend/src/sources/providers/koreaLawMcpSource.js`
+- Tests:
+  `tests/law-source.test.js`
+- Docs and task state:
+  `.env.example`, `README.md`, `docs/07_local_run.md`, `docs/13_vercel_deploy.md`, `docs/14_source_adapter_plan.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, `docs/09_handover_status.txt`
 
 ## Technical Requirements
 
 - Preserve existing Node/Vercel runtime setup
-- Do not break provider adapters or their tests
-- Keep the harness files human-readable and lightweight
-- Default dashboard flow must still work without MCP configuration
-- When `korea-law-mcp` is selected, the frontend must send `beforeId` and `afterId`
+- Do not break current provider adapters or the dashboard source flow
+- If `KOREA_LAW_MCP_DETAIL_TOOL_NAME` is explicitly set, honor it as a single override
+- If no tool override is set, try the public README order automatically
 
 ## Validation Plan
 
 - `npm run harness:check`
 - `npm run test`
 - `npm run eval`
-- `npm run smoke` with a local server for HTTP/UI-related changes
+- `npm run check`
 
 ## Acceptance Criteria
 
-- Root harness files and role docs exist and match the actual repo workflow
-- A missing harness file causes `npm run harness:check` to fail
-- The dashboard can submit `source.provider=local-fixture`
-- The dashboard can submit `source.provider=korea-law-mcp` with `beforeId` and `afterId`
-- Backend uses the requested source provider for `/analyze`
-- Existing automated checks pass after the refactor
-- `SELF_CHECK.md`, `QA_REPORT.md`, and `docs/09_handover_status.txt` reflect the completed work
+- The adapter no longer assumes only `get_ordinance_detail`
+- The default runtime prefers `get_local_ordinance_detail` and falls back to `get_ordinance_detail`
+- An explicit env override still wins over automatic tool selection
+- Tests cover both tool-name paths
+- Docs and handover reflect the updated public contract understanding

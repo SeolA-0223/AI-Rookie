@@ -7,7 +7,7 @@ import {
 } from "../shared.js";
 
 const REQUIRED_ENV = ["KOREA_LAW_MCP_BASE_URL"];
-const DEFAULT_DETAIL_TOOL_NAME = "get_ordinance_detail";
+const DEFAULT_DETAIL_TOOL_NAMES = ["get_local_ordinance_detail", "get_ordinance_detail"];
 const DEFAULT_ID_ARGUMENT_NAME = "ID";
 const CLAUSE_LIST_KEYS = ["clauses", "articles", "articleList", "items", "rows", "조문", "조문목록", "joMunList"];
 const DOCUMENT_TITLE_KEYS = ["title", "name", "documentTitle", "ordinanceName", "lawName", "자치법규명", "법령명"];
@@ -301,6 +301,38 @@ function buildFetchError(message, details = []) {
   });
 }
 
+function buildToolCandidates(toolName) {
+  const normalizedToolName = normalizeEnvValue(toolName);
+  if (normalizedToolName) {
+    return [normalizedToolName];
+  }
+
+  return [...DEFAULT_DETAIL_TOOL_NAMES];
+}
+
+function isMissingToolError(error, toolName) {
+  const normalizedMessage = String(error instanceof Error ? error.message : error).toLowerCase();
+  const normalizedToolName = toolName.toLowerCase();
+
+  return (
+    normalizedMessage.includes(`tool ${normalizedToolName} not found`) ||
+    normalizedMessage.includes(`tool ${normalizedToolName} disabled`) ||
+    (normalizedMessage.includes(`tool ${normalizedToolName}`) && normalizedMessage.includes("not found")) ||
+    normalizedMessage.includes("unknown tool") ||
+    normalizedMessage.includes("method not found")
+  );
+}
+
+async function selectToolName(client, toolNames) {
+  try {
+    const toolList = await client.listTools();
+    const availableToolNames = new Set((toolList?.tools ?? []).map((tool) => tool.name));
+    return toolNames.find((toolName) => availableToolNames.has(toolName)) ?? toolNames[0];
+  } catch {
+    return toolNames[0];
+  }
+}
+
 function resolveEndpoint(baseUrl) {
   try {
     const endpoint = new URL(baseUrl);
@@ -315,49 +347,74 @@ function resolveEndpoint(baseUrl) {
 
 async function fetchDocument({
   client,
-  toolName,
+  toolNames,
   idArgumentName,
   documentId,
   label
 }) {
-  try {
-    const result = await client.callTool({
-      name: toolName,
-      arguments: {
-        [idArgumentName]: documentId
-      }
-    });
+  let lastError = null;
 
-    if (result?.isError) {
-      const message = Array.isArray(result.content)
-        ? result.content
-            .filter((item) => item?.type === "text" && typeof item.text === "string")
-            .map((item) => item.text)
-            .join(" ")
-            .trim()
-        : "";
-      throw buildFetchError(`Korea-law-mcp rejected the ${label} document request.`, [
+  for (const toolName of toolNames) {
+    try {
+      const result = await client.callTool({
+        name: toolName,
+        arguments: {
+          [idArgumentName]: documentId
+        }
+      });
+
+      if (result?.isError) {
+        const message = Array.isArray(result.content)
+          ? result.content
+              .filter((item) => item?.type === "text" && typeof item.text === "string")
+              .map((item) => item.text)
+              .join(" ")
+              .trim()
+          : "";
+
+        if (toolNames.length > 1 && isMissingToolError(message, toolName)) {
+          lastError = new Error(message || `Tool ${toolName} was not available.`);
+          continue;
+        }
+
+        throw buildFetchError(`Korea-law-mcp rejected the ${label} document request.`, [
+          {
+            path: `source.${label}Id`,
+            message: message || "tool returned an error result"
+          }
+        ]);
+      }
+
+      const candidate = pickDocumentCandidate(result);
+      return {
+        document: normalizeDocument(candidate, label),
+        toolName
+      };
+    } catch (error) {
+      if (error instanceof SourceResolutionError) {
+        throw error;
+      }
+
+      if (toolNames.length > 1 && isMissingToolError(error, toolName)) {
+        lastError = error;
+        continue;
+      }
+
+      throw buildFetchError(`Failed to fetch the ${label} document from korea-law-mcp.`, [
         {
           path: `source.${label}Id`,
-          message: message || "tool returned an error result"
+          message: error instanceof Error ? error.message : String(error)
         }
       ]);
     }
-
-    const candidate = pickDocumentCandidate(result);
-    return normalizeDocument(candidate, label);
-  } catch (error) {
-    if (error instanceof SourceResolutionError) {
-      throw error;
-    }
-
-    throw buildFetchError(`Failed to fetch the ${label} document from korea-law-mcp.`, [
-      {
-        path: `source.${label}Id`,
-        message: error instanceof Error ? error.message : String(error)
-      }
-    ]);
   }
+
+  throw buildFetchError(`Failed to fetch the ${label} document from korea-law-mcp.`, [
+    {
+      path: `source.${label}Id`,
+      message: lastError instanceof Error ? lastError.message : "No supported ordinance detail tool was available."
+    }
+  ]);
 }
 
 export function createKoreaLawMcpSource({
@@ -366,7 +423,7 @@ export function createKoreaLawMcpSource({
   idArgumentName = process.env.KOREA_LAW_MCP_ID_ARGUMENT_NAME
 } = {}) {
   const normalizedBaseUrl = normalizeEnvValue(baseUrl);
-  const resolvedToolName = normalizeEnvValue(toolName) || DEFAULT_DETAIL_TOOL_NAME;
+  const resolvedToolNames = buildToolCandidates(toolName);
   const resolvedIdArgumentName = normalizeEnvValue(idArgumentName) || DEFAULT_ID_ARGUMENT_NAME;
 
   if (!normalizedBaseUrl) {
@@ -454,31 +511,33 @@ export function createKoreaLawMcpSource({
 
       try {
         await client.connect(transport);
+        const selectedToolName = await selectToolName(client, resolvedToolNames);
+        const orderedToolNames = [selectedToolName, ...resolvedToolNames.filter((name) => name !== selectedToolName)];
 
-        const beforeDoc = await fetchDocument({
+        const beforeResolution = await fetchDocument({
           client,
-          toolName: resolvedToolName,
+          toolNames: orderedToolNames,
           idArgumentName: resolvedIdArgumentName,
           documentId: beforeId,
           label: "before"
         });
-        const afterDoc = await fetchDocument({
+        const afterResolution = await fetchDocument({
           client,
-          toolName: resolvedToolName,
+          toolNames: [beforeResolution.toolName],
           idArgumentName: resolvedIdArgumentName,
           documentId: afterId,
           label: "after"
         });
 
         return {
-          beforeDoc,
-          afterDoc,
+          beforeDoc: beforeResolution.document,
+          afterDoc: afterResolution.document,
           meta: {
             provider: "korea-law-mcp",
             mode: "adapter",
             beforeId,
             afterId,
-            toolName: resolvedToolName
+            toolName: beforeResolution.toolName
           }
         };
       } finally {

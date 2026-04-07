@@ -18,7 +18,7 @@
 - `KOREA_LAW_MCP_ID_ARGUMENT_NAME`
 
 Leave `LAW_SOURCE_PROVIDER` as `local-fixture` unless you are deploying a reachable Korea-law-mcp HTTP service behind `KOREA_LAW_MCP_BASE_URL`.
-If the MCP server does not use `get_ordinance_detail({ ID })`, override the tool name and argument name through the two optional env vars instead of changing runtime code on Vercel first.
+If the MCP server does not use `get_local_ordinance_detail({ ID })` or `get_ordinance_detail({ ID })`, override the tool name and argument name through the two optional env vars instead of changing runtime code on Vercel first.
 
 ## Runtime shape
 - Static dashboard entrypoint: `/`

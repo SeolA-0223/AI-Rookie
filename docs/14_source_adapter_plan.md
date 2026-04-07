@@ -10,7 +10,8 @@
   - 샘플 전/후 문서 반환
 - `backend/src/sources/providers/koreaLawMcpSource.js`
   - Streamable HTTP MCP client 연결
-  - 기본 tool contract: `get_ordinance_detail({ ID })`
+  - 공개 README 기준 `get_local_ordinance_detail({ ID })` 우선 사용
+  - `get_ordinance_detail({ ID })` fallback 지원
   - tool name / ID argument name은 env로 override 가능
 
 ## Why this exists now
@@ -18,7 +19,7 @@
 - `before/after` 직접 입력과 `source` 기반 입력을 공존시켜 데모와 실연동 경로를 분리합니다.
 
 ## Next Implementation Step
-1. 실제 Korea-law-mcp 서버의 tool contract를 확인해 env 기본값과 파서를 좁힌다.
+1. 실제 Korea-law-mcp 서버에 붙여 live contract와 README contract가 일치하는지 확인한다.
 2. `beforeId` / `afterId` 외에 조례명, 시행일, 공포일 기반 lookup 전략을 추가한다.
 3. 실제 지자체 사례 2~3건으로 smoke/demo 시나리오를 교체한다.
-4. 프론트에 source provider 선택과 source ID 입력 UI를 붙인다.
+4. request-level source capability status를 UI에 더 정확히 노출한다.

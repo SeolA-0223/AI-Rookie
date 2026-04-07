@@ -83,6 +83,16 @@ function Convert-RemoteToGithubUrl {
   return ""
 }
 
+function Write-Utf8NoBomFile {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Content
+  )
+
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+}
+
 function Get-LatestCiSummary {
   param(
     [string]$GithubRepoUrl,
@@ -221,4 +231,4 @@ $lines += @(
 $content = $lines -join "`r`n"
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $handoverPath) | Out-Null
-Set-Content -Encoding UTF8 -Path $handoverPath -Value $content
+Write-Utf8NoBomFile -Path $handoverPath -Content $content

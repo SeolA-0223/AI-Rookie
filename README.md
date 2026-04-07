@@ -32,7 +32,8 @@
 - 기본값은 `local-fixture`이며 샘플 전/후 규정 문서를 사용합니다.
 - `/analyze`는 기존처럼 `before`/`after` 직접 입력도 받을 수 있습니다.
 - `LAW_SOURCE_PROVIDER=korea-law-mcp`를 쓰면 Streamable HTTP MCP endpoint에서 전/후 문서를 가져옵니다.
-- 기본 tool contract는 `get_ordinance_detail` + `ID` 인자입니다.
+- 공개 `mcp-kr-legislation` README 기준 현재 기본 자치법규 상세 도구는 `get_local_ordinance_detail`이며, AI-Rookie는 `get_ordinance_detail`까지 자동 fallback 합니다.
+- 기본 ID 인자는 `ID`입니다.
 - 실제 서버 구현이 다르면 `KOREA_LAW_MCP_DETAIL_TOOL_NAME`, `KOREA_LAW_MCP_ID_ARGUMENT_NAME`으로 맞출 수 있습니다.
 - 대시보드에서도 `Local Fixture`와 `Korea Law MCP`를 선택할 수 있으며, MCP를 고르면 `beforeId` / `afterId`를 직접 입력합니다.
 

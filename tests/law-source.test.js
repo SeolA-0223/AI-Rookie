@@ -72,7 +72,7 @@ test("createLawSource rejects unsupported providers", async () => {
   });
 });
 
-async function startMockKoreaLawMcpServer(documentsById) {
+async function startMockKoreaLawMcpServer(documentsById, toolNames = ["get_local_ordinance_detail"]) {
   const app = createMcpExpressApp();
 
   app.post("/mcp", async (req, res) => {
@@ -81,25 +81,27 @@ async function startMockKoreaLawMcpServer(documentsById) {
       version: "1.0.0"
     });
 
-    server.registerTool("get_ordinance_detail", {
-      description: "Returns a mock regulation document.",
-      inputSchema: {
-        ID: z.string()
-      }
-    }, async ({ ID }) => {
-      const document = documentsById[ID];
-      if (!document) {
-        return {
-          content: [{ type: "text", text: `Unknown ordinance ID: ${ID}` }],
-          isError: true
-        };
-      }
+    for (const toolName of toolNames) {
+      server.registerTool(toolName, {
+        description: "Returns a mock regulation document.",
+        inputSchema: {
+          ID: z.string()
+        }
+      }, async ({ ID }) => {
+        const document = documentsById[ID];
+        if (!document) {
+          return {
+            content: [{ type: "text", text: `Unknown ordinance ID: ${ID}` }],
+            isError: true
+          };
+        }
 
-      return {
-        content: [{ type: "text", text: JSON.stringify({ document }) }],
-        structuredContent: { document }
-      };
-    });
+        return {
+          content: [{ type: "text", text: JSON.stringify({ document }) }],
+          structuredContent: { document }
+        };
+      });
+    }
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined
@@ -157,10 +159,10 @@ async function startMockKoreaLawMcpServer(documentsById) {
   };
 }
 
-test("createLawSource fetches regulation pair through korea-law-mcp transport", async () => {
+test("createLawSource prefers get_local_ordinance_detail when the documented tool is available", async () => {
   const server = await startMockKoreaLawMcpServer({
     before: {
-      title: "청년 지원 조례",
+      title: "Youth Support Ordinance",
       version: "before",
       clauses: [
         {
@@ -171,7 +173,7 @@ test("createLawSource fetches regulation pair through korea-law-mcp transport", 
       ]
     },
     after: {
-      title: "청년 지원 조례",
+      title: "Youth Support Ordinance",
       version: "after",
       clauses: [
         {
@@ -202,12 +204,60 @@ test("createLawSource fetches regulation pair through korea-law-mcp transport", 
     assert.equal(source.getSourceStatus().enabled, true);
     assert.equal(source.getSourceStatus().provider, "korea-law-mcp");
     assert.equal(pair.meta.provider, "korea-law-mcp");
-    assert.equal(pair.meta.toolName, "get_ordinance_detail");
-    assert.equal(pair.beforeDoc.title, "청년 지원 조례");
+    assert.equal(pair.meta.toolName, "get_local_ordinance_detail");
+    assert.equal(pair.beforeDoc.title, "Youth Support Ordinance");
     assert.equal(pair.beforeDoc.clauses.length, 1);
     assert.equal(pair.afterDoc.clauses.length, 2);
     assert.equal(pair.afterDoc.clauses[1].id, "c2");
     assert.match(pair.afterDoc.clauses[1].text, /700000 KRW/);
+  } finally {
+    await server.close();
+  }
+});
+
+test("createLawSource falls back to get_ordinance_detail when only the legacy generic tool is exposed", async () => {
+  const server = await startMockKoreaLawMcpServer(
+    {
+      before: {
+        title: "Youth Support Ordinance",
+        version: "before",
+        clauses: [
+          {
+            id: "c1",
+            title: "Age Requirement",
+            text: "Applicants must be between 19 and 29 years old."
+          }
+        ]
+      },
+      after: {
+        title: "Youth Support Ordinance",
+        version: "after",
+        clauses: [
+          {
+            id: "c1",
+            title: "Age Requirement",
+            text: "Applicants must be between 19 and 34 years old."
+          }
+        ]
+      }
+    },
+    ["get_ordinance_detail"]
+  );
+
+  try {
+    const source = createLawSource({
+      provider: "korea-law-mcp",
+      koreaLawMcpBaseUrl: server.baseUrl
+    });
+
+    const pair = await source.resolveRegulationPair({
+      beforeId: "before",
+      afterId: "after"
+    });
+
+    assert.equal(pair.meta.toolName, "get_ordinance_detail");
+    assert.equal(pair.beforeDoc.title, "Youth Support Ordinance");
+    assert.equal(pair.afterDoc.clauses.length, 1);
   } finally {
     await server.close();
   }
