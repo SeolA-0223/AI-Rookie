@@ -1,31 +1,31 @@
 ﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-04-07 09:06:50 KST
+Auto-updated: 2026-04-07 09:08:52 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 72265fb (HEAD -> main, origin/main, origin/HEAD) chore: log supabase suffix for redeploy
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24021055312)
+- Latest commit at update time: ca68985 (HEAD -> main, origin/main, origin/HEAD) chore: remove supabase key suffix log
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24057479059)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  backend/src/http/app.js
+- M  .github/workflows/ci.yml
 
 3) Recent Commits (max 8)
-- 72265fb (HEAD -> main, origin/main, origin/HEAD) chore: log supabase suffix for redeploy
+- ca68985 (HEAD -> main, origin/main, origin/HEAD) chore: remove supabase key suffix log
+- 72265fb chore: log supabase suffix for redeploy
 - 77464ba chore: trigger production redeploy
 - 4bae04e feat: add supabase persistence and vercel support (#2)
 - f304996 docs: refresh handover snapshot on main
 - e2da9b4 docs: add non-gh PR creation fallback link
 - aac494e docs: use stable branch actions link in PR summary
 - 98af62b docs: modernize pull request template checks
-- fa62419 docs: update PR summary with latest CI run link
 
 4) Staged Files
-- backend/src/http/app.js
+- .github/workflows/ci.yml
 
 5) Unstaged Files
 - (none)
