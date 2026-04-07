@@ -4,7 +4,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
-import { createLawSource, getLawSourceStatus, resolveLawSourceProvider, searchLawSource, SourceResolutionError } from "../sources/lawSource.js";
+import {
+  createLawSource,
+  getLawSourceStatus,
+  recommendLawSourcePair,
+  resolveLawSourceProvider,
+  searchLawSource,
+  SourceResolutionError
+} from "../sources/lawSource.js";
 
 try {
   process.loadEnvFile();
@@ -252,6 +259,7 @@ export async function buildSourceSearchPayload({ provider, query, limit } = {}) 
       requestedProvider,
       query: "",
       results: [],
+      recommendation: null,
       meta: {
         provider: requestedProvider,
         mode: "search"
@@ -269,6 +277,7 @@ export async function buildSourceSearchPayload({ provider, query, limit } = {}) 
     requestedProvider,
     query: normalizedQuery,
     results: Array.isArray(searchResult.results) ? searchResult.results : [],
+    recommendation: recommendLawSourcePair(searchResult.results, normalizedQuery),
     meta: searchResult.meta ?? {
       provider: requestedProvider,
       mode: "search"

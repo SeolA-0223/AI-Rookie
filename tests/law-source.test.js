@@ -7,6 +7,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import * as z from "zod/v4";
 import {
   createLawSource,
+  recommendLawSourcePair,
   resolveLawSourceProvider,
   searchLawSource,
   SourceResolutionError
@@ -295,6 +296,49 @@ test("createLawSource returns empty search results for local fixture source", as
 
   assert.equal(result.meta.provider, "local-fixture");
   assert.deepEqual(result.results, []);
+});
+
+test("recommendLawSourcePair picks the latest two dated versions from the best-matching ordinance group", () => {
+  const recommendation = recommendLawSourcePair(
+    [
+      {
+        id: "seoul-2022",
+        title: "Seoul Youth Support Ordinance",
+        jurisdiction: "Seoul",
+        effectiveDate: "2022-01-01",
+        promulgationDate: "2021-12-20"
+      },
+      {
+        id: "seoul-2024",
+        title: "Seoul Youth Support Ordinance",
+        jurisdiction: "Seoul",
+        effectiveDate: "2024-01-01",
+        promulgationDate: "2023-12-20"
+      },
+      {
+        id: "seoul-2023",
+        title: "Seoul Youth Support Ordinance",
+        jurisdiction: "Seoul",
+        effectiveDate: "2023-01-01",
+        promulgationDate: "2022-12-20"
+      },
+      {
+        id: "busan-2024",
+        title: "Busan Youth Support Ordinance",
+        jurisdiction: "Busan",
+        effectiveDate: "2024-01-01",
+        promulgationDate: "2023-12-20"
+      }
+    ],
+    "Seoul youth support ordinance"
+  );
+
+  assert.equal(recommendation.strategy, "timeline-heuristic");
+  assert.equal(recommendation.confidence, "high");
+  assert.equal(recommendation.before.id, "seoul-2023");
+  assert.equal(recommendation.after.id, "seoul-2024");
+  assert.equal(recommendation.matchCount, 3);
+  assert.match(recommendation.reason, /Seoul Youth Support Ordinance/);
 });
 
 test("createLawSource falls back to get_ordinance_detail when only the legacy generic tool is exposed", async () => {

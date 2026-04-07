@@ -79,5 +79,6 @@ test("buildSourceSearchPayload returns empty local-fixture search results", asyn
   assert.equal(payload.requestedProvider, "local-fixture");
   assert.equal(payload.query, "sample");
   assert.deepEqual(payload.results, []);
+  assert.equal(payload.recommendation, null);
   assert.equal(payload.meta.provider, "local-fixture");
 });

@@ -76,8 +76,9 @@ The same flow is available in the dashboard:
 1. Open `/`
 2. In `Analysis Source`, choose `Korea Law MCP`
 3. Search by ordinance title if you need candidate IDs
-4. Use search results to fill `Before ID` and `After ID`
-5. Click `Run Analysis`
+4. If the server finds a timeline recommendation, click `Use Recommended Pair`
+5. Or use individual search results to fill `Before ID` and `After ID` manually
+6. Click `Run Analysis`
 
 ## 5) Run smoke check (in another terminal)
 Hits `GET /health`, `GET /source-status`, `GET /source-search`, `POST /analyze`, and `GET /history` and validates response shape.
@@ -104,6 +105,8 @@ To search ordinance candidates directly:
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:3000/source-search?provider=korea-law-mcp&query=서울시%20청년%20지원%20조례"
 ```
+
+If the response includes `recommendation`, AI-Rookie judged that the returned candidates include a plausible pre/post amendment pair based on title and ordinance dates.
 
 ## 6) Local quick check
 Runs tests + eval (does not include smoke).

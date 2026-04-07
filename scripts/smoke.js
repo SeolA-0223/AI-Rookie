@@ -68,6 +68,7 @@ async function main() {
   const sourceSearch = await fetchJson("/source-search?provider=local-fixture&query=sample");
   assert(sourceSearch.requestedProvider === "local-fixture", "Unexpected requestedProvider in /source-search response.");
   assert(Array.isArray(sourceSearch.results), "Missing results[] in /source-search response.");
+  assert(Object.prototype.hasOwnProperty.call(sourceSearch, "recommendation"), "Missing recommendation in /source-search response.");
   console.log(`Source search endpoint check passed. Loaded ${sourceSearch.results.length} candidate(s).`);
 
   const analyze = await fetchJson("/analyze", {

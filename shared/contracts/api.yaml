@@ -94,6 +94,10 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/LawSourceSearchResult"
+                  recommendation:
+                    oneOf:
+                      - $ref: "#/components/schemas/LawSourceSearchRecommendation"
+                      - type: "null"
                   meta:
                     type: object
                     additionalProperties: true
@@ -101,6 +105,7 @@ paths:
                   - requestedProvider
                   - query
                   - results
+                  - recommendation
                   - meta
   /analyze:
     post:
@@ -307,6 +312,32 @@ components:
       required:
         - id
         - title
+    LawSourceSearchRecommendation:
+      type: object
+      properties:
+        before:
+          $ref: "#/components/schemas/LawSourceSearchResult"
+        after:
+          $ref: "#/components/schemas/LawSourceSearchResult"
+        confidence:
+          type: string
+          enum:
+            - high
+            - medium
+            - low
+        matchCount:
+          type: integer
+        reason:
+          type: string
+        strategy:
+          type: string
+      required:
+        - before
+        - after
+        - confidence
+        - matchCount
+        - reason
+        - strategy
     AnalyzeInputSource:
       type: object
       properties:

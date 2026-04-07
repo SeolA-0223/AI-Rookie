@@ -1,31 +1,62 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-07 22:35:43 KST
+Auto-updated: 2026-04-08 01:02:40 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 1ad3f48 (HEAD -> main, origin/main, origin/HEAD) feat: add municipality case pack samples
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24084092669)
+- Latest commit at update time: c9c5595 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after municipality case packs
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24084264832)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
+- M  QA_REPORT.md
+- M  README.md
+- M  SELF_CHECK.md
+- M  SPEC.md
+- M  backend/src/http/app.js
+- M  backend/src/sources/lawSource.js
+- M  data/eval/metrics.json
+- M  docs/07_local_run.md
 - M  docs/09_handover_status.txt
+- M  docs/11_progress_board.md
+- M  frontend/index.html
+- M  frontend/src/app.js
+- M  frontend/src/styles.css
+- M  scripts/smoke.js
+- M  shared/contracts/api.yaml
+- M  tests/http-app.test.js
+- M  tests/law-source.test.js
 
 3) Recent Commits (max 8)
-- 1ad3f48 (HEAD -> main, origin/main, origin/HEAD) feat: add municipality case pack samples
+- c9c5595 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after municipality case packs
+- 1ad3f48 feat: add municipality case pack samples
 - 93a9bfa docs: refresh handover after search helper rollout
 - 1a0ad83 feat: add korea-law-mcp search helper
 - 7235f30 docs: refresh handover after source-status rollout
 - c97551e feat: add request-level law source status
 - 44b021b fix: align korea-law-mcp adapter with public contract
 - ec6da07 docs: refresh handover after harness retrofit
-- 9ce9d3b feat: add codex harness workflow and source dashboard
 
 4) Staged Files
-- (none)
+- QA_REPORT.md
+- README.md
+- SELF_CHECK.md
+- SPEC.md
+- backend/src/http/app.js
+- backend/src/sources/lawSource.js
+- data/eval/metrics.json
+- docs/07_local_run.md
+- docs/11_progress_board.md
+- frontend/index.html
+- frontend/src/app.js
+- frontend/src/styles.css
+- scripts/smoke.js
+- shared/contracts/api.yaml
+- tests/http-app.test.js
+- tests/law-source.test.js
 
 5) Unstaged Files
 - (none)
@@ -35,10 +66,9 @@ Auto-updated: 2026-04-07 22:35:43 KST
 
 7) Manual Notes
 ### [MANUAL NOTES START]
-- Municipality-oriented normalized case packs now exist under `data/cases`: Ulsan youth job support (`2024-03-07`), Bucheon youth housing support (`2023-02-06`), and Seoul youth basic ordinance (`2023-07-24`).
-- Default `data/samples/*` now mirrors the Ulsan case pack, so `local-fixture`, `npm run eval`, and smoke/tests all use the municipality-focused scenario.
-- Change detection and impact mapping were rewritten in ASCII-safe source form with Korean labels emitted at runtime; this avoids the earlier encoding noise in classifier files.
-- Next implementation order: validate against a real `korea-law-mcp` deployment -> add before/after recommendation rules on top of search results -> extend evaluation from one sample to all case packs.
+- `/source-search` now returns `recommendation` when the result set contains a plausible ordinance timeline pair, and the dashboard can apply that pair with `Use Recommended Pair`.
+- Live `korea-law-mcp` verification is still open. Public README evidence exists, but no reachable public HTTP deployment was found, and this workspace currently lacks a usable Python/uv runtime to launch the upstream server locally.
+- Next implementation order: secure a real MCP runtime for contract verification -> extend evaluation from one sample to all `data/cases/*` packs -> refine recommendation scoring against real response shapes.
 ### [MANUAL NOTES END]
 
 8) Quick Commands

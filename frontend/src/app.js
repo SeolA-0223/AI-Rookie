@@ -21,6 +21,7 @@ const sourceSearchGroup = document.getElementById("source-search-group");
 const sourceSearchQueryField = document.getElementById("source-search-query");
 const sourceSearchButton = document.getElementById("source-search-btn");
 const sourceSearchStatusView = document.getElementById("source-search-status");
+const sourceSearchRecommendationView = document.getElementById("source-search-recommendation");
 const sourceSearchResultsView = document.getElementById("source-search-results");
 
 let latestHealth = null;
@@ -98,6 +99,93 @@ function createEmptyMessage(tagName, text) {
   return element;
 }
 
+function formatTimelineLabel(result = {}) {
+  const timeline = [];
+
+  if (result.effectiveDate) {
+    timeline.push(`Effective ${result.effectiveDate}`);
+  }
+  if (result.promulgationDate) {
+    timeline.push(`Promulgated ${result.promulgationDate}`);
+  }
+
+  return timeline.join(" / ") || "No ordinance date metadata returned.";
+}
+
+function applyRecommendedPair(recommendation) {
+  if (!recommendation?.before?.id || !recommendation?.after?.id) {
+    return;
+  }
+
+  if (sourceBeforeIdField) {
+    sourceBeforeIdField.value = recommendation.before.id;
+  }
+  if (sourceAfterIdField) {
+    sourceAfterIdField.value = recommendation.after.id;
+  }
+
+  setSourceSearchStatus(
+    `Applied recommended pair: ${recommendation.before.id} -> ${recommendation.after.id}.`,
+    "success"
+  );
+}
+
+function renderSourceSearchRecommendation(recommendation) {
+  if (!sourceSearchRecommendationView) {
+    return;
+  }
+
+  sourceSearchRecommendationView.innerHTML = "";
+
+  if (!recommendation?.before?.id || !recommendation?.after?.id) {
+    return;
+  }
+
+  const card = document.createElement("article");
+  card.className = "recommendation-card";
+
+  const title = document.createElement("h3");
+  title.textContent = "Recommended Pair";
+
+  const reason = document.createElement("p");
+  reason.textContent = recommendation.reason || "Timeline-based recommendation is available.";
+
+  const meta = document.createElement("p");
+  meta.className = "recommendation-meta";
+  meta.textContent = `Confidence: ${recommendation.confidence ?? "unknown"} / Matches: ${recommendation.matchCount ?? 0} / Strategy: ${recommendation.strategy ?? "heuristic"}`;
+
+  const grid = document.createElement("div");
+  grid.className = "recommendation-grid";
+
+  const beforeBlock = document.createElement("div");
+  beforeBlock.className = "search-result";
+  beforeBlock.innerHTML = `
+    <h3>Before</h3>
+    <p class="search-meta">ID: ${recommendation.before.id}</p>
+    <p>${recommendation.before.title ?? recommendation.before.id}</p>
+    <p class="search-meta">${formatTimelineLabel(recommendation.before)}</p>
+  `;
+
+  const afterBlock = document.createElement("div");
+  afterBlock.className = "search-result";
+  afterBlock.innerHTML = `
+    <h3>After</h3>
+    <p class="search-meta">ID: ${recommendation.after.id}</p>
+    <p>${recommendation.after.title ?? recommendation.after.id}</p>
+    <p class="search-meta">${formatTimelineLabel(recommendation.after)}</p>
+  `;
+
+  const applyButton = document.createElement("button");
+  applyButton.type = "button";
+  applyButton.className = "secondary-btn";
+  applyButton.textContent = "Use Recommended Pair";
+  applyButton.addEventListener("click", () => applyRecommendedPair(recommendation));
+
+  grid.append(beforeBlock, afterBlock);
+  card.append(title, reason, meta, grid, applyButton);
+  sourceSearchRecommendationView.append(card);
+}
+
 function renderSourceSearchResults(results = []) {
   if (!sourceSearchResultsView) {
     return;
@@ -121,13 +209,11 @@ function renderSourceSearchResults(results = []) {
     idLine.className = "search-meta";
     idLine.textContent = `ID: ${result.id ?? "Unavailable"}`;
 
-    const jurisdictionParts = [result.jurisdiction, result.effectiveDate && `Effective ${result.effectiveDate}`, result.promulgationDate && `Promulgated ${result.promulgationDate}`]
-      .filter(Boolean)
-      .join(" / ");
-
     const meta = document.createElement("p");
     meta.className = "search-meta";
-    meta.textContent = jurisdictionParts || "No ordinance metadata returned.";
+    meta.textContent = [result.jurisdiction, formatTimelineLabel(result)]
+      .filter(Boolean)
+      .join(" / ");
 
     const summary = document.createElement("p");
     summary.textContent = result.summary || "No summary returned.";
@@ -484,6 +570,7 @@ function updateSourceControls() {
       localFixtureEnabled ? "neutral" : "error"
     );
     setSourceSearchStatus("Search is only used for Korea Law MCP lookups.", "neutral");
+    renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
   }
@@ -516,6 +603,7 @@ function updateSourceControls() {
       "error"
     );
     setSourceSearchStatus("Search is unavailable until Korea Law MCP is configured.", "error");
+    renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
   }
@@ -563,12 +651,14 @@ async function runSourceSearch() {
 
   if (provider !== "korea-law-mcp") {
     setSourceSearchStatus("Search is only available for Korea Law MCP.", "neutral");
+    renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
   }
 
   if (!query) {
     setSourceSearchStatus("Enter an ordinance name or keyword before searching.", "error");
+    renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
   }
@@ -593,13 +683,17 @@ async function runSourceSearch() {
     }
 
     latestSourceSearchResult = await response.json();
+    renderSourceSearchRecommendation(latestSourceSearchResult.recommendation);
     renderSourceSearchResults(latestSourceSearchResult.results ?? []);
     setSourceSearchStatus(
-      `Loaded ${(latestSourceSearchResult.results ?? []).length} ordinance candidate(s).`,
+      latestSourceSearchResult.recommendation
+        ? `Loaded ${(latestSourceSearchResult.results ?? []).length} ordinance candidate(s) with a recommended pair.`
+        : `Loaded ${(latestSourceSearchResult.results ?? []).length} ordinance candidate(s).`,
       "success"
     );
   } catch (error) {
     latestSourceSearchResult = null;
+    renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     setSourceSearchStatus(`Search failed: ${error.message}`, "error");
   } finally {
@@ -675,6 +769,7 @@ async function init() {
     sourceProviderField.addEventListener("change", () => {
       setSourceStatus("Checking selected source provider...", "neutral");
       latestSourceSearchResult = null;
+      renderSourceSearchRecommendation(null);
       renderSourceSearchResults([]);
       updateSourceControls();
       void loadSelectedSourceStatus();

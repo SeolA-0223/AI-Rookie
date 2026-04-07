@@ -52,6 +52,8 @@
 - 대시보드에서도 `Local Fixture`와 `Korea Law MCP`를 선택할 수 있으며, MCP를 고르면 `beforeId` / `afterId`를 직접 입력합니다.
 - 대시보드는 `/api/source-status?provider=...`를 호출해 선택한 provider의 request-level 상태를 직접 확인합니다.
 - 대시보드는 `/api/source-search?provider=...&query=...`를 호출해 조례명 후보를 찾고, 결과에서 `Before` / `After` ID를 채워 넣을 수 있습니다.
+- `/api/source-search`는 후보 목록 외에 `recommendation`도 반환하며, 같은 조례명과 날짜 메타데이터를 기준으로 추천 `before` / `after` 쌍을 계산합니다.
+- 대시보드는 추천 쌍이 있으면 `Use Recommended Pair` 버튼으로 `Before ID` / `After ID`를 한 번에 채울 수 있습니다.
 
 ## 테스트/점검
 - `npm run harness:check`
