@@ -1,0 +1,32 @@
+[
+  {
+    "id": "d1",
+    "type": "guide",
+    "title": "Youth Policy Guide",
+    "text": "Guide for eligibility age, publication deadline, and support amount standards."
+  },
+  {
+    "id": "d2",
+    "type": "faq",
+    "title": "Youth Policy FAQ",
+    "text": "FAQ for eligibility requirements, required documents, and support amount standards."
+  },
+  {
+    "id": "d3",
+    "type": "checklist",
+    "title": "Plan Preparation Checklist",
+    "text": "Checklist for survey documents, department submission files, and participation reports."
+  },
+  {
+    "id": "d4",
+    "type": "notice",
+    "title": "Publication Deadline Memo",
+    "text": "Internal memo for publication deadline and review schedule changes."
+  },
+  {
+    "id": "d5",
+    "type": "script",
+    "title": "Youth Policy Call Script",
+    "text": "Script for eligibility age and support amount questions from citizens."
+  }
+]

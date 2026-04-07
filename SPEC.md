@@ -2,75 +2,70 @@
 
 ## Request Summary
 
-Continue the Korea-law MCP work by adding a search helper around `search_local_ordinance`, exposing it through the backend, and wiring the dashboard so users can find usable ordinance IDs before running analysis.
+Continue the Korea-law MCP and product-direction work by replacing the single generic sample with 2 to 3 municipality youth/welfare-oriented case packs, keeping the runtime stable, and leaving the repository ready for the next live-contract and recommendation steps.
 
 ## CPS
 
 - Context:
-  AI-Rookie can already fetch ordinance details from Korea-law MCP, but users still need raw `beforeId` and `afterId` values up front.
+  AI-Rookie already supports provider-based storage, provider-based law sources, request-level source status/search, and a harness workflow.
 - Problem:
-  Requiring raw ordinance IDs makes the MCP flow awkward and blocks realistic demos because users usually know the ordinance title, not the ID.
+  The demo still leaned on one generic sample pair, so it did not reflect the narrow municipality youth/welfare focus described in the project planning material.
 - Solution:
-  Add a request-level source search endpoint, normalize Korea-law MCP search results, and let the dashboard search by ordinance title then apply candidates to the before/after ID fields.
+  Add a small catalog of normalized municipality case packs grounded in official ordinance pages, switch the default sample to one of those cases, and align change-detection keywords so the pipeline remains stable on the new dataset.
 
 ## Target Users
 
 - Primary:
   Maintainers iterating on AI-Rookie with Codex
 - Secondary:
-  Demo users trying ordinance-backed analysis without knowing raw IDs
+  Demo users who need municipality-oriented youth/welfare scenarios instead of a generic sample
 
 ## Goals
 
-- Add a source-search backend endpoint
-- Normalize `search_local_ordinance` results from Korea-law MCP
-- Let the dashboard search and apply candidates to `Before` / `After` IDs
-- Preserve current analyze/history/status flows and update docs/handover
+- Add 3 municipality-oriented normalized case packs under `data/cases`
+- Switch the default `data/samples/*` fixture set to the Ulsan youth job-support case
+- Keep change detection and impact mapping stable on the new dataset
+- Update docs, harness files, progress tracking, and handover for the next session
 
 ## Non-Goals
 
 - Prove a public live `korea-law-mcp` deployment in this task
-- Automatically choose before/after versions from search results
+- Build a full case-switching UI for all case packs
 - Replace the current analysis pipeline or storage flow
 
 ## Workstreams
 
-1. Add search support to law source adapters and Korea-law MCP provider metadata.
-2. Add `/source-search` to the HTTP layer and Vercel routing.
-3. Add dashboard search input, search results, and candidate application buttons.
-4. Extend tests and smoke coverage.
-5. Update contracts, docs, progress board, and handover.
+1. Collect 2 to 3 municipality youth/welfare cases from official ordinance pages and record metadata.
+2. Add normalized demo case-pack files (`meta`, `before`, `after`, `internal_docs`) under `data/cases`.
+3. Update the default sample fixture set to mirror the primary Ulsan case.
+4. Tighten change-detection and impact-mapping keywords so the new sample still produces the expected 4 change types.
+5. Update docs, harness state files, progress board, and handover.
 
 ## File Touch Plan
 
 - Backend:
-  `backend/src/http/app.js`, `backend/src/sources/lawSource.js`, `backend/src/sources/shared.js`, `backend/src/sources/providers/localFixtureLawSource.js`, `backend/src/sources/providers/koreaLawMcpSource.js`
-- Frontend:
-  `frontend/index.html`, `index.html`, `frontend/src/app.js`, `frontend/src/styles.css`
-- API/Vercel:
-  `api/source-search.js`, `vercel.json`, `shared/contracts/api.yaml`
-- Tests and smoke:
-  `tests/http-app.test.js`, `tests/law-source.test.js`, `scripts/smoke.js`
+  `backend/src/changeDetection/detectChanges.js`, `backend/src/mapping/mapImpactDocuments.js`
+- Data:
+  `data/cases/**`, `data/samples/regulation_before.json`, `data/samples/regulation_after.json`, `data/samples/internal_docs.json`
 - Docs and task state:
-  `.env.example`, `README.md`, `docs/07_local_run.md`, `docs/11_progress_board.md`, `docs/13_vercel_deploy.md`, `docs/14_source_adapter_plan.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, `docs/09_handover_status.txt`
+  `README.md`, `docs/07_local_run.md`, `docs/11_progress_board.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, `docs/09_handover_status.txt`
 
 ## Technical Requirements
 
-- Preserve existing Node/Vercel runtime setup
-- Search defaults should follow the public README contract: `search_local_ordinance` with `query`
-- Search behavior must remain overrideable through env vars
-- Dashboard search must not block the existing direct-ID path
+- Preserve the existing Node/Vercel runtime setup and request-level source workflow
+- Keep the default sample set compatible with current unit tests and `npm run eval`
+- Use official ordinance metadata for dates, ordinance numbers, and source URLs
+- Keep the normalized clause text explicit about being demo excerpts, not verbatim statutory text
 
 ## Validation Plan
 
 - `npm run test`
-- `npm run smoke` with a local server
 - `npm run check`
+- `npm run smoke` with a local server
 
 ## Acceptance Criteria
 
-- `GET /source-search?provider=...&query=...` returns normalized results
-- Korea-law MCP status exposes search-tool metadata
-- Dashboard can search and apply candidate IDs to before/after fields
-- Vercel routing includes the new endpoint
-- Tests, smoke, docs, and handover reflect the search helper flow
+- `data/cases` contains 3 municipality-oriented case packs with official metadata
+- `data/samples/*` mirrors the primary case pack and still produces the expected 4 change types
+- `npm run test`, `npm run check`, and local `npm run smoke` pass
+- README, local-run guide, progress board, and handover reflect the case-pack workflow

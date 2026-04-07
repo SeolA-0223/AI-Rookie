@@ -7,6 +7,7 @@
 - `frontend`: 대시보드 UI 샘플
 - `shared`: API 계약
 - `data/samples`: 샘플 데이터
+- `data/cases`: 지자체 실사례 기반 normalized demo case pack
 - `docs`: 기획/설계 문서
 - `tests`: Node 테스트
 - `agents`, `AGENTS.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`: Codex 하네스 운영 파일
@@ -23,6 +24,16 @@
 `/history`는 현재 설정된 저장소 provider의 최근 분석 이력을 반환합니다.
 `/source-status?provider=...`는 요청 시점에 선택한 law source provider의 설정 상태를 반환합니다.
 `/source-search?provider=...&query=...`는 선택한 law source provider에서 사용할 수 있는 조례 후보 ID를 검색합니다.
+
+## 케이스 팩
+- `data/cases/case_catalog.json`에 현재 등록된 지자체 사례 목록이 있습니다.
+- 현재 포함된 normalized demo case pack:
+  - `ulsan_youth_job_support`: 울산광역시 청년 구직지원 시나리오, 기준 개정일 `2024-03-07`
+  - `bucheon_youth_rent_support`: 부천시 청년 주거지원 시나리오, 기준 개정일 `2023-02-06`
+  - `seoul_youth_basic_ordinance`: 서울시 청년 기본정책 시나리오, 기준 개정일 `2023-07-24`
+- 각 사례의 제목, 지자체, 기준 개정일, 공식 URL은 `meta.json`에 기록되어 있습니다.
+- 조문 텍스트는 파이프라인 평가용 normalized demo excerpt이며, 원문 법령 전문을 그대로 복제한 데이터는 아닙니다.
+- 기본 `local-fixture` 샘플은 현재 `ulsan_youth_job_support` 사례를 미러링합니다.
 
 ## 저장소 provider
 - 기본값은 `local`이며 외부 DB 없이 API를 실행할 수 있습니다.
@@ -47,6 +58,7 @@
 - `npm run test`
 - `npm run eval`
 - `npm run check`
+- `npm run smoke`
 - 평가 산출물: `data/eval/metrics.json`
 
 ## 하네스 워크플로우

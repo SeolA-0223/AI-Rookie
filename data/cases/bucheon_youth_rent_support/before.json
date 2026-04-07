@@ -1,0 +1,26 @@
+{
+  "title": "Bucheon Youth Rent Support Ordinance",
+  "version": "normalized-pre-2023-amendment",
+  "clauses": [
+    {
+      "id": "c1",
+      "title": "Eligibility Age Requirement",
+      "text": "Youth applicants had to be Bucheon residents aged 19 to 34."
+    },
+    {
+      "id": "c2",
+      "title": "Required Documents",
+      "text": "Applicants had to submit a lease contract, resident registration, and a loan certificate."
+    },
+    {
+      "id": "c3",
+      "title": "Application Deadline",
+      "text": "Applications closed on September 30 each year."
+    },
+    {
+      "id": "c4",
+      "title": "Support Amount",
+      "text": "Interest support amount was up to 1000000 KRW per year."
+    }
+  ]
+}

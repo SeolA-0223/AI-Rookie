@@ -1,0 +1,14 @@
+{
+  "caseId": "bucheon_youth_rent_support",
+  "officialTitle": "Bucheon Newlyweds and Youth Jeonse-Wolse Loan Interest Support Ordinance",
+  "municipality": "Bucheon, Gyeonggi-do",
+  "domain": "youth-housing",
+  "beforeVersionLabel": "normalized-pre-2023-amendment",
+  "afterVersionLabel": "normalized-2023-02-06-amendment",
+  "officialSource": {
+    "effectiveDate": "2023-02-06",
+    "ordinanceNo": "Bucheon City Ordinance No. 3927",
+    "url": "https://www.law.go.kr/ordinInfoP.do?ordinSeq=1782147"
+  },
+  "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth housing-support scenario, not verbatim statutory text."
+}

@@ -1,0 +1,14 @@
+{
+  "caseId": "ulsan_youth_job_support",
+  "officialTitle": "Ulsan Youth Job Support Ordinance",
+  "municipality": "Ulsan Metropolitan City",
+  "domain": "youth-employment",
+  "beforeVersionLabel": "normalized-pre-2024-amendment",
+  "afterVersionLabel": "normalized-2024-03-07-amendment",
+  "officialSource": {
+    "effectiveDate": "2024-03-07",
+    "ordinanceNo": "Ulsan Metropolitan City Ordinance No. 2897",
+    "url": "https://www.law.go.kr/LSW/ordinInfoP.do?chrClsCd=010202&gubun=ELIS&ordinSeq=1910937"
+  },
+  "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth job-support scenario, not verbatim statutory text."
+}

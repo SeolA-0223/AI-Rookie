@@ -1,0 +1,32 @@
+[
+  {
+    "id": "d1",
+    "type": "guide",
+    "title": "Citizen Guide for Rent Interest Support",
+    "text": "Guide for eligibility age, application deadline, and support amount."
+  },
+  {
+    "id": "d2",
+    "type": "faq",
+    "title": "Housing Support FAQ",
+    "text": "FAQ for lease documents, proof files, and support amount questions."
+  },
+  {
+    "id": "d3",
+    "type": "checklist",
+    "title": "Housing Support Checklist",
+    "text": "Checklist for lease contract, resident registration, loan certificate, and proof documents."
+  },
+  {
+    "id": "d4",
+    "type": "notice",
+    "title": "Additional Notice Memo",
+    "text": "Internal memo for application deadline changes and additional notice periods."
+  },
+  {
+    "id": "d5",
+    "type": "script",
+    "title": "Housing Support Call Script",
+    "text": "Script for eligibility, deadline, and support amount questions from citizens."
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "caseId": "seoul_youth_basic_ordinance",
+  "officialTitle": "Seoul Youth Basic Ordinance",
+  "municipality": "Seoul Metropolitan City",
+  "domain": "youth-policy-foundation",
+  "beforeVersionLabel": "normalized-pre-2023-revision",
+  "afterVersionLabel": "normalized-2023-07-24-revision",
+  "officialSource": {
+    "effectiveDate": "2023-07-24",
+    "ordinanceNo": "Seoul Metropolitan City Ordinance No. 8862",
+    "url": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=1840747"
+  },
+  "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth basic-policy scenario, not verbatim statutory text."
+}

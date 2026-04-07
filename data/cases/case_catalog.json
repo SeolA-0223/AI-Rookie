@@ -1,0 +1,35 @@
+[
+  {
+    "caseId": "ulsan_youth_job_support",
+    "title": "Ulsan Youth Job Support Ordinance",
+    "municipality": "Ulsan Metropolitan City",
+    "domain": "youth-employment",
+    "effectiveDate": "2024-03-07",
+    "ordinanceNo": "Ulsan Metropolitan City Ordinance No. 2897",
+    "officialUrl": "https://www.law.go.kr/LSW/ordinInfoP.do?chrClsCd=010202&gubun=ELIS&ordinSeq=1910937",
+    "normalizedDemoExcerpts": true,
+    "defaultSample": true
+  },
+  {
+    "caseId": "bucheon_youth_rent_support",
+    "title": "Bucheon Newlyweds and Youth Jeonse-Wolse Loan Interest Support Ordinance",
+    "municipality": "Bucheon, Gyeonggi-do",
+    "domain": "youth-housing",
+    "effectiveDate": "2023-02-06",
+    "ordinanceNo": "Bucheon City Ordinance No. 3927",
+    "officialUrl": "https://www.law.go.kr/ordinInfoP.do?ordinSeq=1782147",
+    "normalizedDemoExcerpts": true,
+    "defaultSample": false
+  },
+  {
+    "caseId": "seoul_youth_basic_ordinance",
+    "title": "Seoul Youth Basic Ordinance",
+    "municipality": "Seoul Metropolitan City",
+    "domain": "youth-policy-foundation",
+    "effectiveDate": "2023-07-24",
+    "ordinanceNo": "Seoul Metropolitan City Ordinance No. 8862",
+    "officialUrl": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=1840747",
+    "normalizedDemoExcerpts": true,
+    "defaultSample": false
+  }
+]

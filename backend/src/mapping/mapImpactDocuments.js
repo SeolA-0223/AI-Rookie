@@ -1,8 +1,48 @@
-﻿const KEYWORDS = {
-  "요건": ["age", "eligibility", "requirement"],
-  "서류": ["document", "proof", "file", "submit"],
-  "기한": ["deadline", "close", "timeline", "date"],
-  "금액": ["amount", "support", "krw", "payment"]
+const KEYWORDS = {
+  "\uC694\uAC74": [
+    "age",
+    "eligibility",
+    "requirement",
+    "graduate",
+    "\uC5F0\uB839",
+    "\uB300\uC0C1",
+    "\uC694\uAC74",
+    "\uC790\uACA9"
+  ],
+  "\uC11C\uB958": [
+    "document",
+    "proof",
+    "file",
+    "submit",
+    "\uC11C\uB958",
+    "\uC99D\uBE59",
+    "\uC81C\uCD9C",
+    "\uD655\uC778\uC11C",
+    "\uB4F1\uBCF8"
+  ],
+  "\uAE30\uD55C": [
+    "deadline",
+    "close",
+    "closing",
+    "timeline",
+    "date",
+    "\uAE30\uD55C",
+    "\uB9C8\uAC10",
+    "\uC811\uC218",
+    "\uACF5\uACE0",
+    "\uAE30\uAC04"
+  ],
+  "\uAE08\uC561": [
+    "amount",
+    "support",
+    "krw",
+    "payment",
+    "\uAE08\uC561",
+    "\uC9C0\uC6D0\uAE08",
+    "\uC9C0\uC6D0\uC561",
+    "\uC774\uC790",
+    "\uC608\uC0B0"
+  ]
 };
 
 function scoreDocument(change, document) {

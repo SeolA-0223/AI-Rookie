@@ -1,0 +1,26 @@
+{
+  "title": "Seoul Youth Basic Ordinance",
+  "version": "normalized-pre-2023-revision",
+  "clauses": [
+    {
+      "id": "c1",
+      "title": "Eligibility Age Requirement",
+      "text": "Youth referred to residents aged 19 to 34."
+    },
+    {
+      "id": "c2",
+      "title": "Required Documents for Survey",
+      "text": "The city could request survey documents and department submission files for the youth plan."
+    },
+    {
+      "id": "c3",
+      "title": "Plan Publication Deadline",
+      "text": "The annual youth plan was published by March 31."
+    },
+    {
+      "id": "c4",
+      "title": "Support Amount Standard",
+      "text": "Support amount standards for youth projects followed the annual plan."
+    }
+  ]
+}
