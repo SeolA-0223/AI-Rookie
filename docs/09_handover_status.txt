@@ -1,68 +1,31 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-07 19:59:40 KST
+Auto-updated: 2026-04-07 20:00:10 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 44b021b (HEAD -> main, origin/main, origin/HEAD) fix: align korea-law-mcp adapter with public contract
+- Latest commit at update time: c97551e (HEAD -> main) feat: add request-level law source status
 - Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24059702436)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## main...origin/main
-- M  QA_REPORT.md
-- M  README.md
-- M  SELF_CHECK.md
-- M  SPEC.md
-- A  api/source-status.js
-- M  backend/src/http/app.js
-- M  backend/src/sources/lawSource.js
-- M  backend/src/sources/providers/koreaLawMcpSource.js
-- M  backend/src/sources/shared.js
-- M  docs/07_local_run.md
+- ## main...origin/main [ahead 1]
 - M  docs/09_handover_status.txt
-- M  docs/11_progress_board.md
-- M  docs/13_vercel_deploy.md
-- M  docs/14_source_adapter_plan.md
-- M  frontend/src/app.js
-- M  scripts/smoke.js
-- M  shared/contracts/api.yaml
-- M  tests/http-app.test.js
-- M  tests/law-source.test.js
-- M  vercel.json
 
 3) Recent Commits (max 8)
-- 44b021b (HEAD -> main, origin/main, origin/HEAD) fix: align korea-law-mcp adapter with public contract
+- c97551e (HEAD -> main) feat: add request-level law source status
+- 44b021b (origin/main, origin/HEAD) fix: align korea-law-mcp adapter with public contract
 - ec6da07 docs: refresh handover after harness retrofit
 - 9ce9d3b feat: add codex harness workflow and source dashboard
 - 8484161 docs: refresh handover after korea-law-mcp wiring
 - f68e126 feat: wire korea-law-mcp source adapter
 - d05d0c3 docs: refresh handover after provider scaffolding
 - 88b9b1a feat: add provider-based storage and law source adapters
-- 5889c07 chore: upgrade github actions to v6
 
 4) Staged Files
-- QA_REPORT.md
-- README.md
-- SELF_CHECK.md
-- SPEC.md
-- api/source-status.js
-- backend/src/http/app.js
-- backend/src/sources/lawSource.js
-- backend/src/sources/providers/koreaLawMcpSource.js
-- backend/src/sources/shared.js
-- docs/07_local_run.md
-- docs/11_progress_board.md
-- docs/13_vercel_deploy.md
-- docs/14_source_adapter_plan.md
-- frontend/src/app.js
-- scripts/smoke.js
-- shared/contracts/api.yaml
-- tests/http-app.test.js
-- tests/law-source.test.js
-- vercel.json
+- (none)
 
 5) Unstaged Files
 - (none)
