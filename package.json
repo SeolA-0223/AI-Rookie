@@ -8,7 +8,8 @@
     "test": "node --test --test-isolation=none tests/*.test.js",
     "eval": "node scripts/evaluate.js",
     "smoke": "node scripts/smoke.js",
-    "check": "npm run test && npm run eval",
+    "harness:check": "node scripts/harness-check.js",
+    "check": "npm run harness:check && npm run test && npm run eval",
     "handover:update": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/update-handover.ps1",
     "hooks:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1",
     "hooks:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/hooks-doctor.ps1"

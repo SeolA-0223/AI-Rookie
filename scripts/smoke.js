@@ -63,10 +63,15 @@ async function main() {
   const analyze = await fetchJson("/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({})
+    body: JSON.stringify({
+      source: {
+        provider: "local-fixture"
+      }
+    })
   });
   const normalized = validateAnalyzeResponse(analyze);
-  console.log(`Analyze endpoint check passed. Detected ${normalized.changes.length} changes.`);
+  assert(analyze.meta?.inputSource?.provider === "local-fixture", "Expected /analyze to report local-fixture input source.");
+  console.log(`Analyze endpoint check passed. Source ${analyze.meta.inputSource.provider} detected ${normalized.changes.length} changes.`);
 
   const history = await fetchJson("/history");
   assert(Array.isArray(history.runs), "Missing runs[] in /history response.");

@@ -31,6 +31,7 @@ Default storage provider is `local`.
 If you set `STORAGE_PROVIDER=supabase` with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, analysis runs will also be saved to Supabase.
 If `STORAGE_PROVIDER` is empty and `SUPABASE_URL` is set, the runtime keeps the previous auto-detect behavior and selects `supabase`.
 Default law source provider is `local-fixture`, which serves the sample regulation pair.
+The dashboard now includes an `Analysis Source` panel for switching between sample input and `korea-law-mcp`.
 
 If you want to exercise the source-adapter path, send a request with a `source` object instead of inline `before`/`after` payloads:
 
@@ -64,6 +65,13 @@ Then call `/analyze` with source IDs:
 ```
 
 If your MCP server exposes a different tool contract, change `KOREA_LAW_MCP_DETAIL_TOOL_NAME` and `KOREA_LAW_MCP_ID_ARGUMENT_NAME` instead of patching the API code first.
+
+The same flow is available in the dashboard:
+
+1. Open `/`
+2. In `Analysis Source`, choose `Korea Law MCP`
+3. Enter `Before ID` and `After ID`
+4. Click `Run Analysis`
 
 ## 5) Run smoke check (in another terminal)
 Hits `GET /health`, `POST /analyze`, and `GET /history` and validates response shape.

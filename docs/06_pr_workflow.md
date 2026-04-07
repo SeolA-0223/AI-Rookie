@@ -11,9 +11,14 @@
 2. `git pull origin main`
 3. `git switch -c feat/<short-task-name>`
 4. Implement and test locally
-5. `git add . && git commit -m "feat: <message>"`
-6. `git push -u origin feat/<short-task-name>`
-7. Create PR to `main`
+5. Refresh harness task files when the work is non-trivial:
+   - `SPEC.md`
+   - `SELF_CHECK.md`
+   - `QA_REPORT.md`
+6. `npm run check`
+7. `git add . && git commit -m "feat: <message>"`
+8. `git push -u origin feat/<short-task-name>`
+9. Create PR to `main`
 
 ## PR Rule
 - Keep PR small and single-purpose
@@ -23,6 +28,7 @@
 
 ## Local Guardrails
 - Install hooks once: `npm run hooks:install`
+- `harness:check`: blocks work that deleted required harness files
 - `pre-commit`: refreshes `docs/09_handover_status.txt` automatically
 - `pre-push`: blocks direct push to `main` by default
 - One-time override for emergency push:

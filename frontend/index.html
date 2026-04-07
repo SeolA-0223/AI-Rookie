@@ -4,18 +4,65 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI-Rookie Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
     <main class="layout">
       <header class="hero">
+        <p class="eyebrow">Municipal Change Copilot</p>
         <h1>Regulation Catch Dashboard</h1>
-        <p>Detect changes, map impacts, and draft follow-up documents.</p>
+        <p class="hero-copy">Trace ordinance revisions, identify impacted internal guidance, and keep follow-up drafts ready for review.</p>
         <div class="hero-actions">
           <button id="analyze-btn" class="run-btn" type="button">Run Analysis</button>
           <p id="status-msg" class="status" role="status" aria-live="polite">Ready.</p>
         </div>
       </header>
+
+      <section class="panel panel-source" id="source-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Input Route</p>
+            <h2>Analysis Source</h2>
+          </div>
+          <p id="source-status" class="subtle">Loading source status...</p>
+        </div>
+        <div class="source-grid">
+          <label class="field">
+            <span class="field-label">Provider</span>
+            <select id="source-provider" class="field-input">
+              <option value="local-fixture">Local Fixture</option>
+              <option value="korea-law-mcp">Korea Law MCP</option>
+            </select>
+          </label>
+          <label class="field" id="source-before-group" hidden>
+            <span class="field-label">Before ID</span>
+            <input
+              id="source-before-id"
+              class="field-input field-input-mono"
+              type="text"
+              placeholder="ordinance-before-id"
+              autocomplete="off"
+            />
+          </label>
+          <label class="field" id="source-after-group" hidden>
+            <span class="field-label">After ID</span>
+            <input
+              id="source-after-id"
+              class="field-input field-input-mono"
+              type="text"
+              placeholder="ordinance-after-id"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+        <p id="source-help" class="source-help">The bundled sample regulation pair is selected by default.</p>
+      </section>
 
       <section class="panel" id="summary-panel">
         <h2>Change Summary</h2>

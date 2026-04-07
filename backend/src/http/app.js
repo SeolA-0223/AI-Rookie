@@ -15,7 +15,7 @@ try {
 const MAX_BODY_BYTES = 1024 * 1024;
 const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs", "source"]);
 const analysisStore = createAnalysisStore();
-const lawSource = createLawSource();
+const defaultLawSource = createLawSource();
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 const STATIC_ROOT_FILE = path.join(REPO_ROOT, "index.html");
 const STATIC_FRONTEND_ROOT = path.join(REPO_ROOT, "frontend");
@@ -194,11 +194,14 @@ function validateAnalyzeRequest(payload) {
   return details;
 }
 
-async function buildAnalyzeInput(payload) {
+export async function buildAnalyzeInput(payload) {
   const internalDocs = payload.internalDocs ?? readSample(SAMPLE_INTERNAL_DOCS_FILE);
 
   if (payload.source) {
-    const resolvedPair = await lawSource.resolveRegulationPair(payload.source);
+    const requestedLawSource = createLawSource({
+      provider: payload.source.provider
+    });
+    const resolvedPair = await requestedLawSource.resolveRegulationPair(payload.source);
     return {
       beforeDoc: resolvedPair.beforeDoc,
       afterDoc: resolvedPair.afterDoc,
@@ -223,7 +226,7 @@ export async function handleHealth(req, res) {
     status: "ok",
     service: "ai-rookie",
     storage: analysisStore.getStorageStatus(),
-    source: lawSource.getSourceStatus()
+    source: defaultLawSource.getSourceStatus()
   });
 }
 
