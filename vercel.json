@@ -9,6 +9,10 @@
       "destination": "/api/history"
     },
     {
+      "source": "/source-status",
+      "destination": "/api/source-status"
+    },
+    {
       "source": "/analyze",
       "destination": "/api/analyze"
     }

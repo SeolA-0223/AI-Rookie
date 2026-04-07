@@ -2,72 +2,75 @@
 
 ## Request Summary
 
-Validate the public `korea-law-mcp` / `mcp-kr-legislation` contract, align the AI-Rookie source adapter with the currently documented ordinance-detail tools, and keep the harness/task files updated for this new iteration.
+Continue the Korea-law MCP integration work by exposing request-level source-provider capability status through the backend and dashboard, while keeping the repo handover/harness files aligned.
 
 ## CPS
 
 - Context:
-  AI-Rookie already has a Streamable HTTP MCP adapter and source-driven dashboard flow, but the adapter defaults were based on an inferred single tool name.
+  AI-Rookie can now analyze using `local-fixture` or `korea-law-mcp`, but the dashboard still relies on default `/health` data instead of checking the provider actually selected for the request.
 - Problem:
-  The public `mcp-kr-legislation` documentation shows both `get_local_ordinance_detail` and `get_ordinance_detail`, so a single hardcoded default is brittle.
+  Users can switch to `korea-law-mcp` in the UI without seeing the exact request-level readiness for that provider, which makes MCP troubleshooting slower and hides missing env/config issues.
 - Solution:
-  Align the adapter with the public contract by preferring the documented local-ordinance tool, falling back to the generic ordinance tool, and updating tests/docs/handover to match.
+  Add a dedicated source-status endpoint, return provider-specific source status metadata, wire the dashboard to query it when the source selector changes, and update tests/docs/handover accordingly.
 
 ## Target Users
 
 - Primary:
   Maintainers iterating on AI-Rookie with Codex
 - Secondary:
-  Demo users validating regulation-change analysis with sample or MCP-backed inputs
+  Demo users switching between sample input and Korea-law MCP-backed inputs
 
 ## Goals
 
-- Confirm the currently documented ordinance-detail tools exposed by `mcp-kr-legislation`
-- Make the adapter robust to either documented tool name without manual env edits
-- Keep existing dashboard and source-provider flows intact
-- Update task docs and handover for the new iteration
+- Add a backend endpoint for request-selected law source status
+- Let the dashboard query the selected provider directly instead of inferring from `/health`
+- Preserve current analyze/history flows and Vercel deployment shape
+- Keep harness docs and handover aligned with the new iteration
 
 ## Non-Goals
 
-- Connect to a real municipality DB in this task
-- Redesign the dashboard UI again
-- Prove the live MCP deployment contract beyond what the public repository documents
+- Verify a public live `korea-law-mcp` deployment end-to-end in this task
+- Add ordinance search/lookup UX beyond status reporting
+- Redesign the dashboard layout
 
 ## Workstreams
 
-1. Verify the public `mcp-kr-legislation` README contract for HTTP transport and ordinance-detail tools.
-2. Update the Korea-law MCP adapter to prefer `get_local_ordinance_detail` and fall back to `get_ordinance_detail`.
-3. Preserve env overrides for custom servers.
-4. Add tests for both the preferred tool and the fallback tool path.
-5. Update docs, spec, self-check, QA report, and handover to reflect the new contract understanding.
+1. Add a request-level source status payload builder and HTTP handler.
+2. Add a Vercel function entrypoint and rewrite for `/source-status`.
+3. Extend Korea-law MCP status metadata with tool-order and argument-name hints.
+4. Update the dashboard to fetch source status for the selected provider.
+5. Add/refresh tests, smoke coverage, task files, docs, and handover.
 
 ## File Touch Plan
 
-- Adapter:
-  `backend/src/sources/providers/koreaLawMcpSource.js`
-- Tests:
-  `tests/law-source.test.js`
+- Backend:
+  `backend/src/http/app.js`, `backend/src/sources/lawSource.js`, `backend/src/sources/shared.js`, `backend/src/sources/providers/koreaLawMcpSource.js`
+- Frontend:
+  `frontend/src/app.js`
+- API/Vercel:
+  `api/source-status.js`, `vercel.json`, `shared/contracts/api.yaml`
+- Tests and smoke:
+  `tests/http-app.test.js`, `tests/law-source.test.js`, `scripts/smoke.js`
 - Docs and task state:
-  `.env.example`, `README.md`, `docs/07_local_run.md`, `docs/13_vercel_deploy.md`, `docs/14_source_adapter_plan.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, `docs/09_handover_status.txt`
+  `README.md`, `docs/07_local_run.md`, `docs/11_progress_board.md`, `docs/13_vercel_deploy.md`, `docs/14_source_adapter_plan.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`, `docs/09_handover_status.txt`
 
 ## Technical Requirements
 
 - Preserve existing Node/Vercel runtime setup
-- Do not break current provider adapters or the dashboard source flow
-- If `KOREA_LAW_MCP_DETAIL_TOOL_NAME` is explicitly set, honor it as a single override
-- If no tool override is set, try the public README order automatically
+- `/health` stays backward compatible
+- `/source-status` must support at least `local-fixture` and `korea-law-mcp`
+- Dashboard source status messaging must reflect the selected provider, not only the server default source
 
 ## Validation Plan
 
-- `npm run harness:check`
 - `npm run test`
-- `npm run eval`
+- `npm run smoke` with a local server
 - `npm run check`
 
 ## Acceptance Criteria
 
-- The adapter no longer assumes only `get_ordinance_detail`
-- The default runtime prefers `get_local_ordinance_detail` and falls back to `get_ordinance_detail`
-- An explicit env override still wins over automatic tool selection
-- Tests cover both tool-name paths
-- Docs and handover reflect the updated public contract understanding
+- `GET /source-status?provider=...` returns the selected provider and source status payload
+- Korea-law MCP status includes request-useful metadata such as tool order and ID argument name
+- Dashboard source messaging updates from `/api/source-status`
+- Vercel routing includes the new endpoint
+- Tests, smoke, docs, and handover reflect the change

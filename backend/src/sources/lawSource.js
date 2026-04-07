@@ -36,3 +36,7 @@ export function createLawSource({
     reason: "unsupported_provider"
   });
 }
+
+export function getLawSourceStatus(options = {}) {
+  return createLawSource(options).getSourceStatus();
+}

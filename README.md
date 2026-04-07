@@ -21,6 +21,7 @@
 
 `/analyze`는 body가 없어도 샘플 데이터를 사용해 결과를 반환합니다.
 `/history`는 현재 설정된 저장소 provider의 최근 분석 이력을 반환합니다.
+`/source-status?provider=...`는 요청 시점에 선택한 law source provider의 설정 상태를 반환합니다.
 
 ## 저장소 provider
 - 기본값은 `local`이며 외부 DB 없이 API를 실행할 수 있습니다.
@@ -36,6 +37,7 @@
 - 기본 ID 인자는 `ID`입니다.
 - 실제 서버 구현이 다르면 `KOREA_LAW_MCP_DETAIL_TOOL_NAME`, `KOREA_LAW_MCP_ID_ARGUMENT_NAME`으로 맞출 수 있습니다.
 - 대시보드에서도 `Local Fixture`와 `Korea Law MCP`를 선택할 수 있으며, MCP를 고르면 `beforeId` / `afterId`를 직접 입력합니다.
+- 대시보드는 `/api/source-status?provider=...`를 호출해 선택한 provider의 request-level 상태를 직접 확인합니다.
 
 ## 테스트/점검
 - `npm run harness:check`

@@ -75,7 +75,7 @@ The same flow is available in the dashboard:
 4. Click `Run Analysis`
 
 ## 5) Run smoke check (in another terminal)
-Hits `GET /health`, `POST /analyze`, and `GET /history` and validates response shape.
+Hits `GET /health`, `GET /source-status`, `POST /analyze`, and `GET /history` and validates response shape.
 
 ```bash
 npm run smoke
@@ -86,6 +86,12 @@ If you run server on a custom port, set `BASE_URL`:
 ```powershell
 $env:PORT=3100; npm run start
 $env:BASE_URL="http://127.0.0.1:3100"; npm run smoke
+```
+
+To inspect the request-selected source provider directly:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=korea-law-mcp"
 ```
 
 ## 6) Local quick check

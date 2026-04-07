@@ -433,7 +433,10 @@ export function createKoreaLawMcpSource({
           provider: "korea-law-mcp",
           enabled: false,
           mode: "adapter",
-          missingEnv: REQUIRED_ENV
+          missingEnv: REQUIRED_ENV,
+          transport: "streamable-http",
+          detailToolNames: resolvedToolNames,
+          idArgumentName: resolvedIdArgumentName
         });
       },
       async resolveRegulationPair() {
@@ -458,7 +461,10 @@ export function createKoreaLawMcpSource({
           provider: "korea-law-mcp",
           enabled: false,
           mode: "adapter",
-          missingEnv: []
+          missingEnv: [],
+          transport: "streamable-http",
+          detailToolNames: resolvedToolNames,
+          idArgumentName: resolvedIdArgumentName
         });
       },
       async resolveRegulationPair() {
@@ -479,7 +485,10 @@ export function createKoreaLawMcpSource({
   const status = buildSourceStatus({
     provider: "korea-law-mcp",
     enabled: true,
-    mode: "adapter"
+    mode: "adapter",
+    transport: "streamable-http",
+    detailToolNames: resolvedToolNames,
+    idArgumentName: resolvedIdArgumentName
   });
 
   return {

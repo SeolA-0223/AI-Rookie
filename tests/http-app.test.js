@@ -34,3 +34,36 @@ test("buildAnalyzeInput uses request source provider instead of default env prov
   assert.ok(Array.isArray(input.beforeDoc.clauses));
   assert.ok(Array.isArray(input.afterDoc.clauses));
 });
+
+test("buildSourceStatusPayload reports request-selected source provider status", async (t) => {
+  const previousProvider = process.env.LAW_SOURCE_PROVIDER;
+  const previousBaseUrl = process.env.KOREA_LAW_MCP_BASE_URL;
+
+  process.env.LAW_SOURCE_PROVIDER = "local-fixture";
+  process.env.KOREA_LAW_MCP_BASE_URL = "";
+
+  t.after(() => {
+    if (previousProvider === undefined) {
+      delete process.env.LAW_SOURCE_PROVIDER;
+    } else {
+      process.env.LAW_SOURCE_PROVIDER = previousProvider;
+    }
+
+    if (previousBaseUrl === undefined) {
+      delete process.env.KOREA_LAW_MCP_BASE_URL;
+    } else {
+      process.env.KOREA_LAW_MCP_BASE_URL = previousBaseUrl;
+    }
+  });
+
+  const moduleUrl = new URL(`../backend/src/http/app.js?case=status-${Date.now()}`, import.meta.url);
+  const { buildSourceStatusPayload } = await import(moduleUrl);
+  const payload = buildSourceStatusPayload({
+    provider: "korea-law-mcp"
+  });
+
+  assert.equal(payload.requestedProvider, "korea-law-mcp");
+  assert.equal(payload.source.provider, "korea-law-mcp");
+  assert.equal(payload.source.enabled, false);
+  assert.deepEqual(payload.source.missingEnv, ["KOREA_LAW_MCP_BASE_URL"]);
+});

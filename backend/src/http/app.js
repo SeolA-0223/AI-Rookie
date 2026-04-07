@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
-import { createLawSource, SourceResolutionError } from "../sources/lawSource.js";
+import { createLawSource, getLawSourceStatus, resolveLawSourceProvider, SourceResolutionError } from "../sources/lawSource.js";
 
 try {
   process.loadEnvFile();
@@ -25,6 +25,7 @@ const SAMPLE_INTERNAL_DOCS_FILE = fileURLToPath(new URL("../../../data/samples/i
 const ROUTES = {
   health: new Set(["/health", "/api/health"]),
   history: new Set(["/history", "/api/history"]),
+  sourceStatus: new Set(["/source-status", "/api/source-status"]),
   analyze: new Set(["/analyze", "/api/analyze"])
 };
 
@@ -221,6 +222,17 @@ export async function buildAnalyzeInput(payload) {
   };
 }
 
+export function buildSourceStatusPayload({ provider } = {}) {
+  const requestedProvider = resolveLawSourceProvider({ provider });
+
+  return {
+    requestedProvider,
+    source: getLawSourceStatus({
+      provider: requestedProvider
+    })
+  };
+}
+
 export async function handleHealth(req, res) {
   sendJson(res, 200, {
     status: "ok",
@@ -228,6 +240,13 @@ export async function handleHealth(req, res) {
     storage: analysisStore.getStorageStatus(),
     source: defaultLawSource.getSourceStatus()
   });
+}
+
+export async function handleSourceStatus(req, res) {
+  const requestUrl = getRequestUrl(req);
+  sendJson(res, 200, buildSourceStatusPayload({
+    provider: requestUrl.searchParams.get("provider")
+  }));
 }
 
 export async function handleHistory(req, res) {
@@ -307,6 +326,11 @@ export async function routeRequest(req, res) {
 
   if (req.method === "GET" && ROUTES.history.has(pathname)) {
     await handleHistory(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && ROUTES.sourceStatus.has(pathname)) {
+    await handleSourceStatus(req, res);
     return;
   }
 

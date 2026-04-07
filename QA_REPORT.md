@@ -2,28 +2,28 @@
 
 ## Summary
 
-The public `mcp-kr-legislation` README contract is now reflected in the adapter behavior. AI-Rookie no longer assumes only `get_ordinance_detail`; it prefers `get_local_ordinance_detail`, falls back to `get_ordinance_detail`, preserves explicit env overrides, and tests both paths. Validation evidence is strong enough for a pass.
+AI-Rookie now exposes request-level law-source capability status through `/source-status`, the dashboard queries that endpoint when the selected provider changes, and Korea-law MCP status now includes tool-order and ID-argument hints. Validation evidence is strong enough for a pass.
 
 ## Scores
 
 | Category | Weight | Score (0-10) | Notes |
 | --- | --- | --- | --- |
-| Scope Alignment | 30% | 8.8 | The contract-verification follow-up was implemented directly in the adapter, tests, and docs. |
-| Architecture Integrity | 25% | 8.7 | Automatic tool fallback stays inside the source adapter and preserves env override boundaries. |
-| Technical Completion | 25% | 8.8 | `harness:check`, `test`, `eval`, and `check` passed after the change. |
-| UX and Operational Clarity | 20% | 7.4 | Docs are clearer, but live-server capability reporting is still unresolved. |
+| Scope Alignment | 30% | 8.9 | The backend, Vercel entrypoint, dashboard wiring, smoke coverage, and docs were all updated around the selected-provider status flow. |
+| Architecture Integrity | 25% | 8.8 | The new endpoint reuses provider factories/status methods instead of duplicating provider logic in the HTTP layer. |
+| Technical Completion | 25% | 8.9 | `test`, local-server `smoke`, and `check` all passed after the change. |
+| UX and Operational Clarity | 20% | 8.0 | The dashboard now reports selected-provider readiness more accurately, though live MCP deployment validation is still pending. |
 
 ## Findings
 
 - No blocking findings for the scoped task.
-- Residual risk: live deployment behavior is still unverified beyond the public GitHub README.
-- Residual risk: the ordinance detail parameter `ID` is still inferred rather than verified from source code or a running public server.
+- Residual risk: a public live `korea-law-mcp` endpoint is still not confirmed, so runtime behavior is validated through local/mock flows and documented contracts.
+- Residual risk: the MCP ordinance detail parameter name remains inferred as `ID`.
 
 ## Required Fixes
 
 - None for the current scope.
-- Next recommended follow-up: validate the adapter against a real `mcp-kr-legislation` deployment.
-- Next recommended follow-up: add explicit backend capability reporting for request-selected source providers.
+- Next recommended follow-up: validate against a reachable `korea-law-mcp` deployment or local package runtime.
+- Next recommended follow-up: add an ID-search helper flow on top of `search_local_ordinance` so users do not need raw ordinance IDs up front.
 
 ## Final Verdict
 

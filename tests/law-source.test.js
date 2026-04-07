@@ -50,6 +50,11 @@ test("createLawSource validates korea-law-mcp request ids", async () => {
     provider: "korea-law-mcp",
     koreaLawMcpBaseUrl: "http://127.0.0.1:8080"
   });
+  const status = source.getSourceStatus();
+
+  assert.equal(status.transport, "streamable-http");
+  assert.deepEqual(status.detailToolNames, ["get_local_ordinance_detail", "get_ordinance_detail"]);
+  assert.equal(status.idArgumentName, "ID");
 
   await assert.rejects(() => source.resolveRegulationPair({}), (error) => {
     assert.ok(error instanceof SourceResolutionError);

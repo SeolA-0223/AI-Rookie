@@ -1,6 +1,6 @@
 ﻿# 진행 보드 (Plan + Progress)
 
-기준 시각: 2026-04-07 10:38 KST
+기준 시각: 2026-04-07 11:05 KST
 
 ## 한눈에 보기
 | 구분 | 상태 | 내용 |
@@ -12,6 +12,7 @@
 | 법령 소스 분리 | 완료 | `local-fixture` / `korea-law-mcp` adapter 구조 + 실제 MCP HTTP fetch 구현 |
 | 대시보드 source 입력 | 완료 | `local-fixture` / `korea-law-mcp` 선택 UI와 요청별 source provider 처리 |
 | MCP 계약 정렬 | 완료 | 공개 `mcp-kr-legislation` README 기준 tool fallback 정렬 |
+| Source Status API | 완료 | `/source-status`로 request-level provider 상태 조회 |
 | 제품 고도화 | 다음 작업 | 실제 지자체 사례 입력과 실서버 MCP 검증 |
 
 ## 완료된 작업
@@ -22,6 +23,7 @@
 - [x] 법령 소스 provider 분리 (`local-fixture`, `korea-law-mcp`)
 - [x] `korea-law-mcp` Streamable HTTP transport 연동 + mock 서버 테스트 추가
 - [x] 공개 `mcp-kr-legislation` README 기준 tool fallback 정렬 (`get_local_ordinance_detail` -> `get_ordinance_detail`)
+- [x] `/source-status` 추가 및 대시보드 request-level source status 조회 연결
 - [x] 루트 하네스 구조 추가 (`AGENTS.md`, `agents/*`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`)
 - [x] `harness:check`와 pre-commit guard 추가
 - [x] 대시보드 source 선택 UI 추가
@@ -30,13 +32,13 @@
 ## 지금 진행 중
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
 - [ ] 복지·청년지원 실제 지자체 사례 데이터 수집
-- [ ] MCP capability status를 request-level로 노출할지 결정
+- [ ] `search_local_ordinance` 기반 ID 검색 보조 흐름 설계
 
 ## 다음 작업 (우선순위)
 1. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
 2. 복지·청년지원 도메인 기준 실제 지자체 사례 2~3건 수집
 3. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
-4. request-level source capability를 `/health` 또는 별도 status 응답으로 노출
+4. `search_local_ordinance` 기반 ID 검색 보조 흐름 추가
 5. 평가셋을 샘플 1세트에서 다중 사례로 확장
 6. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
 

@@ -60,6 +60,11 @@ async function main() {
   assert(typeof health.source === "object" && health.source !== null, "Missing source object in /health response.");
   console.log("Health endpoint check passed.");
 
+  const sourceStatus = await fetchJson("/source-status?provider=korea-law-mcp");
+  assert(sourceStatus.requestedProvider === "korea-law-mcp", "Unexpected requestedProvider in /source-status response.");
+  assert(typeof sourceStatus.source === "object" && sourceStatus.source !== null, "Missing source object in /source-status response.");
+  console.log(`Source status endpoint check passed. Provider ${sourceStatus.source.provider} enabled=${sourceStatus.source.enabled}.`);
+
   const analyze = await fetchJson("/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -27,6 +27,33 @@ paths:
                   - service
                   - storage
                   - source
+  /source-status:
+    get:
+      summary: Report status for a request-selected law source provider
+      parameters:
+        - in: query
+          name: provider
+          schema:
+            type: string
+            enum:
+              - local-fixture
+              - korea-law-mcp
+          description: Optional source provider to inspect. Defaults to the runtime default provider.
+      responses:
+        "200":
+          description: Selected source-provider status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestedProvider:
+                    type: string
+                  source:
+                    $ref: "#/components/schemas/LawSourceStatus"
+                required:
+                  - requestedProvider
+                  - source
   /analyze:
     post:
       summary: Analyze regulation changes and suggest follow-up actions
@@ -193,6 +220,14 @@ components:
           type: array
           items:
             type: string
+        transport:
+          type: string
+        detailToolNames:
+          type: array
+          items:
+            type: string
+        idArgumentName:
+          type: string
       required:
         - enabled
         - provider

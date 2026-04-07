@@ -24,14 +24,16 @@ If the MCP server does not use `get_local_ordinance_detail({ ID })` or `get_ordi
 - Static dashboard entrypoint: `/`
 - Vercel functions:
   - `/api/health`
+  - `/api/source-status`
   - `/api/history`
   - `/api/analyze`
 - Backward-compatible rewrites:
   - `/health` -> `/api/health`
+  - `/source-status` -> `/api/source-status`
   - `/history` -> `/api/history`
   - `/analyze` -> `/api/analyze`
 
 ## Notes
-- The dashboard uses `/api/analyze` and `/api/history`
+- The dashboard uses `/api/source-status`, `/api/analyze`, and `/api/history`
 - Root `index.html` serves the dashboard on Vercel
 - Local `npm run start` still supports both `/api/*` and legacy root API paths

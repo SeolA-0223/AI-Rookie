@@ -1,4 +1,5 @@
 const HEALTH_ENDPOINT = "/api/health";
+const SOURCE_STATUS_ENDPOINT = "/api/source-status";
 const ANALYZE_ENDPOINT = "/api/analyze";
 const HISTORY_ENDPOINT = "/api/history?limit=6";
 const BUTTON_LABEL = "Run Analysis";
@@ -17,6 +18,7 @@ const sourceBeforeIdField = document.getElementById("source-before-id");
 const sourceAfterIdField = document.getElementById("source-after-id");
 
 let latestHealth = null;
+let latestRequestedSourceStatus = null;
 
 function setStatus(message, type = "neutral") {
   if (!statusView) {
@@ -56,6 +58,14 @@ function setSourceHelp(message, type = "neutral") {
   }
   sourceHelpView.textContent = message;
   sourceHelpView.className = `source-help subtle subtle-${type}`;
+}
+
+function formatMissingEnv(missingEnv = []) {
+  if (!Array.isArray(missingEnv) || !missingEnv.length) {
+    return "";
+  }
+
+  return missingEnv.join(", ");
 }
 
 function createEmptyMessage(tagName, text) {
@@ -333,8 +343,6 @@ async function loadHealth() {
     latestHealth = null;
     setSourceStatus(`Source status unavailable: ${error.message}`, "error");
   }
-
-  updateSourceControls();
 }
 
 function parseErrorMessage(errorBody) {
@@ -366,6 +374,7 @@ function parseErrorMessage(errorBody) {
 function updateSourceControls() {
   const provider = sourceProviderField?.value ?? "local-fixture";
   const usesMcp = provider === "korea-law-mcp";
+  const selectedSource = latestRequestedSourceStatus?.requestedProvider === provider ? latestRequestedSourceStatus.source : null;
 
   if (sourceBeforeGroup) {
     sourceBeforeGroup.hidden = !usesMcp;
@@ -375,10 +384,35 @@ function updateSourceControls() {
   }
 
   if (provider === "local-fixture") {
-    setSourceStatus("Bundled sample source ready.", "success");
+    const localFixtureEnabled = selectedSource?.enabled ?? true;
+    setSourceStatus(localFixtureEnabled ? "Bundled sample source ready." : "Bundled sample source is unavailable.", localFixtureEnabled ? "success" : "error");
     setSourceHelp(
       "Uses the repository sample regulation pair. No source IDs are required for the default demo flow.",
+      localFixtureEnabled ? "neutral" : "error"
+    );
+    return;
+  }
+
+  if (selectedSource?.enabled) {
+    const toolNames = Array.isArray(selectedSource.detailToolNames) ? selectedSource.detailToolNames.join(" -> ") : "configured detail tool";
+    const idArgumentName = selectedSource.idArgumentName ?? "ID";
+
+    setSourceStatus("Korea Law MCP request path is configured.", "success");
+    setSourceHelp(
+      `Enter before/after ordinance IDs. The server will try ${toolNames} with the ${idArgumentName} argument.`,
       "neutral"
+    );
+    return;
+  }
+
+  if (selectedSource && !selectedSource.enabled) {
+    const missingEnv = formatMissingEnv(selectedSource.missingEnv);
+    const detail = missingEnv ? ` Missing: ${missingEnv}.` : "";
+
+    setSourceStatus("Korea Law MCP is not configured for request-level use.", "error");
+    setSourceHelp(
+      `Set the MCP endpoint configuration before using ordinance IDs.${detail}`,
+      "error"
     );
     return;
   }
@@ -386,16 +420,36 @@ function updateSourceControls() {
   const defaultSource = latestHealth?.source ?? {};
   if (defaultSource.provider === "korea-law-mcp" && defaultSource.enabled) {
     setSourceStatus("Korea Law MCP is configured on the server.", "success");
-  } else if (defaultSource.provider === "korea-law-mcp" && !defaultSource.enabled) {
-    setSourceStatus("Korea Law MCP is selected by default but missing configuration.", "error");
-  } else {
-    setSourceStatus("Korea Law MCP will be selected per request.", "neutral");
+    setSourceHelp(
+      "Enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP detail tool.",
+      "neutral"
+    );
+    return;
   }
 
+  setSourceStatus("Korea Law MCP will be selected per request.", "neutral");
   setSourceHelp(
     "Enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP detail tool.",
     "neutral"
   );
+}
+
+async function loadSelectedSourceStatus() {
+  const provider = sourceProviderField?.value ?? "local-fixture";
+
+  try {
+    const response = await fetch(`${SOURCE_STATUS_ENDPOINT}?provider=${encodeURIComponent(provider)}`);
+    if (!response.ok) {
+      throw new Error(`Source status request failed with ${response.status}`);
+    }
+
+    latestRequestedSourceStatus = await response.json();
+  } catch (error) {
+    latestRequestedSourceStatus = null;
+    setSourceStatus(`Source status unavailable: ${error.message}`, "error");
+  }
+
+  updateSourceControls();
 }
 
 function buildAnalyzePayload() {
@@ -463,10 +517,15 @@ async function runAnalyze() {
 
 async function init() {
   if (sourceProviderField) {
-    sourceProviderField.addEventListener("change", updateSourceControls);
+    sourceProviderField.addEventListener("change", () => {
+      setSourceStatus("Checking selected source provider...", "neutral");
+      updateSourceControls();
+      void loadSelectedSourceStatus();
+    });
   }
 
   await loadHealth();
+  await loadSelectedSourceStatus();
   await loadHistory();
   await runAnalyze();
 }

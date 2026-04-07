@@ -16,13 +16,15 @@ export function buildSourceStatus({
   provider,
   enabled,
   mode,
-  missingEnv = []
+  missingEnv = [],
+  ...extra
 }) {
   return {
     enabled,
     provider,
     mode,
-    missingEnv
+    missingEnv,
+    ...extra
   };
 }
 
