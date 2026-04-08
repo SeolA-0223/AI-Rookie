@@ -47,14 +47,15 @@
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
 - [ ] `law-go-public` search 결과만으로는 과거 버전 pair 추천이 잘 안 잡히는 문제 보완
+- [ ] Vercel serverless 런타임에서는 `law.go.kr` outbound가 `ECONNRESET`로 끊기는 제한 정리
 
 ## 다음 작업 (우선순위)
-1. `law-go-public`에서 과거 버전 후보를 찾을 수 있는 history/연혁 보조 경로 추가
-2. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
-3. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
-4. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
-5. 케이스 팩 전환 UI 또는 CLI 보조 흐름 추가
-6. 실제 MCP 서버 응답을 기준으로 recommendation heuristic 보정
+1. `law-go-public`를 계속 쓸 경우 Vercel 밖의 실행 환경으로 백엔드 이전
+2. `law-go-public`에서 과거 버전 후보를 찾을 수 있는 history/연혁 보조 경로 추가
+3. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
+4. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
+5. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
+6. 케이스 팩 전환 UI 또는 CLI 보조 흐름 추가
 
 ## 작업 루틴 (인수인계 기준)
 1. 코드/문서 수정
