@@ -1,8 +1,12 @@
+import http from "node:http";
+import https from "node:https";
+import zlib from "node:zlib";
 import { buildSourceStatus, normalizeEnvValue, SourceResolutionError } from "../shared.js";
 
 const DEFAULT_BASE_URL = "https://www.law.go.kr";
 const DEFAULT_OC = "test";
 const DEFAULT_TIMEOUT_MS = 20000;
+const MAX_REDIRECTS = 5;
 const DEFAULT_GUBUN = "ELIS";
 const DEFAULT_CHR_CLS_CD = "010202";
 
@@ -295,13 +299,13 @@ function parsePrintClauses(printHtml, clauseEntries) {
 }
 
 async function readTextResponse(response, message, path) {
-  const text = await response.text();
+  const text = response.body;
 
-  if (!response.ok) {
+  if (response.statusCode < 200 || response.statusCode >= 300) {
     throw buildFetchError(message, [
       {
         path,
-        message: `${response.status} ${response.statusText}`.trim()
+        message: `${response.statusCode} ${response.statusMessage}`.trim()
       }
     ]);
   }
@@ -309,14 +313,107 @@ async function readTextResponse(response, message, path) {
   return text.replace(/^\uFEFF/, "");
 }
 
-async function fetchText(url, init, message, path) {
-  let response;
+function decompressResponseBody(buffer, encoding) {
+  if (!encoding) {
+    return buffer;
+  }
 
-  try {
-    response = await fetch(url, {
-      ...init,
-      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS)
+  const normalizedEncoding = encoding.toLowerCase();
+
+  if (normalizedEncoding.includes("gzip")) {
+    return zlib.gunzipSync(buffer);
+  }
+  if (normalizedEncoding.includes("deflate")) {
+    return zlib.inflateSync(buffer);
+  }
+  if (normalizedEncoding.includes("br")) {
+    return zlib.brotliDecompressSync(buffer);
+  }
+
+  return buffer;
+}
+
+async function requestText(url, init = {}, redirectCount = 0) {
+  if (redirectCount > MAX_REDIRECTS) {
+    throw new Error("too many redirects");
+  }
+
+  const targetUrl = typeof url === "string" ? new URL(url) : url;
+  const requestClient = targetUrl.protocol === "https:" ? https : http;
+  const body =
+    typeof init.body === "string"
+      ? Buffer.from(init.body, "utf8")
+      : Buffer.isBuffer(init.body)
+        ? init.body
+        : null;
+
+  const headers = {
+    "user-agent": "AI-Rookie/0.1",
+    accept: "text/html,application/json;q=0.9,*/*;q=0.8",
+    "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "accept-encoding": "gzip, deflate, br",
+    connection: "close",
+    ...init.headers
+  };
+
+  if (body && !headers["content-length"] && !headers["Content-Length"]) {
+    headers["content-length"] = String(body.length);
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = requestClient.request(targetUrl, {
+      method: init.method ?? "GET",
+      headers
+    }, (response) => {
+      const chunks = [];
+
+      response.on("data", (chunk) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      });
+      response.on("error", reject);
+      response.on("end", async () => {
+        try {
+          if (
+            response.statusCode &&
+            response.statusCode >= 300 &&
+            response.statusCode < 400 &&
+            response.headers.location
+          ) {
+            const redirectUrl = new URL(response.headers.location, targetUrl);
+            resolve(await requestText(redirectUrl, init, redirectCount + 1));
+            return;
+          }
+
+          const rawBuffer = Buffer.concat(chunks);
+          const decodedBuffer = decompressResponseBody(rawBuffer, response.headers["content-encoding"]);
+
+          resolve({
+            statusCode: response.statusCode ?? 0,
+            statusMessage: response.statusMessage ?? "",
+            body: decodedBuffer.toString("utf8")
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
+
+    request.setTimeout(DEFAULT_TIMEOUT_MS, () => {
+      request.destroy(new Error("request timed out"));
+    });
+    request.on("error", reject);
+
+    if (body) {
+      request.write(body);
+    }
+    request.end();
+  });
+}
+
+async function fetchText(url, init, message, path) {
+  try {
+    const response = await requestText(url, init);
+    return readTextResponse(response, message, path);
   } catch (error) {
     throw buildFetchError(message, [
       {
@@ -325,8 +422,6 @@ async function fetchText(url, init, message, path) {
       }
     ]);
   }
-
-  return readTextResponse(response, message, path);
 }
 
 async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
