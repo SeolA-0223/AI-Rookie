@@ -71,7 +71,8 @@ Then call `/analyze` with ordinance sequence IDs:
 }
 ```
 
-`law-go-public` search usually returns the latest ordinance version only, so `/source-search` may not always produce a recommended pre/post pair. When `recommendation` is `null`, use known ordinance sequence IDs directly.
+`law-go-public` search now expands a high-confidence single result with `ordinHstListR.do` history entries, so `/source-search` can recommend a pre/post pair when the public site exposes ordinance history.
+The default public demo `LAW_GO_OC=test` still returns sparse or empty search results in some cases. For reliable search, set a real `LAW_GO_OC`. If `recommendation` is still `null`, use known ordinance sequence IDs directly.
 
 `korea-law-mcp` uses a Streamable HTTP MCP endpoint. If the endpoint is running locally, the adapter auto-resolves `/mcp` when only the host/port is provided:
 

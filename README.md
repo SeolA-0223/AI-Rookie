@@ -46,7 +46,8 @@
 - `/analyze`는 기존처럼 `before`/`after` 직접 입력도 받을 수 있습니다.
 - `LAW_SOURCE_PROVIDER=law-go-public`를 쓰면 공식 `law.go.kr` 공개 검색/본문 endpoint로 조례를 조회합니다.
 - `law-go-public`는 기본 `LAW_GO_BASE_URL=https://www.law.go.kr`를 사용하고, `LAW_GO_OC`가 비어 있으면 공개 demo `OC=test` 검색 경로로 동작합니다.
-- `law-go-public`는 검색으로 보통 최신 조례 버전만 돌려주므로, `/source-search`의 추천 `before` / `after` 쌍은 자주 `null`일 수 있습니다. 이 경우 조례 일련번호를 직접 넣어야 합니다.
+- `law-go-public`는 검색 결과가 단일 고신뢰 조례로 좁혀지면 `ordinHstListR.do` 연혁 목록을 추가로 읽어 `/source-search` 추천 `before` / `after` 쌍을 보강합니다.
+- 다만 공개 demo `OC=test`는 검색 결과가 비어 있거나 제한될 수 있습니다. 실사용 검색 품질이 필요하면 실제 `LAW_GO_OC`를 넣고, 그래도 결과가 부족하면 조례 일련번호를 직접 입력해야 합니다.
 - `LAW_SOURCE_PROVIDER=korea-law-mcp`를 쓰면 Streamable HTTP MCP endpoint에서 전/후 문서를 가져옵니다.
 - 공개 `mcp-kr-legislation` README 기준 현재 기본 자치법규 상세 도구는 `get_local_ordinance_detail`이며, AI-Rookie는 `get_ordinance_detail`까지 자동 fallback 합니다.
 - 공개 `mcp-kr-legislation` README 기준 검색 도구는 `search_local_ordinance`이며, AI-Rookie 기본 검색 인자는 `query`입니다.

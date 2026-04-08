@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-04-08T08:03:09.701Z",
+  "evaluatedAt": "2026-04-08T09:04:00.780Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
@@ -52,7 +52,7 @@
     "summary": {
       "evaluatedCaseCount": 3,
       "passedCaseCount": 3,
-      "suiteRuntimeMs": 3,
+      "suiteRuntimeMs": 1,
       "averageF1": 1,
       "averageMappingCoverage": 1,
       "averageTraceCompleteness": 1,

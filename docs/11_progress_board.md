@@ -1,6 +1,6 @@
 ﻿# 진행 보드 (Plan + Progress)
 
-기준 시각: 2026-04-08 16:55 KST
+기준 시각: 2026-04-08 18:06 KST
 
 ## 한눈에 보기
 | 구분 | 상태 | 내용 |
@@ -17,8 +17,8 @@
 | Before/After 추천 | 완료 | 검색 결과의 동일 조례군과 날짜 메타데이터를 사용해 추천 pair 계산 |
 | 실사례 케이스 팩 | 완료 | 울산/부천/서울 청년·복지 중심 normalized case pack 3종 추가 |
 | 다중 사례 평가 | 완료 | `npm run eval`이 `data/cases/*` 전체를 평가하고 aggregate summary를 생성 |
-| 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint로 실데이터 fetch 검증 |
-| 제품 고도화 | 다음 작업 | 공식 search 한계 보완과 live MCP 계약 검증 |
+| 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint + 연혁(`ordinHstListR.do`) 보조 경로 정리 |
+| 제품 고도화 | 다음 작업 | 실 OC 확보, live MCP 계약 검증, Vercel 외부 백엔드 런타임 검토 |
 
 ## 완료된 작업
 - [x] `/analyze`, `/history`, `/health` API 배포 및 라이브 점검
@@ -30,6 +30,7 @@
 - [x] 공개 `mcp-kr-legislation` README 기준 tool fallback 정렬 (`get_local_ordinance_detail` -> `get_ordinance_detail`)
 - [x] `law-go-public` provider 추가 및 공식 `law.go.kr` 공개 검색/본문 endpoint 정규화
 - [x] 실제 `law.go.kr` 실서버에서 조문 본문 fetch 검증 (`ordinBdyPrint.do`)
+- [x] `law-go-public` 검색 결과에 `ordinHstListR.do` 연혁 확장을 붙여 추천 pair 보강
 - [x] `/source-status` 추가 및 대시보드 request-level source status 조회 연결
 - [x] `/source-search` 추가 및 `search_local_ordinance` 기반 ID 검색 보조 연결
 - [x] `/source-search` 응답에 추천 `before` / `after` pair 추가
@@ -46,12 +47,12 @@
 ## 지금 진행 중
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
-- [ ] `law-go-public` search 결과만으로는 과거 버전 pair 추천이 잘 안 잡히는 문제 보완
+- [ ] 실사용 `LAW_GO_OC` 또는 동등한 검색 자격 확보
 - [ ] Vercel serverless 런타임에서는 `law.go.kr` outbound가 `ECONNRESET`로 끊기는 제한 정리
 
 ## 다음 작업 (우선순위)
-1. `law-go-public`를 계속 쓸 경우 Vercel 밖의 실행 환경으로 백엔드 이전
-2. `law-go-public`에서 과거 버전 후보를 찾을 수 있는 history/연혁 보조 경로 추가
+1. 실사용 `LAW_GO_OC`를 확보하거나 검색을 대체할 live Korea-law-mcp 런타임 확보
+2. `law-go-public`를 계속 쓸 경우 Vercel 밖의 실행 환경으로 백엔드 이전
 3. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
 4. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
 5. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강

@@ -189,7 +189,8 @@ async function startMockKoreaLawMcpServer({
 
 async function startMockLawGoPublicServer({
   searchResultsByQuery = {},
-  documentsById = {}
+  documentsById = {},
+  historyEntriesById = {}
 }) {
   const server = createServer(async (req, res) => {
     const requestUrl = new URL(req.url, "http://127.0.0.1");
@@ -223,6 +224,30 @@ async function startMockLawGoPublicServer({
             <input type="hidden" id="ordinNm" value="${document.title}" />
             <input type="hidden" id="lgovOrgCd" value="${document.lgovOrgCd ?? ""}" />
             <h2>${document.title}</h2>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    if (requestUrl.pathname === "/LSW/ordinHstListR.do") {
+      const ordinSeq = requestUrl.searchParams.get("ordinSeq") ?? "";
+      const historyEntries = historyEntriesById[ordinSeq] ?? [];
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`
+        <html>
+          <body>
+            ${historyEntries
+              .map(
+                (entry) => `
+                  <a href="#history-${entry.id}" onclick="javascript:ordinViewOrdinHst('${entry.id}','${entry.current ? "Y" : "N"}');return false;">
+                    ${entry.index}. ${entry.title}<br />
+                    [시행 ${entry.effectiveDateLabel}] [${entry.announcementLabel}, ${entry.promulgationDateLabel}, ${entry.amendmentType}]
+                  </a>
+                `
+              )
+              .join("\n")}
           </body>
         </html>
       `);
@@ -486,6 +511,87 @@ test("searchLawSource normalizes official ordinance search results through law-g
       referenceUrl: `${server.baseUrl}/LSW/ordinInfoP.do?urlMode=ordinScJoRltInfoR&viewCls=ordinInfoP&ordinSeq=1853703&chrClsCd=010202&gubun=ELIS`,
       summary: "Ordinance / Partial Revision / Youth"
     });
+  } finally {
+    await server.close();
+  }
+});
+
+test("searchLawSource expands ordinance history for law-go-public and enables pair recommendation", async () => {
+  const server = await startMockLawGoPublicServer({
+    searchResultsByQuery: {
+      "seoul youth support ordinance": [
+        {
+          자치법규명: "Seoul Youth Support Ordinance",
+          자치법규일련번호: "1853703",
+          시행일자: "20230922",
+          공포일자: "20230922",
+          지자체기관명: "Seoul",
+          자치법규종류: "Ordinance",
+          제개정구분명: "Partial Revision",
+          자치법규분야명: "Youth"
+        }
+      ]
+    },
+    historyEntriesById: {
+      "1853703": [
+        {
+          id: "1853703",
+          index: 1,
+          title: "Seoul Youth Support Ordinance",
+          effectiveDateLabel: "2023. 9. 22.",
+          announcementLabel: "서울특별시조례 제1568호",
+          promulgationDateLabel: "2023. 9. 22.",
+          amendmentType: "일부개정",
+          current: true
+        },
+        {
+          id: "1853702",
+          index: 2,
+          title: "Seoul Youth Support Ordinance",
+          effectiveDateLabel: "2022. 1. 1.",
+          announcementLabel: "서울특별시조례 제1200호",
+          promulgationDateLabel: "2022. 1. 1.",
+          amendmentType: "일부개정",
+          current: false
+        },
+        {
+          id: "1853701",
+          index: 3,
+          title: "Seoul Youth Support Ordinance",
+          effectiveDateLabel: "2020. 1. 1.",
+          announcementLabel: "서울특별시조례 제900호",
+          promulgationDateLabel: "2020. 1. 1.",
+          amendmentType: "제정",
+          current: false
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: "seoul youth support ordinance",
+      limit: 5
+    });
+    const recommendation = recommendLawSourcePair(result.results, "seoul youth support ordinance");
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.historyExpanded, true);
+    assert.equal(result.meta.historySeedId, "1853703");
+    assert.equal(result.results.length, 3);
+    assert.deepEqual(
+      result.results.map((item) => item.id),
+      ["1853703", "1853702", "1853701"]
+    );
+    assert.deepEqual(
+      result.results.map((item) => item.effectiveDate),
+      ["2023-09-22", "2022-01-01", "2020-01-01"]
+    );
+    assert.equal(recommendation.before.id, "1853702");
+    assert.equal(recommendation.after.id, "1853703");
+    assert.equal(recommendation.confidence, "high");
   } finally {
     await server.close();
   }

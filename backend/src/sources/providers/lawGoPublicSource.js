@@ -9,6 +9,17 @@ const DEFAULT_TIMEOUT_MS = 20000;
 const MAX_REDIRECTS = 5;
 const DEFAULT_GUBUN = "ELIS";
 const DEFAULT_CHR_CLS_CD = "010202";
+const HISTORY_QUERY_STOP_WORDS = new Set([
+  "ordinance",
+  "ordinances",
+  "law",
+  "laws",
+  "local",
+  "the",
+  "\uC870\uB840",
+  "\uBC95\uADDC",
+  "\uBC95"
+]);
 
 function buildSourceInputError(details) {
   return new SourceResolutionError({
@@ -88,6 +99,34 @@ function normalizeDateValue(value) {
   }
 
   return normalizedValue;
+}
+
+function normalizeHistoryDateValue(value) {
+  const normalizedValue = normalizeEnvValue(value).replace(/\s+/g, " ");
+  const match = normalizedValue.match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
+
+  if (!match) {
+    return normalizeDateValue(normalizedValue);
+  }
+
+  const [, year, month, day] = match;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function normalizeSearchText(value) {
+  return normalizeEnvValue(value)
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+    .replace(/[\s_-]+/g, " ")
+    .trim();
+}
+
+function tokenizeSearchText(value) {
+  return normalizeSearchText(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token && !HISTORY_QUERY_STOP_WORDS.has(token));
 }
 
 function decodeHtmlEntities(value) {
@@ -216,6 +255,101 @@ function normalizeSearchResult(baseUrl, candidate) {
     referenceUrl: buildReferenceUrl(baseUrl, ordinSeq),
     summary: summaryParts.join(" / ")
   };
+}
+
+function scoreHistorySeed(result, query) {
+  const normalizedTitle = normalizeSearchText(result?.title);
+  const normalizedJurisdiction = normalizeSearchText(result?.jurisdiction);
+  const normalizedQuery = normalizeSearchText(query);
+  const queryTokens = tokenizeSearchText(query);
+  let score = 0;
+
+  if (!normalizedTitle || !normalizedQuery) {
+    return 0;
+  }
+
+  if (normalizedTitle === normalizedQuery) {
+    score += 10;
+  } else if (normalizedTitle.includes(normalizedQuery) || normalizedQuery.includes(normalizedTitle)) {
+    score += 6;
+  }
+
+  for (const token of queryTokens) {
+    if (normalizedTitle.includes(token)) {
+      score += 2;
+    } else if (normalizedJurisdiction.includes(token)) {
+      score += 1;
+    }
+  }
+
+  return score;
+}
+
+function shouldExpandHistory(results, query) {
+  if (!Array.isArray(results) || results.length === 0) {
+    return false;
+  }
+
+  if (results.length === 1) {
+    return true;
+  }
+
+  const topScore = scoreHistorySeed(results[0], query);
+  return results.length <= 3 && topScore >= 6;
+}
+
+function parseHistoryEntries(historyHtml, baseUrl, seedResult) {
+  const itemPattern =
+    /<a[^>]+onclick="javascript:ordinViewOrdinHst\('(\d+)','([YN])'\);return false;"[^>]*>([\s\S]*?)<\/a>/gi;
+  const historyEntries = [];
+  let match;
+
+  while ((match = itemPattern.exec(historyHtml)) !== null) {
+    const [, ordinanceId, currentFlag, anchorHtml] = match;
+    const lines = stripHtml(anchorHtml)
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const title = normalizeEnvValue((lines[0] ?? "").replace(/^\d+\.\s*/, "")) || seedResult.title;
+    const versionLine = lines.slice(1).join(" ");
+    const effectiveDate = normalizeHistoryDateValue(versionLine.match(/\[\s*\uC2DC\uD589\s*([^\]]+)\]/)?.[1] ?? "");
+    const promulgationMatch = versionLine.match(/\[[^,]+,\s*([^,]+),\s*([^\]]+)\]/);
+    const promulgationDate = normalizeHistoryDateValue(promulgationMatch?.[1] ?? "");
+    const amendmentType = normalizeEnvValue(promulgationMatch?.[2] ?? "");
+
+    historyEntries.push({
+      id: ordinanceId,
+      title,
+      jurisdiction: seedResult.jurisdiction ?? "",
+      effectiveDate,
+      promulgationDate,
+      referenceUrl: buildReferenceUrl(baseUrl, ordinanceId),
+      summary: amendmentType ? `History entry / ${amendmentType}` : "History entry",
+      current: currentFlag === "Y"
+    });
+  }
+
+  return historyEntries;
+}
+
+function mergeSearchResults(primaryResults, historyResults, limit) {
+  const mergedResults = [];
+  const seenIds = new Set();
+
+  for (const result of [...historyResults, ...primaryResults]) {
+    if (!result?.id || seenIds.has(result.id)) {
+      continue;
+    }
+
+    seenIds.add(result.id);
+    mergedResults.push(result);
+
+    if (mergedResults.length >= limit) {
+      break;
+    }
+  }
+
+  return mergedResults;
 }
 
 function parseClauseList(text) {
@@ -469,6 +603,37 @@ async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
   throw lastError ?? buildFetchError("Failed to search ordinances from law.go.kr.");
 }
 
+async function fetchHistoryEntries({ baseUrls, ordinanceId, seedResult }) {
+  let lastError = null;
+
+  for (const baseUrl of baseUrls) {
+    try {
+      const historyUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinHstListR.do", {
+        ordinSeq: ordinanceId
+      });
+      const historyHtml = await fetchText(
+        historyUrl,
+        {},
+        "Failed to fetch the ordinance history list from law.go.kr.",
+        "query"
+      );
+      const historyEntries = parseHistoryEntries(historyHtml, baseUrl, seedResult);
+
+      if (historyEntries.length > 0) {
+        return historyEntries;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return [];
+}
+
 async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
   const ordinSeq = normalizeOrdinanceId(ordinanceId);
 
@@ -662,12 +827,34 @@ export function createLawGoPublicSource({
         limit
       });
 
+      let resolvedResults = results;
+      let historyExpanded = false;
+
+      if (shouldExpandHistory(results, query)) {
+        try {
+          const historyResults = await fetchHistoryEntries({
+            baseUrls: baseUrlCandidates,
+            ordinanceId: results[0].id,
+            seedResult: results[0]
+          });
+
+          if (historyResults.length > 1) {
+            resolvedResults = mergeSearchResults(results, historyResults, limit);
+            historyExpanded = true;
+          }
+        } catch {
+          historyExpanded = false;
+        }
+      }
+
       return {
-        results,
+        results: resolvedResults,
         meta: {
           provider: "law-go-public",
           mode: "adapter",
-          ocMode
+          ocMode,
+          historyExpanded,
+          historySeedId: historyExpanded ? results[0].id : null
         }
       };
     },
