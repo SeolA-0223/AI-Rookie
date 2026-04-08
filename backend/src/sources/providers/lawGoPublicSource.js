@@ -43,6 +43,23 @@ function resolveBaseUrl(baseUrl) {
   }
 }
 
+function buildBaseUrlCandidates(baseUrl) {
+  const primaryBaseUrl = resolveBaseUrl(baseUrl);
+  if (!primaryBaseUrl) {
+    return [];
+  }
+
+  const candidates = [primaryBaseUrl];
+  const alternateBaseUrl = new URL(primaryBaseUrl.toString());
+  alternateBaseUrl.protocol = primaryBaseUrl.protocol === "https:" ? "http:" : "https:";
+
+  if (alternateBaseUrl.toString() !== primaryBaseUrl.toString()) {
+    candidates.push(alternateBaseUrl);
+  }
+
+  return candidates;
+}
+
 function buildAbsoluteUrl(baseUrl, pathname, searchParams = {}) {
   const url = new URL(pathname, baseUrl);
 
@@ -312,142 +329,172 @@ async function fetchText(url, init, message, path) {
   return readTextResponse(response, message, path);
 }
 
-async function searchOfficialOrdinances({ baseUrl, oc, query, limit }) {
-  const searchUrl = buildAbsoluteUrl(baseUrl, "/DRF/lawSearch.do", {
-    OC: oc,
-    target: "ordin",
-    type: "JSON",
-    mobileYn: "Y",
-    query
-  });
+async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
+  let lastError = null;
 
-  const searchText = await fetchText(
-    searchUrl,
-    {},
-    "Failed to search ordinances from law.go.kr.",
-    "query"
-  );
+  for (const baseUrl of baseUrls) {
+    try {
+      const searchUrl = buildAbsoluteUrl(baseUrl, "/DRF/lawSearch.do", {
+        OC: oc,
+        target: "ordin",
+        type: "JSON",
+        mobileYn: "Y",
+        query
+      });
 
-  let parsed;
+      const searchText = await fetchText(
+        searchUrl,
+        {},
+        "Failed to search ordinances from law.go.kr.",
+        "query"
+      );
 
-  try {
-    parsed = JSON.parse(searchText);
-  } catch (error) {
-    throw buildFetchError("law.go.kr search returned invalid JSON.", [
-      {
-        path: "response.search",
-        message: error instanceof Error ? error.message : String(error)
+      let parsed;
+
+      try {
+        parsed = JSON.parse(searchText);
+      } catch (error) {
+        throw buildFetchError("law.go.kr search returned invalid JSON.", [
+          {
+            path: "response.search",
+            message: error instanceof Error ? error.message : String(error)
+          }
+        ]);
       }
-    ]);
+
+      return normalizeLawSearchPayload(parsed)
+        .map((candidate) => normalizeSearchResult(baseUrl, candidate))
+        .filter((candidate) => candidate && candidate.id)
+        .slice(0, limit);
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  return normalizeLawSearchPayload(parsed)
-    .map((candidate) => normalizeSearchResult(baseUrl, candidate))
-    .filter((candidate) => candidate && candidate.id)
-    .slice(0, limit);
+  throw lastError ?? buildFetchError("Failed to search ordinances from law.go.kr.");
 }
 
-async function fetchRegulationDocument({ baseUrl, ordinanceId }) {
+async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
   const ordinSeq = normalizeOrdinanceId(ordinanceId);
 
   if (!/^\d+$/.test(ordinSeq)) {
     throw buildSourceInputError([
       {
-        path: "source.beforeId",
+        path: `source.${label}Id`,
         message: "must be a numeric ordinance sequence or a supported law.go.kr URL"
       }
     ]);
   }
 
-  const infoUrl = buildReferenceUrl(baseUrl, ordinSeq);
-  const infoHtml = await fetchText(
-    infoUrl,
-    {},
-    "Failed to fetch the public ordinance detail page.",
-    "source.beforeId"
-  );
+  let lastError = null;
 
-  const ancYd = extractInputValue(infoHtml, "ancYd");
-  const ancNo = extractInputValue(infoHtml, "ancNo");
-  const lgovOrgCd = extractInputValue(infoHtml, "lgovOrgCd");
-  const title = extractInputValue(infoHtml, "ordinNm") || extractInnerText(infoHtml, /<h2>([\s\S]*?)<\/h2>/i);
+  for (const baseUrl of baseUrls) {
+    try {
+      const infoUrl = buildReferenceUrl(baseUrl, ordinSeq);
+      const infoHtml = await fetchText(
+        infoUrl,
+        {},
+        "Failed to fetch the public ordinance detail page.",
+        `source.${label}Id`
+      );
 
-  if (!ancYd || !ancNo) {
-    throw buildFetchError("Failed to parse the public ordinance metadata page.", [
-      {
-        path: "response.infoPage",
-        message: "required ordinance metadata fields were missing"
+      const ancYd = extractInputValue(infoHtml, "ancYd");
+      const ancNo = extractInputValue(infoHtml, "ancNo");
+      const lgovOrgCd = extractInputValue(infoHtml, "lgovOrgCd");
+      const title = extractInputValue(infoHtml, "ordinNm") || extractInnerText(infoHtml, /<h2>([\s\S]*?)<\/h2>/i);
+
+      if (!ancYd || !ancNo) {
+        throw buildFetchError("Failed to parse the public ordinance metadata page.", [
+          {
+            path: "response.infoPage",
+            message: "required ordinance metadata fields were missing"
+          }
+        ]);
       }
-    ]);
+
+      const clauseListUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinJoListRInc_XML.do", {
+        ordinSeq,
+        mode: "99",
+        chapNo: "1",
+        gubun: DEFAULT_GUBUN,
+        paras: "",
+        nwYn: "1",
+        ancYd,
+        ancNo,
+        lgovOrgCd
+      });
+
+      const clauseListText = await fetchText(
+        clauseListUrl,
+        {},
+        "Failed to fetch the public ordinance clause list.",
+        `source.${label}Id`
+      );
+      const clauseEntries = parseClauseList(clauseListText);
+
+      if (!clauseEntries.length) {
+        throw buildFetchError("The public ordinance clause list did not contain any selectable clauses.", [
+          {
+            path: "response.clauseList",
+            message: "no usable clause entries were returned"
+          }
+        ]);
+      }
+
+      const printBody = new URLSearchParams({
+        ordinSeq,
+        outPutGubun: DEFAULT_GUBUN,
+        gubun: DEFAULT_GUBUN
+      });
+
+      clauseEntries.forEach((entry) => {
+        printBody.append("joNo", entry.id);
+      });
+
+      const printHtml = await fetchText(
+        buildAbsoluteUrl(baseUrl, "/LSW/ordinBdyPrint.do"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: printBody.toString()
+        },
+        "Failed to fetch the public ordinance print view.",
+        `source.${label}Id`
+      );
+
+      const version = extractInnerText(printHtml, /<div[^>]+class=["']subtit1["'][^>]*>([\s\S]*?)<\/div>/i);
+      const clauses = parsePrintClauses(printHtml, clauseEntries);
+
+      if (clauseEntries.length > 1 && clauses.length === 1) {
+        throw buildFetchError("The public ordinance print view returned incomplete clause content.", [
+          {
+            path: "response.printView",
+            message: "only one clause was parsed from a multi-clause ordinance"
+          }
+        ]);
+      }
+
+      return {
+        title: title || extractInnerText(printHtml, /<h2>([\s\S]*?)<\/h2>/i) || ordinSeq,
+        version: version || ordinSeq,
+        clauses
+      };
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  const clauseListUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinJoListRInc_XML.do", {
-    ordinSeq,
-    mode: "99",
-    chapNo: "1",
-    gubun: DEFAULT_GUBUN,
-    paras: "",
-    nwYn: "1",
-    ancYd,
-    ancNo,
-    lgovOrgCd
-  });
-
-  const clauseListText = await fetchText(
-    clauseListUrl,
-    {},
-    "Failed to fetch the public ordinance clause list.",
-    "source.beforeId"
-  );
-  const clauseEntries = parseClauseList(clauseListText);
-
-  if (!clauseEntries.length) {
-    throw buildFetchError("The public ordinance clause list did not contain any selectable clauses.", [
-      {
-        path: "response.clauseList",
-        message: "no usable clause entries were returned"
-      }
-    ]);
-  }
-
-  const printBody = new URLSearchParams({
-    ordinSeq,
-    outPutGubun: DEFAULT_GUBUN,
-    gubun: DEFAULT_GUBUN
-  });
-
-  clauseEntries.forEach((entry) => {
-    printBody.append("joNo", entry.id);
-  });
-
-  const printHtml = await fetchText(
-    buildAbsoluteUrl(baseUrl, "/LSW/ordinBdyPrint.do"),
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: printBody.toString()
-    },
-    "Failed to fetch the public ordinance print view.",
-    "source.beforeId"
-  );
-
-  const version = extractInnerText(printHtml, /<div[^>]+class=["']subtit1["'][^>]*>([\s\S]*?)<\/div>/i);
-  const clauses = parsePrintClauses(printHtml, clauseEntries);
-
-  return {
-    title: title || extractInnerText(printHtml, /<h2>([\s\S]*?)<\/h2>/i) || ordinSeq,
-    version: version || ordinSeq,
-    clauses
-  };
+  throw lastError ?? buildFetchError("Failed to fetch the public ordinance detail page.");
 }
 
 export function createLawGoPublicSource({
   baseUrl = process.env.LAW_GO_BASE_URL,
   oc = process.env.LAW_GO_OC
 } = {}) {
-  const resolvedBaseUrl = resolveBaseUrl(baseUrl);
+  const baseUrlCandidates = buildBaseUrlCandidates(baseUrl);
+  const resolvedBaseUrl = baseUrlCandidates[0] ?? null;
   const resolvedOc = normalizeEnvValue(oc) || DEFAULT_OC;
   const ocMode = normalizeEnvValue(oc) ? "env" : "test-demo";
 
@@ -514,7 +561,7 @@ export function createLawGoPublicSource({
       }
 
       const results = await searchOfficialOrdinances({
-        baseUrl: resolvedBaseUrl,
+        baseUrls: baseUrlCandidates,
         oc: resolvedOc,
         query,
         limit
@@ -546,12 +593,14 @@ export function createLawGoPublicSource({
       }
 
       const beforeDoc = await fetchRegulationDocument({
-        baseUrl: resolvedBaseUrl,
-        ordinanceId: beforeId
+        baseUrls: baseUrlCandidates,
+        ordinanceId: beforeId,
+        label: "before"
       });
       const afterDoc = await fetchRegulationDocument({
-        baseUrl: resolvedBaseUrl,
-        ordinanceId: afterId
+        baseUrls: baseUrlCandidates,
+        ordinanceId: afterId,
+        label: "after"
       });
 
       return {
