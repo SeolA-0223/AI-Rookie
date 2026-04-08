@@ -1,4 +1,5 @@
 import { createKoreaLawMcpSource } from "./providers/koreaLawMcpSource.js";
+import { createLawGoPublicSource } from "./providers/lawGoPublicSource.js";
 import { createLocalFixtureLawSource } from "./providers/localFixtureLawSource.js";
 import { createUnavailableLawSource, normalizeEnvValue, SourceResolutionError } from "./shared.js";
 
@@ -202,6 +203,8 @@ export function resolveLawSourceProvider({
 
 export function createLawSource({
   provider = process.env.LAW_SOURCE_PROVIDER,
+  lawGoBaseUrl = process.env.LAW_GO_BASE_URL,
+  lawGoOc = process.env.LAW_GO_OC,
   koreaLawMcpBaseUrl = process.env.KOREA_LAW_MCP_BASE_URL,
   koreaLawMcpToolName = process.env.KOREA_LAW_MCP_DETAIL_TOOL_NAME,
   koreaLawMcpIdArgumentName = process.env.KOREA_LAW_MCP_ID_ARGUMENT_NAME,
@@ -212,6 +215,13 @@ export function createLawSource({
 
   if (resolvedProvider === "local-fixture") {
     return createLocalFixtureLawSource();
+  }
+
+  if (resolvedProvider === "law-go-public") {
+    return createLawGoPublicSource({
+      baseUrl: lawGoBaseUrl,
+      oc: lawGoOc
+    });
   }
 
   if (resolvedProvider === "korea-law-mcp") {

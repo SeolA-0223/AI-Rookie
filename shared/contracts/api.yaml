@@ -37,6 +37,7 @@ paths:
             type: string
             enum:
               - local-fixture
+              - law-go-public
               - korea-law-mcp
           description: Optional source provider to inspect. Defaults to the runtime default provider.
       responses:
@@ -64,6 +65,7 @@ paths:
             type: string
             enum:
               - local-fixture
+              - law-go-public
               - korea-law-mcp
           description: Optional source provider to search against. Defaults to the runtime default provider.
         - in: query
@@ -249,12 +251,14 @@ components:
           type: string
           enum:
             - local-fixture
+            - law-go-public
             - korea-law-mcp
         beforeId:
           type: string
         afterId:
           type: string
       description: >
+        For `law-go-public`, `beforeId` and `afterId` are ordinance sequence IDs from law.go.kr.
         For `korea-law-mcp`, `beforeId` and `afterId` are passed to the configured MCP detail tool.
     LawSourceStatus:
       type: object
@@ -265,6 +269,7 @@ components:
           type: string
           enum:
             - local-fixture
+            - law-go-public
             - korea-law-mcp
             - unsupported
         mode:
@@ -274,6 +279,10 @@ components:
           items:
             type: string
         transport:
+          type: string
+        ocMode:
+          type: string
+        baseUrl:
           type: string
         detailToolNames:
           type: array

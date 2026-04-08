@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import { once } from "node:events";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -186,6 +187,145 @@ async function startMockKoreaLawMcpServer({
   };
 }
 
+async function startMockLawGoPublicServer({
+  searchResultsByQuery = {},
+  documentsById = {}
+}) {
+  const server = createServer(async (req, res) => {
+    const requestUrl = new URL(req.url, "http://127.0.0.1");
+
+    if (requestUrl.pathname === "/DRF/lawSearch.do") {
+      const query = requestUrl.searchParams.get("query") ?? "";
+      const law = searchResultsByQuery[query] ?? [];
+
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ OrdinSearch: { law } }));
+      return;
+    }
+
+    if (requestUrl.pathname === "/LSW/ordinInfoP.do") {
+      const ordinSeq = requestUrl.searchParams.get("ordinSeq") ?? "";
+      const document = documentsById[ordinSeq];
+
+      if (!document) {
+        res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Not Found");
+        return;
+      }
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`
+        <html>
+          <body>
+            <input type="hidden" id="ordinSeq" value="${document.ordinSeq}" />
+            <input type="hidden" id="ancYd" value="${document.ancYd}" />
+            <input type="hidden" id="ancNo" value="${document.ancNo}" />
+            <input type="hidden" id="ordinNm" value="${document.title}" />
+            <input type="hidden" id="lgovOrgCd" value="${document.lgovOrgCd ?? ""}" />
+            <h2>${document.title}</h2>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    if (requestUrl.pathname === "/LSW/ordinJoListRInc_XML.do") {
+      const ordinSeq = requestUrl.searchParams.get("ordinSeq") ?? "";
+      const document = documentsById[ordinSeq];
+
+      if (!document) {
+        res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+        res.end("[]");
+        return;
+      }
+
+      const clauseList = document.clauses.map((clause) => ({
+        joTit: clause.title,
+        joNo: clause.joNo,
+        cls: "joNo",
+        oriJoNo: clause.oriJoNo,
+        joYn: "Y",
+        joLink: `${Number.parseInt(clause.oriJoNo, 10)}:0`,
+        chapNo: "00000000000000000000",
+        joChgYn: "",
+        joBrNo: clause.joBrNo
+      }));
+
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify(clauseList));
+      return;
+    }
+
+    if (requestUrl.pathname === "/LSW/ordinBdyPrint.do") {
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+
+      const body = Buffer.concat(chunks).toString("utf8");
+      const params = new URLSearchParams(body);
+      const ordinSeq = params.get("ordinSeq") ?? "";
+      const document = documentsById[ordinSeq];
+
+      if (!document) {
+        res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Not Found");
+        return;
+      }
+
+      const selectedClauseIds = new Set(params.getAll("joNo"));
+      const selectedClauses = document.clauses.filter((clause) =>
+        selectedClauseIds.has(`${clause.oriJoNo}:${clause.joBrNo}`)
+      );
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`
+        <html>
+          <body>
+            <div class="confnla1">
+              <h2>${document.title}</h2>
+              <div class="subtit1">${document.version}</div>
+              ${selectedClauses
+                .map(
+                  (clause) => `
+                    <p class="pty1_p2">
+                      <span class="bl"><label for="${clause.joNo}">${clause.printTitle}</label></span>
+                      ${clause.text}
+                    </p>
+                  `
+                )
+                .join("\n")}
+            </div>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Not Found");
+  });
+
+  server.listen(0);
+  await once(server, "listening");
+  const address = server.address();
+
+  return {
+    baseUrl: `http://127.0.0.1:${address.port}`,
+    async close() {
+      await new Promise((resolve, reject) => {
+        server.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  };
+}
+
 test("createLawSource prefers get_local_ordinance_detail when the documented tool is available", async () => {
   const server = await startMockKoreaLawMcpServer({
     documentsById: {
@@ -296,6 +436,151 @@ test("createLawSource returns empty search results for local fixture source", as
 
   assert.equal(result.meta.provider, "local-fixture");
   assert.deepEqual(result.results, []);
+});
+
+test("createLawSource enables law-go-public without extra environment variables", async () => {
+  const source = createLawSource({ provider: "law-go-public" });
+  const status = source.getSourceStatus();
+
+  assert.equal(status.provider, "law-go-public");
+  assert.equal(status.enabled, true);
+  assert.equal(status.transport, "official-http");
+  assert.equal(status.ocMode, "test-demo");
+});
+
+test("searchLawSource normalizes official ordinance search results through law-go-public", async () => {
+  const server = await startMockLawGoPublicServer({
+    searchResultsByQuery: {
+      "seoul youth support": [
+        {
+          자치법규명: "Seoul Youth Support Ordinance",
+          자치법규일련번호: "1853703",
+          시행일자: "20230922",
+          공포일자: "20230922",
+          지자체기관명: "Seoul",
+          자치법규종류: "Ordinance",
+          제개정구분명: "Partial Revision",
+          자치법규분야명: "Youth"
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: "seoul youth support",
+      limit: 5
+    });
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.ocMode, "test-demo");
+    assert.equal(result.results.length, 1);
+    assert.deepEqual(result.results[0], {
+      id: "1853703",
+      title: "Seoul Youth Support Ordinance",
+      jurisdiction: "Seoul",
+      effectiveDate: "2023-09-22",
+      promulgationDate: "2023-09-22",
+      referenceUrl: `${server.baseUrl}/LSW/ordinInfoP.do?urlMode=ordinScJoRltInfoR&viewCls=ordinInfoP&ordinSeq=1853703&chrClsCd=010202&gubun=ELIS`,
+      summary: "Ordinance / Partial Revision / Youth"
+    });
+  } finally {
+    await server.close();
+  }
+});
+
+test("createLawSource resolves ordinance pairs through the public law.go.kr flow", async () => {
+  const server = await startMockLawGoPublicServer({
+    documentsById: {
+      "1853702": {
+        ordinSeq: "1853702",
+        ancYd: "20220101",
+        ancNo: "1200",
+        title: "Seoul Youth Support Ordinance",
+        version: "[시행 2022. 1. 1.] [서울특별시조례 제1200호, 2022. 1. 1., 일부개정]",
+        clauses: [
+          {
+            joNo: "000100",
+            oriJoNo: "0001",
+            joBrNo: "00",
+            title: "제1조 목적",
+            printTitle: "제1조(목적)",
+            text: "청년 지원의 기본 원칙을 규정한다."
+          },
+          {
+            joNo: "000200",
+            oriJoNo: "0002",
+            joBrNo: "00",
+            title: "제2조 정의",
+            printTitle: "제2조(정의)",
+            text: "청년은 19세 이상 29세 이하로 본다."
+          }
+        ]
+      },
+      "1853703": {
+        ordinSeq: "1853703",
+        ancYd: "20230922",
+        ancNo: "1568",
+        title: "Seoul Youth Support Ordinance",
+        version: "[시행 2023. 9. 22.] [서울특별시조례 제1568호, 2023. 9. 22., 일부개정]",
+        clauses: [
+          {
+            joNo: "000100",
+            oriJoNo: "0001",
+            joBrNo: "00",
+            title: "제1조 목적",
+            printTitle: "제1조(목적)",
+            text: "청년 지원의 기본 원칙과 자립 기반 형성을 규정한다."
+          },
+          {
+            joNo: "000200",
+            oriJoNo: "0002",
+            joBrNo: "00",
+            title: "제2조 정의",
+            printTitle: "제2조(정의)",
+            text: "청년은 19세 이상 34세 이하로 본다."
+          },
+          {
+            joNo: "000300",
+            oriJoNo: "0003",
+            joBrNo: "00",
+            title: "제3조 지원사업",
+            printTitle: "제3조(지원사업)",
+            text: "구청장은 취업, 주거, 금융 지원 사업을 추진할 수 있다."
+          }
+        ]
+      }
+    }
+  });
+
+  try {
+    const source = createLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl
+    });
+
+    const pair = await source.resolveRegulationPair({
+      beforeId: "1853702",
+      afterId: `${server.baseUrl}/LSW/ordinInfoP.do?ordinSeq=1853703`
+    });
+
+    assert.equal(pair.meta.provider, "law-go-public");
+    assert.equal(pair.meta.beforeId, "1853702");
+    assert.equal(pair.meta.afterId, "1853703");
+    assert.equal(pair.beforeDoc.title, "Seoul Youth Support Ordinance");
+    assert.equal(pair.afterDoc.version, "[시행 2023. 9. 22.] [서울특별시조례 제1568호, 2023. 9. 22., 일부개정]");
+    assert.equal(pair.beforeDoc.clauses.length, 2);
+    assert.equal(pair.afterDoc.clauses.length, 3);
+    assert.deepEqual(pair.afterDoc.clauses[1], {
+      id: "0002:00",
+      title: "제2조(정의)",
+      text: "청년은 19세 이상 34세 이하로 본다."
+    });
+  } finally {
+    await server.close();
+  }
 });
 
 test("recommendLawSourcePair picks the latest two dated versions from the best-matching ordinance group", () => {

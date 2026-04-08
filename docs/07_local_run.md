@@ -37,7 +37,7 @@ Default storage provider is `local`.
 If you set `STORAGE_PROVIDER=supabase` with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, analysis runs will also be saved to Supabase.
 If `STORAGE_PROVIDER` is empty and `SUPABASE_URL` is set, the runtime keeps the previous auto-detect behavior and selects `supabase`.
 Default law source provider is `local-fixture`, which serves the sample regulation pair.
-The dashboard now includes an `Analysis Source` panel for switching between sample input and `korea-law-mcp`.
+The dashboard now includes an `Analysis Source` panel for switching between sample input, `law-go-public`, and `korea-law-mcp`.
 The default `local-fixture` sample currently mirrors the Ulsan youth job-support case pack in `data/cases/ulsan_youth_job_support`.
 Additional normalized municipality case packs are listed in `data/cases/case_catalog.json`.
 
@@ -50,6 +50,28 @@ If you want to exercise the source-adapter path, send a request with a `source` 
   }
 }
 ```
+
+`law-go-public` uses official `law.go.kr` search and public ordinance-print endpoints. It works without additional environment variables, but you can override the base URL or OC if needed:
+
+```powershell
+$env:LAW_SOURCE_PROVIDER="law-go-public"
+$env:LAW_GO_BASE_URL="https://www.law.go.kr"
+$env:LAW_GO_OC=""
+```
+
+Then call `/analyze` with ordinance sequence IDs:
+
+```json
+{
+  "source": {
+    "provider": "law-go-public",
+    "beforeId": "1840747",
+    "afterId": "1840747"
+  }
+}
+```
+
+`law-go-public` search usually returns the latest ordinance version only, so `/source-search` may not always produce a recommended pre/post pair. When `recommendation` is `null`, use known ordinance sequence IDs directly.
 
 `korea-law-mcp` uses a Streamable HTTP MCP endpoint. If the endpoint is running locally, the adapter auto-resolves `/mcp` when only the host/port is provided:
 
@@ -80,7 +102,7 @@ If the tool-name override is left blank, AI-Rookie first tries `get_local_ordina
 The same flow is available in the dashboard:
 
 1. Open `/`
-2. In `Analysis Source`, choose `Korea Law MCP`
+2. In `Analysis Source`, choose `law.go.kr Public` or `Korea Law MCP`
 3. Search by ordinance title if you need candidate IDs
 4. If the server finds a timeline recommendation, click `Use Recommended Pair`
 5. Or use individual search results to fill `Before ID` and `After ID` manually
@@ -104,12 +126,14 @@ To inspect the request-selected source provider directly:
 
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=korea-law-mcp"
+Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=law-go-public"
 ```
 
 To search ordinance candidates directly:
 
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:3000/source-search?provider=korea-law-mcp&query=서울시%20청년%20지원%20조례"
+Invoke-RestMethod "http://127.0.0.1:3000/source-search?provider=law-go-public&query=서울시%20청년%20지원%20조례"
 ```
 
 If the response includes `recommendation`, AI-Rookie judged that the returned candidates include a plausible pre/post amendment pair based on title and ordinance dates.

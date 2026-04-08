@@ -112,6 +112,14 @@ function formatTimelineLabel(result = {}) {
   return timeline.join(" / ") || "No ordinance date metadata returned.";
 }
 
+function providerUsesSourceIds(provider) {
+  return provider === "korea-law-mcp" || provider === "law-go-public";
+}
+
+function providerSupportsSearch(provider) {
+  return providerUsesSourceIds(provider);
+}
+
 function applyRecommendedPair(recommendation) {
   if (!recommendation?.before?.id || !recommendation?.after?.id) {
     return;
@@ -255,6 +263,9 @@ function formatProviderLabel(provider) {
   if (provider === "korea-law-mcp") {
     return "Korea Law MCP";
   }
+  if (provider === "law-go-public") {
+    return "law.go.kr Public";
+  }
   if (provider === "local-fixture") {
     return "Local Fixture";
   }
@@ -266,7 +277,7 @@ function formatProviderLabel(provider) {
 
 function describeRunSource(run) {
   const inputSource = run.result?.meta?.inputSource ?? {};
-  if (inputSource.provider === "korea-law-mcp") {
+  if (providerUsesSourceIds(inputSource.provider)) {
     const ids =
       inputSource.beforeId && inputSource.afterId
         ? ` (${inputSource.beforeId} -> ${inputSource.afterId})`
@@ -549,17 +560,18 @@ function parseErrorMessage(errorBody) {
 
 function updateSourceControls() {
   const provider = sourceProviderField?.value ?? "local-fixture";
-  const usesMcp = provider === "korea-law-mcp";
+  const usesSourceIds = providerUsesSourceIds(provider);
+  const supportsSearch = providerSupportsSearch(provider);
   const selectedSource = latestRequestedSourceStatus?.requestedProvider === provider ? latestRequestedSourceStatus.source : null;
 
   if (sourceBeforeGroup) {
-    sourceBeforeGroup.hidden = !usesMcp;
+    sourceBeforeGroup.hidden = !usesSourceIds;
   }
   if (sourceAfterGroup) {
-    sourceAfterGroup.hidden = !usesMcp;
+    sourceAfterGroup.hidden = !usesSourceIds;
   }
   if (sourceSearchGroup) {
-    sourceSearchGroup.hidden = !usesMcp;
+    sourceSearchGroup.hidden = !supportsSearch;
   }
 
   if (provider === "local-fixture") {
@@ -569,27 +581,49 @@ function updateSourceControls() {
       "Uses the repository sample regulation pair. No source IDs are required for the default demo flow.",
       localFixtureEnabled ? "neutral" : "error"
     );
-    setSourceSearchStatus("Search is only used for Korea Law MCP lookups.", "neutral");
+    setSourceSearchStatus("Search is only used for remote ordinance providers.", "neutral");
     renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
   }
 
   if (selectedSource?.enabled) {
-    const toolNames = Array.isArray(selectedSource.detailToolNames) ? selectedSource.detailToolNames.join(" -> ") : "configured detail tool";
-    const idArgumentName = selectedSource.idArgumentName ?? "ID";
-    const searchToolName = Array.isArray(selectedSource.searchToolNames) ? selectedSource.searchToolNames.join(" -> ") : "search_local_ordinance";
-    const searchQueryArgumentName = selectedSource.searchQueryArgumentName ?? "query";
+    if (provider === "korea-law-mcp") {
+      const toolNames = Array.isArray(selectedSource.detailToolNames)
+        ? selectedSource.detailToolNames.join(" -> ")
+        : "configured detail tool";
+      const idArgumentName = selectedSource.idArgumentName ?? "ID";
+      const searchToolName = Array.isArray(selectedSource.searchToolNames)
+        ? selectedSource.searchToolNames.join(" -> ")
+        : "search_local_ordinance";
+      const searchQueryArgumentName = selectedSource.searchQueryArgumentName ?? "query";
 
-    setSourceStatus("Korea Law MCP request path is configured.", "success");
-    setSourceHelp(
-      `Search by ordinance name or enter before/after ordinance IDs directly. The server will try ${toolNames} with the ${idArgumentName} argument.`,
-      "neutral"
-    );
-    setSourceSearchStatus(
-      `Search uses ${searchToolName} with the ${searchQueryArgumentName} argument. Choose candidates below to fill Before/After IDs.`,
-      "neutral"
-    );
+      setSourceStatus("Korea Law MCP request path is configured.", "success");
+      setSourceHelp(
+        `Search by ordinance name or enter before/after ordinance IDs directly. The server will try ${toolNames} with the ${idArgumentName} argument.`,
+        "neutral"
+      );
+      setSourceSearchStatus(
+        `Search uses ${searchToolName} with the ${searchQueryArgumentName} argument. Choose candidates below to fill Before/After IDs.`,
+        "neutral"
+      );
+      return;
+    }
+
+    if (provider === "law-go-public") {
+      const ocMode = selectedSource.ocMode === "env" ? "configured OC" : "test OC";
+      setSourceStatus("law.go.kr public request path is configured.", "success");
+      setSourceHelp(
+        `Search by ordinance name or enter before/after ordinance sequence IDs directly. The server uses official public endpoints with ${ocMode} search access.`,
+        "neutral"
+      );
+      setSourceSearchStatus(
+        "Search uses the official law.go.kr ordinance search endpoint. Choose candidates below to fill Before/After IDs.",
+        "neutral"
+      );
+      return;
+    }
+
     return;
   }
 
@@ -597,31 +631,28 @@ function updateSourceControls() {
     const missingEnv = formatMissingEnv(selectedSource.missingEnv);
     const detail = missingEnv ? ` Missing: ${missingEnv}.` : "";
 
-    setSourceStatus("Korea Law MCP is not configured for request-level use.", "error");
-    setSourceHelp(
-      `Set the MCP endpoint configuration before using ordinance IDs.${detail}`,
-      "error"
-    );
-    setSourceSearchStatus("Search is unavailable until Korea Law MCP is configured.", "error");
+    setSourceStatus(`${formatProviderLabel(provider)} is not configured for request-level use.`, "error");
+    setSourceHelp(`Set the provider configuration before using ordinance IDs.${detail}`, "error");
+    setSourceSearchStatus(`Search is unavailable until ${formatProviderLabel(provider)} is configured.`, "error");
     renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
   }
 
   const defaultSource = latestHealth?.source ?? {};
-  if (defaultSource.provider === "korea-law-mcp" && defaultSource.enabled) {
-    setSourceStatus("Korea Law MCP is configured on the server.", "success");
+  if (defaultSource.provider === provider && defaultSource.enabled) {
+    setSourceStatus(`${formatProviderLabel(provider)} is configured on the server.`, "success");
     setSourceHelp(
-      "Search by ordinance name or enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP tools.",
+      "Search by ordinance name or enter the ordinance IDs for the before and after versions.",
       "neutral"
     );
-    setSourceSearchStatus("Search is ready for Korea Law MCP.", "neutral");
+    setSourceSearchStatus(`Search is ready for ${formatProviderLabel(provider)}.`, "neutral");
     return;
   }
 
-  setSourceStatus("Korea Law MCP will be selected per request.", "neutral");
+  setSourceStatus(`${formatProviderLabel(provider)} will be selected per request.`, "neutral");
   setSourceHelp(
-    "Search by ordinance name or enter the ordinance IDs for the before and after versions. The server forwards them to the configured MCP tools.",
+    "Search by ordinance name or enter the ordinance IDs for the before and after versions.",
     "neutral"
   );
   setSourceSearchStatus("Search the selected ordinance provider to discover usable IDs.", "neutral");
@@ -649,8 +680,8 @@ async function runSourceSearch() {
   const provider = sourceProviderField?.value ?? "local-fixture";
   const query = sourceSearchQueryField?.value.trim() ?? "";
 
-  if (provider !== "korea-law-mcp") {
-    setSourceSearchStatus("Search is only available for Korea Law MCP.", "neutral");
+  if (!providerSupportsSearch(provider)) {
+    setSourceSearchStatus("Search is only available for remote ordinance providers.", "neutral");
     renderSourceSearchRecommendation(null);
     renderSourceSearchResults([]);
     return;
@@ -716,12 +747,12 @@ function buildAnalyzePayload() {
   const afterId = sourceAfterIdField?.value.trim() ?? "";
 
   if (!beforeId || !afterId) {
-    throw new Error("Before ID and After ID are required for Korea Law MCP.");
+    throw new Error(`Before ID and After ID are required for ${formatProviderLabel(provider)}.`);
   }
 
   return {
     source: {
-      provider: "korea-law-mcp",
+      provider,
       beforeId,
       afterId
     }

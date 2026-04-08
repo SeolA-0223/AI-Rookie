@@ -1,12 +1,12 @@
 {
-  "evaluatedAt": "2026-04-07T16:09:19.319Z",
+  "evaluatedAt": "2026-04-08T07:52:54.094Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
     "internalDocs": "data/samples/internal_docs.json"
   },
   "artifact": "data/eval/metrics.json",
-  "runtimeMs": 2,
+  "runtimeMs": 1,
   "metrics": {
     "changeDetection": {
       "expectedChangedClauses": 4,
@@ -52,7 +52,7 @@
     "summary": {
       "evaluatedCaseCount": 3,
       "passedCaseCount": 3,
-      "suiteRuntimeMs": 1,
+      "suiteRuntimeMs": 2,
       "averageF1": 1,
       "averageMappingCoverage": 1,
       "averageTraceCompleteness": 1,
@@ -137,7 +137,7 @@
           "after": "data/cases/seoul_youth_basic_ordinance/after.json",
           "internalDocs": "data/cases/seoul_youth_basic_ordinance/internal_docs.json"
         },
-        "runtimeMs": 1,
+        "runtimeMs": 0,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,
