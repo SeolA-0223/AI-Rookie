@@ -1,62 +1,31 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-10 00:15:49 KST
+Auto-updated: 2026-04-10 00:16:22 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: abee068 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after public search history
+- Latest commit at update time: ee4d680 (HEAD -> main) feat: add bundled case catalog and public search fallback
 - Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24127432583)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## main...origin/main
-- M  README.md
-- A  api/case-catalog.js
-- M  backend/src/http/app.js
-- M  backend/src/sources/providers/lawGoPublicSource.js
-- M  backend/src/sources/providers/localFixtureLawSource.js
-- M  data/eval/metrics.json
-- M  docs/07_local_run.md
+- ## main...origin/main [ahead 1]
 - M  docs/09_handover_status.txt
-- M  docs/11_progress_board.md
-- M  frontend/index.html
-- M  frontend/src/app.js
-- M  index.html
-- M  scripts/smoke.js
-- M  shared/contracts/api.yaml
-- M  tests/http-app.test.js
-- M  tests/law-source.test.js
-- M  vercel.json
 
 3) Recent Commits (max 8)
-- abee068 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after public search history
+- ee4d680 (HEAD -> main) feat: add bundled case catalog and public search fallback
+- abee068 (origin/main, origin/HEAD) docs: refresh handover after public search history
 - 7b31712 feat: expand public law source search with history
 - fe2e336 docs: refresh handover after public source rollout
 - 2b08d6c fix: replace public law source fetch implementation
 - 254340a fix: retry public law source over alternate scheme
 - 8356111 feat: add public law.go.kr source adapter
 - 1f2a3cb docs: refresh handover after multi-case eval
-- b847ad5 feat: expand eval coverage across municipality case packs
 
 4) Staged Files
-- README.md
-- api/case-catalog.js
-- backend/src/http/app.js
-- backend/src/sources/providers/lawGoPublicSource.js
-- backend/src/sources/providers/localFixtureLawSource.js
-- data/eval/metrics.json
-- docs/07_local_run.md
-- docs/11_progress_board.md
-- frontend/index.html
-- frontend/src/app.js
-- index.html
-- scripts/smoke.js
-- shared/contracts/api.yaml
-- tests/http-app.test.js
-- tests/law-source.test.js
-- vercel.json
+- (none)
 
 5) Unstaged Files
 - (none)
