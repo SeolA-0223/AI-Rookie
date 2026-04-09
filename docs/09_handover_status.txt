@@ -1,27 +1,28 @@
-﻿[AI-Rookie Auto Handover]
-Auto-updated: 2026-04-10 00:41:57 KST
+[AI-Rookie Auto Handover]
+Auto-updated: 2026-04-10 00:46:13 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 63adfad (HEAD -> main) feat: align public law detail fetch with live flow
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24198735789)
+- Latest commit at update time: 96285b1 (HEAD -> main) docs: note live public law analysis recovery
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24199261195)
 - PR link: (not applicable on main)
 
 2) Working Tree
-- Clean: yes
+- Clean: no
 - git status --short --branch
 - ## main...origin/main [ahead 1]
+- M  docs/09_handover_status.txt
 
 3) Recent Commits (max 8)
-- 63adfad (HEAD -> main) feat: align public law detail fetch with live flow
-- 0158f3a (origin/main, origin/HEAD) docs: refresh handover after live vercel check
+- 96285b1 (HEAD -> main) docs: note live public law analysis recovery
+- 63adfad (origin/main, origin/HEAD) feat: align public law detail fetch with live flow
+- 0158f3a docs: refresh handover after live vercel check
 - 7fdadb4 docs: note live vercel law-go-public status
 - 6dbf326 docs: refresh handover after public search ranking
 - 74ee338 feat: improve public law source search ranking
 - d3b5348 docs: refresh handover after case catalog rollout
 - ee4d680 feat: add bundled case catalog and public search fallback
-- abee068 docs: refresh handover after public search history
 
 4) Staged Files
 - (none)
@@ -38,7 +39,7 @@ Auto-updated: 2026-04-10 00:41:57 KST
 - Local verification succeeded against `law.go.kr`: ordinance search returned real candidates, `source-status?provider=law-go-public` reported `enabled=true`, and a local fetch for ordinance `1840747` returned 28 parsed clauses.
 - Live Vercel behavior changed again after commit `63adfad`. As of 2026-04-10, `https://ai-rookie-three.vercel.app/api/source-search?provider=law-go-public...` returns real results with `searchBackend=drf+html`, and `/api/analyze` with `law-go-public` now succeeds for both same-version IDs (`1840747 -> 1840747`) and historical/current pairs (`1811191 -> 2054497`).
 - `law-go-public` search now expands a single strong seed result with `ordinHstListR.do` history entries. Mock integration coverage proves that `/source-search` can now return a recommended pre/post pair from public ordinance history when the search seed is available.
-- `law-go-public` now merges DRF + HTML candidates, re-ranks them by query match, and retries a body-title-only query variant for wide-area searches such as `?쒖슱?밸퀎??泥?뀈 湲곕낯 議곕?`.
+- `law-go-public` now merges DRF + HTML candidates, re-ranks them by query match, and retries a body-title-only query variant for wide-area searches such as `서울특별시 청년 기본 조례`.
 - `law-go-public` detail fetch now follows the live page flow more closely: it reads `gubun`, `nwYn`, `ancYd`, and `ancNo` from `ordinInfoP.do`, then reuses those values for `ordinJoListRInc_XML.do` and `ordinBdyPrint.do`. This fixed live historical/current analysis on Vercel.
 - Even after the re-ranking change, the default demo `LAW_GO_OC=test` still does not reliably return the exact metropolitan-city ordinance for some queries. As of 2026-04-10, `서울특별시 청년 기본 조례` still comes back with district ordinances first in real local verification.
 - `local-fixture` now supports bundled `caseId` selection. `/case-catalog` exposes the three municipality case packs, and the dashboard can switch case packs without editing `data/samples/*`.
@@ -52,4 +53,3 @@ Auto-updated: 2026-04-10 00:41:57 KST
 - check: npm run check
 - smoke: npm run smoke
 - manual refresh: npm run handover:update
-
