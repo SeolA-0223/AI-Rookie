@@ -50,7 +50,8 @@
 - `law-go-public`는 기본 `LAW_GO_BASE_URL=https://www.law.go.kr`를 사용하고, `LAW_GO_OC`가 비어 있으면 공개 demo `OC=test` 검색 경로로 동작합니다.
 - `law-go-public`는 검색 결과가 단일 고신뢰 조례로 좁혀지면 `ordinHstListR.do` 연혁 목록을 추가로 읽어 `/source-search` 추천 `before` / `after` 쌍을 보강합니다.
 - `law-go-public`는 `LAW_GO_OC=test`에서 DRF search가 비어 있을 때 공개 HTML search(`ordinScListR.do`)로 fallback 합니다.
-- 다만 공개 demo `OC=test`는 검색 결과가 비어 있거나 제한될 수 있습니다. 실사용 검색 품질이 필요하면 실제 `LAW_GO_OC`를 넣고, 그래도 결과가 부족하면 조례 일련번호를 직접 입력해야 합니다.
+- `law-go-public`는 DRF + HTML 결과를 병합해 query match 기준으로 재정렬하고, 광역 지자체명이 붙은 검색어는 body-title-only variant까지 함께 시도합니다.
+- 다만 공개 demo `OC=test`는 검색 결과가 비어 있거나 제한될 수 있습니다. 2026-04-10 기준 `서울특별시 청년 기본 조례` 같은 검색어는 여전히 자치구 조례 위주로 돌아올 수 있습니다. 실사용 검색 품질이 필요하면 실제 `LAW_GO_OC`를 넣고, 그래도 결과가 부족하면 조례 일련번호를 직접 입력해야 합니다.
 - `LAW_SOURCE_PROVIDER=korea-law-mcp`를 쓰면 Streamable HTTP MCP endpoint에서 전/후 문서를 가져옵니다.
 - 공개 `mcp-kr-legislation` README 기준 현재 기본 자치법규 상세 도구는 `get_local_ordinance_detail`이며, AI-Rookie는 `get_ordinance_detail`까지 자동 fallback 합니다.
 - 공개 `mcp-kr-legislation` README 기준 검색 도구는 `search_local_ordinance`이며, AI-Rookie 기본 검색 인자는 `query`입니다.

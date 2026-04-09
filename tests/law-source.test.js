@@ -621,6 +621,101 @@ test("searchLawSource falls back to public HTML search when DRF search returns n
   }
 });
 
+test("searchLawSource merges DRF and public HTML results and re-ranks the best match first", async () => {
+  const server = await startMockLawGoPublicServer({
+    searchResultsByQuery: {
+      "Seoul Youth Basic Ordinance": [
+        {
+          "\uC790\uCE58\uBC95\uADDC\uBA85": "Gangnam Youth Basic Ordinance",
+          "\uC790\uCE58\uBC95\uADDC\uC77C\uB828\uBC88\uD638": "1832905",
+          "\uC2DC\uD589\uC77C\uC790": "20230724",
+          "\uACF5\uD3EC\uC77C\uC790": "20230724",
+          "\uC790\uCE58\uB2E8\uCCB4\uAE30\uAD00\uBA85": "Seoul Gangnam",
+          "\uC790\uCE58\uBC95\uADDC\uC885\uB958": "Ordinance",
+          "\uC81C\uAC1C\uC815\uAD6C\uBD84\uBA85": "Partial Revision",
+          "\uC790\uCE58\uBC95\uADDC\uBD84\uC57C\uBA85": "Youth"
+        }
+      ]
+    },
+    htmlSearchResultsByQuery: {
+      "Seoul Youth Basic Ordinance": [
+        {
+          id: "1840747",
+          title: "Seoul Youth Basic Ordinance",
+          effectiveDateLabel: "2023. 7. 24.",
+          announcementLabel: "Seoul Ordinance No. 8625",
+          promulgationDateLabel: "2023. 7. 24.",
+          amendmentType: "Full Revision",
+          current: true
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: "Seoul Youth Basic Ordinance",
+      limit: 5
+    });
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.searchBackend, "drf+html");
+    assert.equal(result.meta.historyExpanded, false);
+    assert.deepEqual(
+      result.results.map((item) => item.id),
+      ["1840747", "1832905"]
+    );
+    assert.equal(result.results[0].title, "Seoul Youth Basic Ordinance");
+    assert.equal(result.results[1].title, "Gangnam Youth Basic Ordinance");
+  } finally {
+    await server.close();
+  }
+});
+
+test("searchLawSource tries a body-title-only query variant for public law.go.kr search", async () => {
+  const rawQuery = "\uC11C\uC6B8\uD2B9\uBCC4\uC2DC \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840";
+  const bodyTitleQuery = "\uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840";
+  const expectedTitle = "\uC11C\uC6B8\uD2B9\uBCC4\uC2DC \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840";
+  const server = await startMockLawGoPublicServer({
+    searchResultsByQuery: {
+      [rawQuery]: []
+    },
+    htmlSearchResultsByQuery: {
+      [rawQuery]: [],
+      [bodyTitleQuery]: [
+        {
+          id: "1840747",
+          title: expectedTitle,
+          effectiveDateLabel: "2023. 7. 24.",
+          announcementLabel: "서울특별시조례 제8862호",
+          promulgationDateLabel: "2023. 7. 24.",
+          amendmentType: "전부개정",
+          current: true
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: rawQuery,
+      limit: 5
+    });
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.searchBackend, "html-fallback");
+    assert.equal(result.results.length, 1);
+    assert.equal(result.results[0].id, "1840747");
+    assert.equal(result.results[0].title, expectedTitle);
+  } finally {
+    await server.close();
+  }
+});
+
 test("searchLawSource expands ordinance history for law-go-public and enables pair recommendation", async () => {
   const server = await startMockLawGoPublicServer({
     searchResultsByQuery: {

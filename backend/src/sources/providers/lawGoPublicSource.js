@@ -9,6 +9,18 @@ const DEFAULT_TIMEOUT_MS = 20000;
 const MAX_REDIRECTS = 5;
 const DEFAULT_GUBUN = "ELIS";
 const DEFAULT_CHR_CLS_CD = "010202";
+const JURISDICTION_SUFFIXES = [
+  "\uD2B9\uBCC4\uC790\uCE58\uB3C4",
+  "\uD2B9\uBCC4\uC790\uCE58\uC2DC",
+  "\uD2B9\uBCC4\uC2DC",
+  "\uAD11\uC5ED\uC2DC",
+  "\uC790\uCE58\uB3C4",
+  "\uC790\uCE58\uC2DC",
+  "\uB3C4",
+  "\uC2DC",
+  "\uAD70",
+  "\uAD6C"
+];
 const HISTORY_QUERY_STOP_WORDS = new Set([
   "ordinance",
   "ordinances",
@@ -106,6 +118,33 @@ function stripLeadingListIndex(value) {
     .replace(/^\d+\.\s*/, "")
     .replace(/^[^\p{L}\p{N}]+/gu, "")
     .trim();
+}
+
+function isJurisdictionToken(token) {
+  return JURISDICTION_SUFFIXES.some((suffix) => token.endsWith(suffix));
+}
+
+function splitJurisdictionAndBodyTitle(value) {
+  const rawValue = normalizeEnvValue(value);
+
+  if (!rawValue) {
+    return {
+      jurisdiction: "",
+      bodyTitle: ""
+    };
+  }
+
+  const tokens = rawValue.split(/\s+/).filter(Boolean);
+  const jurisdictionTokens = [];
+
+  while (tokens.length > 1 && isJurisdictionToken(tokens[0])) {
+    jurisdictionTokens.push(tokens.shift());
+  }
+
+  return {
+    jurisdiction: jurisdictionTokens.join(" ").trim(),
+    bodyTitle: tokens.join(" ").trim() || rawValue
+  };
 }
 
 function normalizeHistoryDateValue(value) {
@@ -370,6 +409,7 @@ function parsePublicHtmlSearchResults(searchHtml, baseUrl) {
     const titleHtml = anchorHtml.match(/<span[^>]+class="tx"[^>]*>([\s\S]*?)<\/span>/i)?.[1] ?? "";
     const metadataHtml = anchorHtml.match(/<span[^>]+class="tx2"[^>]*>([\s\S]*?)<\/span>/i)?.[1] ?? "";
     const title = stripLeadingListIndex(stripHtml(titleHtml));
+    const inferredTitleParts = splitJurisdictionAndBodyTitle(title);
     const metadata = stripHtml(metadataHtml);
     const effectiveDate = normalizeHistoryDateValue(metadata.match(/\[\s*\uC2DC\uD589\s*([^\]]+)\]/)?.[1] ?? "");
     const promulgationMatch = metadata.match(/\[[^,]+,\s*([^,]+),\s*([^\]]+)\]/);
@@ -383,7 +423,7 @@ function parsePublicHtmlSearchResults(searchHtml, baseUrl) {
     results.push({
       id: ordinanceId,
       title,
-      jurisdiction: "",
+      jurisdiction: inferredTitleParts.jurisdiction,
       effectiveDate,
       promulgationDate,
       referenceUrl: buildReferenceUrl(baseUrl, ordinanceId),
@@ -394,6 +434,179 @@ function parsePublicHtmlSearchResults(searchHtml, baseUrl) {
   }
 
   return results;
+}
+
+function parseSortableSearchDate(value) {
+  const normalizedValue = normalizeDateValue(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+    return 0;
+  }
+
+  const timestamp = Date.parse(`${normalizedValue}T00:00:00Z`);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function buildSearchQueryProfile(query) {
+  const rawQuery = normalizeEnvValue(query);
+  const inferredQueryParts = splitJurisdictionAndBodyTitle(rawQuery);
+
+  return {
+    rawQuery,
+    normalizedQuery: normalizeSearchText(rawQuery),
+    normalizedJurisdiction: normalizeSearchText(inferredQueryParts.jurisdiction),
+    normalizedBodyTitle: normalizeSearchText(inferredQueryParts.bodyTitle),
+    queryTokens: tokenizeSearchText(rawQuery),
+    jurisdictionTokens: tokenizeSearchText(inferredQueryParts.jurisdiction)
+  };
+}
+
+function scoreSearchCandidate(result, queryProfile) {
+  const rawTitle = normalizeEnvValue(result?.title);
+  const inferredTitleParts = splitJurisdictionAndBodyTitle(rawTitle);
+  const rawJurisdiction = normalizeEnvValue(result?.jurisdiction) || inferredTitleParts.jurisdiction;
+  const rawBodyTitle =
+    rawJurisdiction && rawTitle.startsWith(rawJurisdiction)
+      ? normalizeEnvValue(rawTitle.slice(rawJurisdiction.length))
+      : inferredTitleParts.bodyTitle;
+  const normalizedTitle = normalizeSearchText(rawTitle);
+  const normalizedJurisdiction = normalizeSearchText(rawJurisdiction);
+  const normalizedBodyTitle = normalizeSearchText(rawBodyTitle);
+  let score = 0;
+
+  if (!normalizedTitle || !queryProfile.normalizedQuery) {
+    return score;
+  }
+
+  if (normalizedTitle === queryProfile.normalizedQuery) {
+    score += 30;
+  } else if (
+    normalizedTitle.includes(queryProfile.normalizedQuery) ||
+    queryProfile.normalizedQuery.includes(normalizedTitle)
+  ) {
+    score += 14;
+  }
+
+  if (queryProfile.normalizedBodyTitle) {
+    if (normalizedBodyTitle === queryProfile.normalizedBodyTitle) {
+      score += 8;
+    } else if (
+      normalizedBodyTitle.includes(queryProfile.normalizedBodyTitle) ||
+      queryProfile.normalizedBodyTitle.includes(normalizedBodyTitle)
+    ) {
+      score += 4;
+    }
+  }
+
+  for (const token of queryProfile.queryTokens) {
+    if (normalizedTitle.includes(token)) {
+      score += 2;
+    } else if (normalizedJurisdiction.includes(token)) {
+      score += 1;
+    }
+  }
+
+  if (queryProfile.normalizedJurisdiction) {
+    if (normalizedJurisdiction === queryProfile.normalizedJurisdiction) {
+      score += 8;
+    } else if (normalizedJurisdiction.startsWith(queryProfile.normalizedJurisdiction)) {
+      score += 3;
+    } else if (queryProfile.normalizedJurisdiction.startsWith(normalizedJurisdiction)) {
+      score += 1;
+    }
+
+    const extraJurisdictionTokens = tokenizeSearchText(rawJurisdiction).filter(
+      (token) => !queryProfile.jurisdictionTokens.includes(token)
+    );
+    score -= extraJurisdictionTokens.length;
+  }
+
+  if (result?.current === true) {
+    score += 0.5;
+  }
+
+  return score;
+}
+
+function mergeCandidateResult(existingResult, nextResult) {
+  return {
+    ...existingResult,
+    ...nextResult,
+    title: normalizeEnvValue(existingResult?.title) || normalizeEnvValue(nextResult?.title),
+    jurisdiction: normalizeEnvValue(existingResult?.jurisdiction) || normalizeEnvValue(nextResult?.jurisdiction),
+    effectiveDate: normalizeEnvValue(existingResult?.effectiveDate) || normalizeEnvValue(nextResult?.effectiveDate),
+    promulgationDate: normalizeEnvValue(existingResult?.promulgationDate) || normalizeEnvValue(nextResult?.promulgationDate),
+    referenceUrl: normalizeEnvValue(existingResult?.referenceUrl) || normalizeEnvValue(nextResult?.referenceUrl),
+    summary: normalizeEnvValue(existingResult?.summary) || normalizeEnvValue(nextResult?.summary),
+    current: existingResult?.current === true || nextResult?.current === true,
+    gubun: normalizeEnvValue(existingResult?.gubun) || normalizeEnvValue(nextResult?.gubun)
+  };
+}
+
+function rankSearchResults(resultGroups, query, limit) {
+  const mergedResults = new Map();
+  const queryProfile = buildSearchQueryProfile(query);
+
+  for (const resultGroup of resultGroups) {
+    for (const result of resultGroup) {
+      if (!result?.id) {
+        continue;
+      }
+
+      const existingResult = mergedResults.get(result.id);
+      mergedResults.set(result.id, existingResult ? mergeCandidateResult(existingResult, result) : result);
+    }
+  }
+
+  return [...mergedResults.values()]
+    .map((result) => ({
+      result,
+      score: scoreSearchCandidate(result, queryProfile),
+      timeline: parseSortableSearchDate(result.effectiveDate) || parseSortableSearchDate(result.promulgationDate)
+    }))
+    .sort((left, right) => {
+      if (left.score !== right.score) {
+        return right.score - left.score;
+      }
+
+      if (Number(right.result.current === true) !== Number(left.result.current === true)) {
+        return Number(right.result.current === true) - Number(left.result.current === true);
+      }
+
+      if (left.timeline !== right.timeline) {
+        return right.timeline - left.timeline;
+      }
+
+      if ((left.result.title ?? "").length !== (right.result.title ?? "").length) {
+        return (left.result.title ?? "").length - (right.result.title ?? "").length;
+      }
+
+      return String(left.result.id).localeCompare(String(right.result.id));
+    })
+    .slice(0, limit)
+    .map((entry) => entry.result);
+}
+
+function buildQueryVariants(query) {
+  const rawQuery = normalizeEnvValue(query);
+  const inferredQueryParts = splitJurisdictionAndBodyTitle(rawQuery);
+  const variants = new Set([rawQuery]);
+  const withoutWideRegionSuffix = rawQuery
+    .replace(/\uD2B9\uBCC4\uC790\uCE58\uB3C4/g, "")
+    .replace(/\uD2B9\uBCC4\uC790\uCE58\uC2DC/g, "")
+    .replace(/\uD2B9\uBCC4\uC2DC/g, "")
+    .replace(/\uAD11\uC5ED\uC2DC/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (withoutWideRegionSuffix) {
+    variants.add(withoutWideRegionSuffix);
+  }
+
+  if (inferredQueryParts.bodyTitle && inferredQueryParts.bodyTitle !== rawQuery) {
+    variants.add(inferredQueryParts.bodyTitle);
+  }
+
+  return [...variants].filter(Boolean).slice(0, 5);
 }
 
 function parseClauseList(text) {
@@ -604,43 +817,59 @@ async function fetchText(url, init, message, path) {
 
 async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
   let lastError = null;
+  const queryVariants = buildQueryVariants(query);
 
   for (const baseUrl of baseUrls) {
-    try {
-      const searchUrl = buildAbsoluteUrl(baseUrl, "/DRF/lawSearch.do", {
-        OC: oc,
-        target: "ordin",
-        type: "JSON",
-        mobileYn: "Y",
-        query
-      });
+    let sawResponse = false;
+    const collectedResults = [];
 
-      const searchText = await fetchText(
-        searchUrl,
-        {},
-        "Failed to search ordinances from law.go.kr.",
-        "query"
-      );
-
-      let parsed;
-
+    for (const queryVariant of queryVariants) {
       try {
-        parsed = JSON.parse(searchText);
-      } catch (error) {
-        throw buildFetchError("law.go.kr search returned invalid JSON.", [
-          {
-            path: "response.search",
-            message: error instanceof Error ? error.message : String(error)
-          }
-        ]);
-      }
+        const searchUrl = buildAbsoluteUrl(baseUrl, "/DRF/lawSearch.do", {
+          OC: oc,
+          target: "ordin",
+          type: "JSON",
+          mobileYn: "Y",
+          query: queryVariant
+        });
 
-      return normalizeLawSearchPayload(parsed)
-        .map((candidate) => normalizeSearchResult(baseUrl, candidate))
-        .filter((candidate) => candidate && candidate.id)
-        .slice(0, limit);
-    } catch (error) {
-      lastError = error;
+        const searchText = await fetchText(
+          searchUrl,
+          {},
+          "Failed to search ordinances from law.go.kr.",
+          "query"
+        );
+
+        let parsed;
+
+        try {
+          parsed = JSON.parse(searchText);
+        } catch (error) {
+          throw buildFetchError("law.go.kr search returned invalid JSON.", [
+            {
+              path: "response.search",
+              message: error instanceof Error ? error.message : String(error)
+            }
+          ]);
+        }
+
+        sawResponse = true;
+        collectedResults.push(
+          ...normalizeLawSearchPayload(parsed)
+            .map((candidate) => normalizeSearchResult(baseUrl, candidate))
+            .filter((candidate) => candidate && candidate.id)
+        );
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (collectedResults.length > 0) {
+      return rankSearchResults([collectedResults], query, limit);
+    }
+
+    if (sawResponse) {
+      return [];
     }
   }
 
@@ -649,36 +878,47 @@ async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
 
 async function searchPublicHtmlOrdinances({ baseUrls, query, limit }) {
   let lastError = null;
+  const queryVariants = buildQueryVariants(query);
 
   for (const baseUrl of baseUrls) {
-    try {
-      const searchUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinScListR.do", {
-        menuId: "3",
-        subMenuId: "27",
-        tabMenuId: "139",
-        q: query,
-        section: "ordinNm",
-        outmax: String(Math.max(limit, 10)),
-        pg: "1",
-        dtlYn: "N"
-      });
+    let sawResponse = false;
+    const collectedResults = [];
 
-      const searchHtml = await fetchText(
-        searchUrl,
-        {},
-        "Failed to search ordinances from the public law.go.kr HTML endpoint.",
-        "query"
-      );
+    for (const queryVariant of queryVariants) {
+      try {
+        const searchUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinScListR.do", {
+          menuId: "3",
+          subMenuId: "27",
+          tabMenuId: "139",
+          q: queryVariant,
+          section: "ordinNm",
+          outmax: String(Math.max(limit, 10)),
+          pg: "1",
+          dtlYn: "N"
+        });
 
-      const results = parsePublicHtmlSearchResults(searchHtml, baseUrl)
-        .filter((candidate, index, array) => array.findIndex((item) => item.id === candidate.id) === index)
-        .slice(0, limit);
+        const searchHtml = await fetchText(
+          searchUrl,
+          {},
+          "Failed to search ordinances from the public law.go.kr HTML endpoint.",
+          "query"
+        );
 
-      if (results.length > 0) {
-        return results;
+        sawResponse = true;
+        collectedResults.push(...parsePublicHtmlSearchResults(searchHtml, baseUrl));
+      } catch (error) {
+        lastError = error;
       }
-    } catch (error) {
-      lastError = error;
+    }
+
+    const results = rankSearchResults([collectedResults], query, limit);
+
+    if (results.length > 0) {
+      return results;
+    }
+
+    if (sawResponse) {
+      return [];
     }
   }
 
@@ -906,46 +1146,63 @@ export function createLawGoPublicSource({
         throw buildSourceInputError([{ path: "query", message: "is required" }]);
       }
 
-      let results = [];
-      let searchBackend = "drf";
+      let drfResults = [];
+      let htmlResults = [];
+      let drfError = null;
+      let htmlError = null;
 
       try {
-        results = await searchOfficialOrdinances({
+        drfResults = await searchOfficialOrdinances({
           baseUrls: baseUrlCandidates,
           oc: resolvedOc,
           query,
           limit
         });
       } catch (error) {
+        drfError = error;
         if (ocMode === "env") {
           throw error;
         }
       }
 
-      if (results.length === 0) {
-        results = await searchPublicHtmlOrdinances({
-          baseUrls: baseUrlCandidates,
-          query,
-          limit
-        });
-        if (results.length > 0) {
-          searchBackend = "html-fallback";
+      if (ocMode === "test-demo" || drfResults.length < limit) {
+        try {
+          htmlResults = await searchPublicHtmlOrdinances({
+            baseUrls: baseUrlCandidates,
+            query,
+            limit
+          });
+        } catch (error) {
+          htmlError = error;
         }
       }
 
+      if (drfResults.length === 0 && htmlResults.length === 0) {
+        throw htmlError ?? drfError ?? buildFetchError("Failed to search ordinances from law.go.kr.");
+      }
+
+      let searchBackend = "drf";
+      if (drfResults.length > 0 && htmlResults.length > 0) {
+        searchBackend = "drf+html";
+      } else if (htmlResults.length > 0) {
+        searchBackend = "html-fallback";
+      }
+
+      const results = rankSearchResults([drfResults, htmlResults], query, limit);
       let resolvedResults = results;
       let historyExpanded = false;
+      const historySeed = results[0] ?? null;
 
-      if (shouldExpandHistory(results, query)) {
+      if (historySeed && shouldExpandHistory(results, query)) {
         try {
           const historyResults = await fetchHistoryEntries({
             baseUrls: baseUrlCandidates,
-            ordinanceId: results[0].id,
-            seedResult: results[0]
+            ordinanceId: historySeed.id,
+            seedResult: historySeed
           });
 
           if (historyResults.length > 1) {
-            resolvedResults = mergeSearchResults(results, historyResults, limit);
+            resolvedResults = rankSearchResults([results, historyResults], query, limit);
             historyExpanded = true;
           }
         } catch {
@@ -961,7 +1218,7 @@ export function createLawGoPublicSource({
           ocMode,
           searchBackend,
           historyExpanded,
-          historySeedId: historyExpanded ? results[0].id : null
+          historySeedId: historyExpanded ? historySeed.id : null
         }
       };
     },

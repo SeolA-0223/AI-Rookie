@@ -75,7 +75,8 @@ Then call `/analyze` with ordinance sequence IDs:
 
 `law-go-public` search now expands a high-confidence single result with `ordinHstListR.do` history entries, so `/source-search` can recommend a pre/post pair when the public site exposes ordinance history.
 If the public DRF search returns no structured rows, AI-Rookie now falls back to the public HTML list endpoint `ordinScListR.do`.
-The default public demo `LAW_GO_OC=test` still returns sparse or empty search results in some cases. For reliable search, set a real `LAW_GO_OC`. If `recommendation` is still `null`, use known ordinance sequence IDs directly.
+`law-go-public` also merges DRF + HTML candidates and re-ranks them by query match, and it will retry a body-title-only variant for wide-area queries such as `서울특별시 청년 기본 조례`.
+The default public demo `LAW_GO_OC=test` still returns sparse or empty search results in some cases. As of 2026-04-10, some searches like `서울특별시 청년 기본 조례` still return district ordinances instead of the metropolitan-city ordinance. For reliable search, set a real `LAW_GO_OC`. If `recommendation` is still `null`, use known ordinance sequence IDs directly.
 
 `korea-law-mcp` uses a Streamable HTTP MCP endpoint. If the endpoint is running locally, the adapter auto-resolves `/mcp` when only the host/port is provided:
 
