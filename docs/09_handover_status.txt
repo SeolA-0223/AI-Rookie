@@ -1,28 +1,29 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-10 00:16:22 KST
+Auto-updated: 2026-04-10 00:28:24 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: ee4d680 (HEAD -> main) feat: add bundled case catalog and public search fallback
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24127432583)
+- Latest commit at update time: 74ee338 (HEAD -> main) feat: improve public law source search ranking
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24198026635)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main [ahead 1]
+- M data/eval/metrics.json
 - M  docs/09_handover_status.txt
 
 3) Recent Commits (max 8)
-- ee4d680 (HEAD -> main) feat: add bundled case catalog and public search fallback
-- abee068 (origin/main, origin/HEAD) docs: refresh handover after public search history
+- 74ee338 (HEAD -> main) feat: improve public law source search ranking
+- d3b5348 (origin/main, origin/HEAD) docs: refresh handover after case catalog rollout
+- ee4d680 feat: add bundled case catalog and public search fallback
+- abee068 docs: refresh handover after public search history
 - 7b31712 feat: expand public law source search with history
 - fe2e336 docs: refresh handover after public source rollout
 - 2b08d6c fix: replace public law source fetch implementation
 - 254340a fix: retry public law source over alternate scheme
-- 8356111 feat: add public law.go.kr source adapter
-- 1f2a3cb docs: refresh handover after multi-case eval
 
 4) Staged Files
 - (none)
@@ -39,11 +40,12 @@ Auto-updated: 2026-04-10 00:16:22 KST
 - Local verification succeeded against `law.go.kr`: ordinance search returned real candidates, `source-status?provider=law-go-public` reported `enabled=true`, and a local fetch for ordinance `1840747` returned 28 parsed clauses.
 - Vercel deployment is the current blocker for `law-go-public`. After commits `254340a` and `2b08d6c`, GitHub Actions succeeded, but `https://ai-rookie-three.vercel.app/api/source-search?provider=law-go-public...` and `/api/analyze` still fail with `SOURCE_FETCH_FAILED` and `read ECONNRESET`.
 - `law-go-public` search now expands a single strong seed result with `ordinHstListR.do` history entries. Mock integration coverage proves that `/source-search` can now return a recommended pre/post pair from public ordinance history when the search seed is available.
-- `law-go-public` now falls back to the public HTML list endpoint `ordinScListR.do` when the default demo DRF search returns no rows. This removes the hard dependency on `LAW_GO_OC` for basic local search, but relevance is still limited for some ordinance titles.
+- `law-go-public` now merges DRF + HTML candidates, re-ranks them by query match, and retries a body-title-only query variant for wide-area searches such as `서울특별시 청년 기본 조례`.
+- Even after the re-ranking change, the default demo `LAW_GO_OC=test` still does not reliably return the exact metropolitan-city ordinance for some queries. As of 2026-04-10, `서울특별시 청년 기본 조례` still comes back with district ordinances first in real local verification.
 - `local-fixture` now supports bundled `caseId` selection. `/case-catalog` exposes the three municipality case packs, and the dashboard can switch case packs without editing `data/samples/*`.
 - `npm run check` passes after the new provider work. Current eval summary remains `evaluatedCaseCount=3`, `passedCaseCount=3`, `allCasesPassed=true`.
 - Live `korea-law-mcp` verification is still open. Public README evidence exists, but no reachable public HTTP deployment was found, and this workspace currently lacks a usable Python/uv runtime to launch the upstream server locally.
-- Next implementation order: improve ordinance search relevance/ranking for public providers -> secure a real `LAW_GO_OC` or alternate live search runtime -> move the backend to a runtime that can reach `law.go.kr` reliably or proxy that traffic -> secure a real MCP runtime for contract verification.
+- Next implementation order: secure a real `LAW_GO_OC` or alternate live search runtime -> decide between curated fallback vs search diagnostics for exact-title misses -> move the backend to a runtime that can reach `law.go.kr` reliably or proxy that traffic -> secure a real MCP runtime for contract verification.
 ### [MANUAL NOTES END]
 
 8) Quick Commands
