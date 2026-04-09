@@ -20,8 +20,8 @@
 | 다중 사례 평가 | 완료 | `npm run eval`이 `data/cases/*` 전체를 평가하고 aggregate summary를 생성 |
 | 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint + 연혁(`ordinHstListR.do`) + HTML search fallback 정리 |
 | 공개 검색 재정렬 | 완료 | `law-go-public`가 DRF + HTML 후보를 병합하고 body-title query variant까지 사용해 재정렬 |
-| 공개 본문 fetch 정렬 | 완료 | `law-go-public`가 `ordinInfoP.do` hidden input(`gubun`, `nwYn`, `ancYd`, `ancNo`)을 따라 historical/current pair를 로컬에서 분석 가능 |
-| 제품 고도화 | 다음 작업 | 실 OC 확보, live MCP 계약 검증, Vercel 외부 백엔드 런타임 검토 |
+| 공개 본문 fetch 정렬 | 완료 | `law-go-public`가 `ordinInfoP.do` hidden input(`gubun`, `nwYn`, `ancYd`, `ancNo`)을 따라 historical/current pair를 로컬과 Vercel에서 분석 가능 |
+| 제품 고도화 | 다음 작업 | 실 OC 확보, live MCP 계약 검증, exact search fallback 정리 |
 
 ## 완료된 작업
 - [x] `/analyze`, `/history`, `/health` API 배포 및 라이브 점검
@@ -54,16 +54,15 @@
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
 - [ ] 실사용 `LAW_GO_OC` 또는 동등한 검색 자격 확보
-- [ ] Vercel에서는 `law-go-public` `/api/analyze`가 어느 endpoint(`info`, `clauseList`, `print`)에서 끊기는지 재검증 후 남은 `ECONNRESET` 범위 정리
 - [ ] `LAW_GO_OC=test`에서 여전히 exact title hit가 안 나오는 조례 검색 품질 보정 또는 curated fallback 전략 정리
 
 ## 다음 작업 (우선순위)
 1. 실사용 `LAW_GO_OC`를 확보하거나 검색을 대체할 live Korea-law-mcp 런타임 확보
-2. `law-go-public`를 계속 쓸 경우 Vercel 밖의 실행 환경으로 백엔드 이전
-3. exact title hit가 없는 공공 검색어에 대해 curated fallback 또는 search diagnostics 메타데이터 추가
-4. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
-5. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 더 정리
-6. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
+2. exact title hit가 없는 공공 검색어에 대해 curated fallback 또는 search diagnostics 메타데이터 추가
+3. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
+4. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 더 정리
+5. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
+6. 검색 결과와 케이스 팩 provenance를 더 선명하게 보여주는 UI 보완
 
 ## 작업 루틴 (인수인계 기준)
 1. 코드/문서 수정
@@ -78,3 +77,5 @@
 - 스모크 테스트: `npm run smoke`
 - 인수인계 수동 갱신: `npm run handover:update`
 - 훅 점검: `npm run hooks:doctor`
+
+
