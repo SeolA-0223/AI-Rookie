@@ -52,7 +52,7 @@
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
 - [ ] 실사용 `LAW_GO_OC` 또는 동등한 검색 자격 확보
-- [ ] Vercel serverless 런타임에서는 `law.go.kr` outbound가 `ECONNRESET`로 끊기는 제한 정리
+- [ ] Vercel에서는 `law-go-public` `/api/source-search`는 응답하지만 `/api/analyze` detail fetch가 아직 `ECONNRESET`로 실패하는 제한 정리
 - [ ] `LAW_GO_OC=test`에서 여전히 exact title hit가 안 나오는 조례 검색 품질 보정 또는 curated fallback 전략 정리
 
 ## 다음 작업 (우선순위)
