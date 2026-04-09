@@ -1,6 +1,6 @@
 ﻿# 진행 보드 (Plan + Progress)
 
-기준 시각: 2026-04-08 18:06 KST
+기준 시각: 2026-04-10 00:14 KST
 
 ## 한눈에 보기
 | 구분 | 상태 | 내용 |
@@ -16,8 +16,9 @@
 | Source Search Helper | 완료 | `/source-search`와 대시보드 후보 선택으로 ID 탐색 보조 |
 | Before/After 추천 | 완료 | 검색 결과의 동일 조례군과 날짜 메타데이터를 사용해 추천 pair 계산 |
 | 실사례 케이스 팩 | 완료 | 울산/부천/서울 청년·복지 중심 normalized case pack 3종 추가 |
+| 케이스 카탈로그 | 완료 | `/case-catalog` + 대시보드 dropdown으로 bundled case pack 선택 |
 | 다중 사례 평가 | 완료 | `npm run eval`이 `data/cases/*` 전체를 평가하고 aggregate summary를 생성 |
-| 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint + 연혁(`ordinHstListR.do`) 보조 경로 정리 |
+| 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint + 연혁(`ordinHstListR.do`) + HTML search fallback 정리 |
 | 제품 고도화 | 다음 작업 | 실 OC 확보, live MCP 계약 검증, Vercel 외부 백엔드 런타임 검토 |
 
 ## 완료된 작업
@@ -36,6 +37,7 @@
 - [x] `/source-search` 응답에 추천 `before` / `after` pair 추가
 - [x] 대시보드에 `Use Recommended Pair` 흐름 추가
 - [x] 지자체 실사례 기반 normalized case pack 3종 추가 (`울산`, `부천`, `서울`)
+- [x] `/case-catalog` 추가 및 `local-fixture caseId` 기반 bundled case pack 선택 지원
 - [x] 기본 `local-fixture` 샘플을 울산 청년 구직지원 사례로 교체
 - [x] 변경 탐지/영향 매핑 키워드를 새 샘플 기준으로 정리
 - [x] `npm run eval`을 기본 샘플 + `data/cases/*` suite 평가로 확장
@@ -54,9 +56,9 @@
 1. 실사용 `LAW_GO_OC`를 확보하거나 검색을 대체할 live Korea-law-mcp 런타임 확보
 2. `law-go-public`를 계속 쓸 경우 Vercel 밖의 실행 환경으로 백엔드 이전
 3. 실제 Korea-law-mcp 서버의 live tool name / argument name / 응답 shape 확인
-4. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 정리
+4. `/analyze` 입력을 실제 조례/자치법규 식별자 기반으로 더 정리
 5. 한국어 법령 텍스트 기준 변경유형 분류 규칙 보강
-6. 케이스 팩 전환 UI 또는 CLI 보조 흐름 추가
+6. 케이스 팩 선택 결과를 히스토리/화면 상단에 더 선명하게 표시
 
 ## 작업 루틴 (인수인계 기준)
 1. 코드/문서 수정

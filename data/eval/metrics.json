@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-04-08T09:04:00.780Z",
+  "evaluatedAt": "2026-04-09T15:14:50.063Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
@@ -52,7 +52,7 @@
     "summary": {
       "evaluatedCaseCount": 3,
       "passedCaseCount": 3,
-      "suiteRuntimeMs": 1,
+      "suiteRuntimeMs": 2,
       "averageF1": 1,
       "averageMappingCoverage": 1,
       "averageTraceCompleteness": 1,
@@ -137,7 +137,7 @@
           "after": "data/cases/seoul_youth_basic_ordinance/after.json",
           "internalDocs": "data/cases/seoul_youth_basic_ordinance/internal_docs.json"
         },
-        "runtimeMs": 1,
+        "runtimeMs": 0,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,

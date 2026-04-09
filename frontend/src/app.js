@@ -1,4 +1,5 @@
 const HEALTH_ENDPOINT = "/api/health";
+const CASE_CATALOG_ENDPOINT = "/api/case-catalog";
 const SOURCE_SEARCH_ENDPOINT = "/api/source-search";
 const SOURCE_STATUS_ENDPOINT = "/api/source-status";
 const ANALYZE_ENDPOINT = "/api/analyze";
@@ -13,6 +14,8 @@ const historyListView = document.getElementById("history-list");
 const sourceStatusView = document.getElementById("source-status");
 const sourceHelpView = document.getElementById("source-help");
 const sourceProviderField = document.getElementById("source-provider");
+const sourceCaseGroup = document.getElementById("source-case-group");
+const sourceCaseField = document.getElementById("source-case-id");
 const sourceBeforeGroup = document.getElementById("source-before-group");
 const sourceAfterGroup = document.getElementById("source-after-group");
 const sourceBeforeIdField = document.getElementById("source-before-id");
@@ -27,6 +30,7 @@ const sourceSearchResultsView = document.getElementById("source-search-results")
 let latestHealth = null;
 let latestRequestedSourceStatus = null;
 let latestSourceSearchResult = null;
+let latestCaseCatalog = null;
 
 function setStatus(message, type = "neutral") {
   if (!statusView) {
@@ -118,6 +122,46 @@ function providerUsesSourceIds(provider) {
 
 function providerSupportsSearch(provider) {
   return providerUsesSourceIds(provider);
+}
+
+function getSelectedCase() {
+  const selectedCaseId = sourceCaseField?.value ?? "";
+  return latestCaseCatalog?.cases?.find((item) => item.caseId === selectedCaseId) ?? null;
+}
+
+function populateCaseCatalog(payload = {}) {
+  if (!sourceCaseField) {
+    return;
+  }
+
+  const cases = Array.isArray(payload.cases) ? payload.cases : [];
+  const defaultCaseId =
+    typeof payload.defaultCaseId === "string" && payload.defaultCaseId
+      ? payload.defaultCaseId
+      : cases.find((entry) => entry.defaultSample)?.caseId ?? "";
+
+  sourceCaseField.innerHTML = "";
+
+  if (!cases.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No bundled cases available";
+    sourceCaseField.append(option);
+    sourceCaseField.disabled = true;
+    return;
+  }
+
+  for (const entry of cases) {
+    const option = document.createElement("option");
+    option.value = entry.caseId ?? "";
+    option.textContent = entry.municipality ? `${entry.municipality} - ${entry.title}` : entry.title ?? entry.caseId ?? "Untitled case";
+    if (entry.caseId === defaultCaseId) {
+      option.selected = true;
+    }
+    sourceCaseField.append(option);
+  }
+
+  sourceCaseField.disabled = false;
 }
 
 function applyRecommendedPair(recommendation) {
@@ -277,6 +321,9 @@ function formatProviderLabel(provider) {
 
 function describeRunSource(run) {
   const inputSource = run.result?.meta?.inputSource ?? {};
+  if (inputSource.provider === "local-fixture" && inputSource.caseId) {
+    return `Local Fixture (${inputSource.caseTitle ?? inputSource.caseId})`;
+  }
   if (providerUsesSourceIds(inputSource.provider)) {
     const ids =
       inputSource.beforeId && inputSource.afterId
@@ -532,6 +579,32 @@ async function loadHealth() {
   }
 }
 
+async function loadCaseCatalog() {
+  if (!sourceCaseField) {
+    latestCaseCatalog = null;
+    return;
+  }
+
+  try {
+    const response = await fetch(CASE_CATALOG_ENDPOINT);
+    if (!response.ok) {
+      throw new Error(`Case catalog request failed with ${response.status}`);
+    }
+
+    latestCaseCatalog = await response.json();
+    populateCaseCatalog(latestCaseCatalog);
+  } catch (error) {
+    latestCaseCatalog = null;
+    sourceCaseField.innerHTML = "";
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Bundled cases unavailable";
+    sourceCaseField.append(option);
+    sourceCaseField.disabled = true;
+    setSourceHelp(`Bundled case catalog unavailable: ${error.message}`, "error");
+  }
+}
+
 function parseErrorMessage(errorBody) {
   if (!errorBody || typeof errorBody !== "object") {
     return "";
@@ -563,7 +636,11 @@ function updateSourceControls() {
   const usesSourceIds = providerUsesSourceIds(provider);
   const supportsSearch = providerSupportsSearch(provider);
   const selectedSource = latestRequestedSourceStatus?.requestedProvider === provider ? latestRequestedSourceStatus.source : null;
+  const selectedCase = getSelectedCase();
 
+  if (sourceCaseGroup) {
+    sourceCaseGroup.hidden = provider !== "local-fixture";
+  }
   if (sourceBeforeGroup) {
     sourceBeforeGroup.hidden = !usesSourceIds;
   }
@@ -578,7 +655,9 @@ function updateSourceControls() {
     const localFixtureEnabled = selectedSource?.enabled ?? true;
     setSourceStatus(localFixtureEnabled ? "Bundled sample source ready." : "Bundled sample source is unavailable.", localFixtureEnabled ? "success" : "error");
     setSourceHelp(
-      "Uses the repository sample regulation pair. No source IDs are required for the default demo flow.",
+      selectedCase
+        ? `Uses bundled case pack "${selectedCase.title}" (${selectedCase.municipality ?? "municipality not set"}). No source IDs are required for this demo flow.`
+        : "Uses the repository sample regulation pair. No source IDs are required for the default demo flow.",
       localFixtureEnabled ? "neutral" : "error"
     );
     setSourceSearchStatus("Search is only used for remote ordinance providers.", "neutral");
@@ -736,11 +815,19 @@ function buildAnalyzePayload() {
   const provider = sourceProviderField?.value ?? "local-fixture";
 
   if (provider === "local-fixture") {
-    return {
-      source: {
-        provider: "local-fixture"
-      }
-    };
+    const selectedCaseId = sourceCaseField?.value.trim() ?? "";
+    return selectedCaseId
+      ? {
+          source: {
+            provider: "local-fixture",
+            caseId: selectedCaseId
+          }
+        }
+      : {
+          source: {
+            provider: "local-fixture"
+          }
+        };
   }
 
   const beforeId = sourceBeforeIdField?.value.trim() ?? "";
@@ -807,6 +894,12 @@ async function init() {
     });
   }
 
+  if (sourceCaseField) {
+    sourceCaseField.addEventListener("change", () => {
+      updateSourceControls();
+    });
+  }
+
   if (sourceSearchButton) {
     sourceSearchButton.addEventListener("click", () => {
       void runSourceSearch();
@@ -823,6 +916,7 @@ async function init() {
   }
 
   await loadHealth();
+  await loadCaseCatalog();
   await loadSelectedSourceStatus();
   await loadHistory();
   await runAnalyze();

@@ -25,9 +25,25 @@ test("createLawSource returns local fixture source by default", async () => {
 
   assert.equal(status.provider, "local-fixture");
   assert.equal(status.enabled, true);
+  assert.equal(status.caseCount, 3);
+  assert.equal(status.defaultCaseId, "ulsan_youth_job_support");
   assert.equal(pair.meta.provider, "local-fixture");
   assert.ok(Array.isArray(pair.beforeDoc.clauses));
   assert.ok(Array.isArray(pair.afterDoc.clauses));
+});
+
+test("createLawSource resolves bundled local fixture case packs by caseId", async () => {
+  const source = createLawSource({ provider: "local-fixture" });
+  const pair = await source.resolveRegulationPair({
+    caseId: "seoul_youth_basic_ordinance"
+  });
+
+  assert.equal(pair.meta.provider, "local-fixture");
+  assert.equal(pair.meta.mode, "case-pack");
+  assert.equal(pair.meta.caseId, "seoul_youth_basic_ordinance");
+  assert.match(pair.meta.caseTitle, /Seoul Youth Basic Ordinance/);
+  assert.equal(pair.beforeDoc.title, "Seoul Youth Basic Ordinance");
+  assert.equal(pair.afterDoc.title, "Seoul Youth Basic Ordinance");
 });
 
 test("createLawSource reports missing env for korea-law-mcp", async () => {
@@ -190,7 +206,8 @@ async function startMockKoreaLawMcpServer({
 async function startMockLawGoPublicServer({
   searchResultsByQuery = {},
   documentsById = {},
-  historyEntriesById = {}
+  historyEntriesById = {},
+  htmlSearchResultsByQuery = {}
 }) {
   const server = createServer(async (req, res) => {
     const requestUrl = new URL(req.url, "http://127.0.0.1");
@@ -224,6 +241,38 @@ async function startMockLawGoPublicServer({
             <input type="hidden" id="ordinNm" value="${document.title}" />
             <input type="hidden" id="lgovOrgCd" value="${document.lgovOrgCd ?? ""}" />
             <h2>${document.title}</h2>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    if (requestUrl.pathname === "/LSW/ordinScListR.do") {
+      const query = requestUrl.searchParams.get("q") ?? "";
+      const results = htmlSearchResultsByQuery[query] ?? [];
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(`
+        <html>
+          <body>
+            <div id="list_listR">
+              <div id="lelistwrapLeft" class="left_area">
+                <ul class="left_list_bx type02">
+                  ${results
+                    .map(
+                      (result, index) => `
+                        <li id="liBgcolor${index}">
+                          <a href="#AJAX" onclick="ordinViewAll('${result.id}','liBgcolor${index}', '0','${result.gubun ?? "ELIS"}','${result.current ? "1" : "0"}'); return false;">
+                            <span class="tx">${index + 1}. ${result.title}</span>
+                            <span class="tx2">[시행 ${result.effectiveDateLabel}] [${result.announcementLabel}, ${result.promulgationDateLabel}, ${result.amendmentType}]</span>
+                          </a>
+                        </li>
+                      `
+                    )
+                    .join("\n")}
+                </ul>
+              </div>
+            </div>
           </body>
         </html>
       `);
@@ -501,6 +550,7 @@ test("searchLawSource normalizes official ordinance search results through law-g
 
     assert.equal(result.meta.provider, "law-go-public");
     assert.equal(result.meta.ocMode, "test-demo");
+    assert.equal(result.meta.searchBackend, "drf");
     assert.equal(result.results.length, 1);
     assert.deepEqual(result.results[0], {
       id: "1853703",
@@ -511,6 +561,61 @@ test("searchLawSource normalizes official ordinance search results through law-g
       referenceUrl: `${server.baseUrl}/LSW/ordinInfoP.do?urlMode=ordinScJoRltInfoR&viewCls=ordinInfoP&ordinSeq=1853703&chrClsCd=010202&gubun=ELIS`,
       summary: "Ordinance / Partial Revision / Youth"
     });
+  } finally {
+    await server.close();
+  }
+});
+
+test("searchLawSource falls back to public HTML search when DRF search returns no results", async () => {
+  const server = await startMockLawGoPublicServer({
+    searchResultsByQuery: {
+      "서울특별시 청년 기본 조례": []
+    },
+    htmlSearchResultsByQuery: {
+      "서울특별시 청년 기본 조례": [
+        {
+          id: "1840747",
+          title: "서울특별시 청년 기본 조례",
+          effectiveDateLabel: "2023. 7. 24.",
+          announcementLabel: "서울특별시조례 제8862호",
+          promulgationDateLabel: "2023. 7. 24.",
+          amendmentType: "타법개정",
+          current: true
+        },
+        {
+          id: "1800444",
+          title: "서울특별시 청년 기본 조례",
+          effectiveDateLabel: "2023. 1. 5.",
+          announcementLabel: "서울특별시조례 제8451호",
+          promulgationDateLabel: "2023. 1. 5.",
+          amendmentType: "일부개정",
+          current: false
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: "서울특별시 청년 기본 조례",
+      limit: 5
+    });
+    const recommendation = recommendLawSourcePair(result.results, "서울특별시 청년 기본 조례");
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.searchBackend, "html-fallback");
+    assert.equal(result.results.length, 2);
+    assert.deepEqual(
+      result.results.map((item) => item.id),
+      ["1840747", "1800444"]
+    );
+    assert.equal(result.results[0].title, "서울특별시 청년 기본 조례");
+    assert.equal(result.results[0].effectiveDate, "2023-07-24");
+    assert.equal(result.results[0].summary, "Public search / 타법개정");
+    assert.equal(recommendation.before.id, "1800444");
+    assert.equal(recommendation.after.id, "1840747");
   } finally {
     await server.close();
   }

@@ -12,6 +12,12 @@ import {
   searchLawSource,
   SourceResolutionError
 } from "../sources/lawSource.js";
+import {
+  getLocalFixtureDefaultCaseId,
+  listLocalFixtureCases,
+  readLocalFixtureCasePack,
+  readSampleInternalDocs
+} from "../sources/providers/localFixtureLawSource.js";
 
 try {
   process.loadEnvFile();
@@ -32,6 +38,7 @@ const SAMPLE_INTERNAL_DOCS_FILE = fileURLToPath(new URL("../../../data/samples/i
 const ROUTES = {
   health: new Set(["/health", "/api/health"]),
   history: new Set(["/history", "/api/history"]),
+  caseCatalog: new Set(["/case-catalog", "/api/case-catalog"]),
   sourceSearch: new Set(["/source-search", "/api/source-search"]),
   sourceStatus: new Set(["/source-status", "/api/source-status"]),
   analyze: new Set(["/analyze", "/api/analyze"])
@@ -196,6 +203,9 @@ function validateAnalyzeRequest(payload) {
   if (isPlainObject(payload.source) && "afterId" in payload.source && typeof payload.source.afterId !== "string") {
     details.push({ path: "body.source.afterId", message: "must be a string" });
   }
+  if (isPlainObject(payload.source) && "caseId" in payload.source && typeof payload.source.caseId !== "string") {
+    details.push({ path: "body.source.caseId", message: "must be a string" });
+  }
   if ("source" in payload && ("before" in payload || "after" in payload)) {
     details.push({ path: "body.source", message: "cannot be combined with body.before or body.after" });
   }
@@ -213,17 +223,36 @@ function parseSourceSearchLimit(value) {
 }
 
 export async function buildAnalyzeInput(payload) {
-  const internalDocs = payload.internalDocs ?? readSample(SAMPLE_INTERNAL_DOCS_FILE);
-
   if (payload.source) {
-    const requestedLawSource = createLawSource({
+    const requestedProvider = resolveLawSourceProvider({
       provider: payload.source.provider
+    });
+
+    if (requestedProvider === "local-fixture" && typeof payload.source.caseId === "string" && payload.source.caseId.trim()) {
+      const casePack = readLocalFixtureCasePack(payload.source.caseId);
+      return {
+        beforeDoc: casePack.beforeDoc,
+        afterDoc: casePack.afterDoc,
+        internalDocs: payload.internalDocs ?? casePack.internalDocs,
+        sourceMeta: {
+          provider: "local-fixture",
+          mode: "case-pack",
+          caseId: casePack.caseId,
+          caseTitle: casePack.catalogEntry.title,
+          municipality: casePack.catalogEntry.municipality,
+          officialUrl: casePack.catalogEntry.officialUrl
+        }
+      };
+    }
+
+    const requestedLawSource = createLawSource({
+      provider: requestedProvider
     });
     const resolvedPair = await requestedLawSource.resolveRegulationPair(payload.source);
     return {
       beforeDoc: resolvedPair.beforeDoc,
       afterDoc: resolvedPair.afterDoc,
-      internalDocs,
+      internalDocs: payload.internalDocs ?? readSampleInternalDocs(),
       sourceMeta: resolvedPair.meta
     };
   }
@@ -231,11 +260,19 @@ export async function buildAnalyzeInput(payload) {
   return {
     beforeDoc: payload.before ?? readSample(SAMPLE_BEFORE_FILE),
     afterDoc: payload.after ?? readSample(SAMPLE_AFTER_FILE),
-    internalDocs,
+    internalDocs: payload.internalDocs ?? readSample(SAMPLE_INTERNAL_DOCS_FILE),
     sourceMeta:
       "before" in payload || "after" in payload
         ? { provider: "inline", mode: "request" }
         : { provider: "local-fixture", mode: "sample" }
+  };
+}
+
+export function buildCaseCatalogPayload() {
+  return {
+    provider: "local-fixture",
+    defaultCaseId: getLocalFixtureDefaultCaseId(),
+    cases: listLocalFixtureCases()
   };
 }
 
@@ -299,6 +336,10 @@ export async function handleSourceStatus(req, res) {
   sendJson(res, 200, buildSourceStatusPayload({
     provider: requestUrl.searchParams.get("provider")
   }));
+}
+
+export async function handleCaseCatalog(_req, res) {
+  sendJson(res, 200, buildCaseCatalogPayload());
 }
 
 export async function handleSourceSearch(req, res) {
@@ -409,6 +450,11 @@ export async function routeRequest(req, res) {
 
   if (req.method === "GET" && ROUTES.history.has(pathname)) {
     await handleHistory(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && ROUTES.caseCatalog.has(pathname)) {
+    await handleCaseCatalog(req, res);
     return;
   }
 

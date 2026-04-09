@@ -35,6 +35,24 @@ test("buildAnalyzeInput uses request source provider instead of default env prov
   assert.ok(Array.isArray(input.afterDoc.clauses));
 });
 
+test("buildAnalyzeInput loads bundled case packs for local-fixture caseId", async () => {
+  const moduleUrl = new URL(`../backend/src/http/app.js?case=fixture-case-${Date.now()}`, import.meta.url);
+  const { buildAnalyzeInput } = await import(moduleUrl);
+  const input = await buildAnalyzeInput({
+    source: {
+      provider: "local-fixture",
+      caseId: "seoul_youth_basic_ordinance"
+    }
+  });
+
+  assert.equal(input.sourceMeta.provider, "local-fixture");
+  assert.equal(input.sourceMeta.mode, "case-pack");
+  assert.equal(input.sourceMeta.caseId, "seoul_youth_basic_ordinance");
+  assert.equal(input.beforeDoc.title, "Seoul Youth Basic Ordinance");
+  assert.equal(input.afterDoc.title, "Seoul Youth Basic Ordinance");
+  assert.equal(input.internalDocs.length, 5);
+});
+
 test("buildSourceStatusPayload reports request-selected source provider status", async (t) => {
   const previousProvider = process.env.LAW_SOURCE_PROVIDER;
   const previousBaseUrl = process.env.KOREA_LAW_MCP_BASE_URL;
@@ -81,4 +99,15 @@ test("buildSourceSearchPayload returns empty local-fixture search results", asyn
   assert.deepEqual(payload.results, []);
   assert.equal(payload.recommendation, null);
   assert.equal(payload.meta.provider, "local-fixture");
+});
+
+test("buildCaseCatalogPayload exposes bundled local fixture cases", async () => {
+  const moduleUrl = new URL(`../backend/src/http/app.js?case=catalog-${Date.now()}`, import.meta.url);
+  const { buildCaseCatalogPayload } = await import(moduleUrl);
+  const payload = buildCaseCatalogPayload();
+
+  assert.equal(payload.provider, "local-fixture");
+  assert.equal(payload.defaultCaseId, "ulsan_youth_job_support");
+  assert.equal(payload.cases.length, 3);
+  assert.ok(payload.cases.some((entry) => entry.caseId === "seoul_youth_basic_ordinance"));
 });

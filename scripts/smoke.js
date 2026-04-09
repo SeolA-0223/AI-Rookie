@@ -60,6 +60,12 @@ async function main() {
   assert(typeof health.source === "object" && health.source !== null, "Missing source object in /health response.");
   console.log("Health endpoint check passed.");
 
+  const caseCatalog = await fetchJson("/case-catalog");
+  assert(caseCatalog.provider === "local-fixture", "Unexpected provider in /case-catalog response.");
+  assert(Array.isArray(caseCatalog.cases), "Missing cases[] in /case-catalog response.");
+  assert(typeof caseCatalog.defaultCaseId === "string" && caseCatalog.defaultCaseId.length > 0, "Missing defaultCaseId in /case-catalog response.");
+  console.log(`Case catalog endpoint check passed. Loaded ${caseCatalog.cases.length} bundled case(s).`);
+
   const sourceStatus = await fetchJson("/source-status?provider=korea-law-mcp");
   assert(sourceStatus.requestedProvider === "korea-law-mcp", "Unexpected requestedProvider in /source-status response.");
   assert(typeof sourceStatus.source === "object" && sourceStatus.source !== null, "Missing source object in /source-status response.");

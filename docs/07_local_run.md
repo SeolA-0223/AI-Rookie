@@ -40,13 +40,15 @@ Default law source provider is `local-fixture`, which serves the sample regulati
 The dashboard now includes an `Analysis Source` panel for switching between sample input, `law-go-public`, and `korea-law-mcp`.
 The default `local-fixture` sample currently mirrors the Ulsan youth job-support case pack in `data/cases/ulsan_youth_job_support`.
 Additional normalized municipality case packs are listed in `data/cases/case_catalog.json`.
+The dashboard also loads `/case-catalog` so you can switch bundled local-fixture case packs without editing sample files.
 
 If you want to exercise the source-adapter path, send a request with a `source` object instead of inline `before`/`after` payloads:
 
 ```json
 {
   "source": {
-    "provider": "local-fixture"
+    "provider": "local-fixture",
+    "caseId": "seoul_youth_basic_ordinance"
   }
 }
 ```
@@ -72,6 +74,7 @@ Then call `/analyze` with ordinance sequence IDs:
 ```
 
 `law-go-public` search now expands a high-confidence single result with `ordinHstListR.do` history entries, so `/source-search` can recommend a pre/post pair when the public site exposes ordinance history.
+If the public DRF search returns no structured rows, AI-Rookie now falls back to the public HTML list endpoint `ordinScListR.do`.
 The default public demo `LAW_GO_OC=test` still returns sparse or empty search results in some cases. For reliable search, set a real `LAW_GO_OC`. If `recommendation` is still `null`, use known ordinance sequence IDs directly.
 
 `korea-law-mcp` uses a Streamable HTTP MCP endpoint. If the endpoint is running locally, the adapter auto-resolves `/mcp` when only the host/port is provided:
@@ -103,14 +106,14 @@ If the tool-name override is left blank, AI-Rookie first tries `get_local_ordina
 The same flow is available in the dashboard:
 
 1. Open `/`
-2. In `Analysis Source`, choose `law.go.kr Public` or `Korea Law MCP`
+2. In `Analysis Source`, either keep `Local Fixture` and choose a bundled case pack, or switch to `law.go.kr Public` / `Korea Law MCP`
 3. Search by ordinance title if you need candidate IDs
 4. If the server finds a timeline recommendation, click `Use Recommended Pair`
 5. Or use individual search results to fill `Before ID` and `After ID` manually
 6. Click `Run Analysis`
 
 ## 5) Run smoke check (in another terminal)
-Hits `GET /health`, `GET /source-status`, `GET /source-search`, `POST /analyze`, and `GET /history` and validates response shape.
+Hits `GET /health`, `GET /case-catalog`, `GET /source-status`, `GET /source-search`, `POST /analyze`, and `GET /history` and validates response shape.
 
 ```bash
 npm run smoke
@@ -128,6 +131,12 @@ To inspect the request-selected source provider directly:
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=korea-law-mcp"
 Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=law-go-public"
+```
+
+To inspect bundled case packs directly:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:3000/case-catalog"
 ```
 
 To search ordinance candidates directly:

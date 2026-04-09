@@ -22,6 +22,7 @@
 
 `/analyze`는 body가 없어도 샘플 데이터를 사용해 결과를 반환합니다.
 `/history`는 현재 설정된 저장소 provider의 최근 분석 이력을 반환합니다.
+`/case-catalog`는 대시보드에서 선택할 수 있는 bundled local-fixture case pack 목록을 반환합니다.
 `/source-status?provider=...`는 요청 시점에 선택한 law source provider의 설정 상태를 반환합니다.
 `/source-search?provider=...&query=...`는 선택한 law source provider에서 사용할 수 있는 조례 후보 ID를 검색합니다.
 
@@ -43,10 +44,12 @@
 
 ## 법령 소스 provider
 - 기본값은 `local-fixture`이며 샘플 전/후 규정 문서를 사용합니다.
+- `local-fixture`는 이제 `caseId`로 bundled municipality case pack을 직접 선택할 수 있습니다.
 - `/analyze`는 기존처럼 `before`/`after` 직접 입력도 받을 수 있습니다.
 - `LAW_SOURCE_PROVIDER=law-go-public`를 쓰면 공식 `law.go.kr` 공개 검색/본문 endpoint로 조례를 조회합니다.
 - `law-go-public`는 기본 `LAW_GO_BASE_URL=https://www.law.go.kr`를 사용하고, `LAW_GO_OC`가 비어 있으면 공개 demo `OC=test` 검색 경로로 동작합니다.
 - `law-go-public`는 검색 결과가 단일 고신뢰 조례로 좁혀지면 `ordinHstListR.do` 연혁 목록을 추가로 읽어 `/source-search` 추천 `before` / `after` 쌍을 보강합니다.
+- `law-go-public`는 `LAW_GO_OC=test`에서 DRF search가 비어 있을 때 공개 HTML search(`ordinScListR.do`)로 fallback 합니다.
 - 다만 공개 demo `OC=test`는 검색 결과가 비어 있거나 제한될 수 있습니다. 실사용 검색 품질이 필요하면 실제 `LAW_GO_OC`를 넣고, 그래도 결과가 부족하면 조례 일련번호를 직접 입력해야 합니다.
 - `LAW_SOURCE_PROVIDER=korea-law-mcp`를 쓰면 Streamable HTTP MCP endpoint에서 전/후 문서를 가져옵니다.
 - 공개 `mcp-kr-legislation` README 기준 현재 기본 자치법규 상세 도구는 `get_local_ordinance_detail`이며, AI-Rookie는 `get_ordinance_detail`까지 자동 fallback 합니다.
@@ -54,6 +57,7 @@
 - 기본 ID 인자는 `ID`입니다.
 - 실제 서버 구현이 다르면 `KOREA_LAW_MCP_DETAIL_TOOL_NAME`, `KOREA_LAW_MCP_ID_ARGUMENT_NAME`, `KOREA_LAW_MCP_SEARCH_TOOL_NAME`, `KOREA_LAW_MCP_SEARCH_QUERY_ARGUMENT_NAME`으로 맞출 수 있습니다.
 - 대시보드에서도 `Local Fixture`, `law.go.kr Public`, `Korea Law MCP`를 선택할 수 있으며, 원격 provider를 고르면 `beforeId` / `afterId`를 직접 입력합니다.
+- 대시보드에서 `Local Fixture`를 고르면 `/api/case-catalog`에서 불러온 bundled case pack을 dropdown으로 바로 선택할 수 있습니다.
 - 대시보드는 `/api/source-status?provider=...`를 호출해 선택한 provider의 request-level 상태를 직접 확인합니다.
 - 대시보드는 `/api/source-search?provider=...&query=...`를 호출해 조례명 후보를 찾고, 결과에서 `Before` / `After` ID를 채워 넣을 수 있습니다.
 - `/api/source-search`는 후보 목록 외에 `recommendation`도 반환하며, 같은 조례명과 날짜 메타데이터를 기준으로 추천 `before` / `after` 쌍을 계산합니다.

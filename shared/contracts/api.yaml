@@ -109,6 +109,31 @@ paths:
                   - results
                   - recommendation
                   - meta
+  /case-catalog:
+    get:
+      summary: List bundled local-fixture case packs for the demo dashboard
+      responses:
+        "200":
+          description: Bundled local case catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider:
+                    type: string
+                    enum:
+                      - local-fixture
+                  defaultCaseId:
+                    type: string
+                  cases:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LocalFixtureCase"
+                required:
+                  - provider
+                  - defaultCaseId
+                  - cases
   /analyze:
     post:
       summary: Analyze regulation changes and suggest follow-up actions
@@ -257,7 +282,10 @@ components:
           type: string
         afterId:
           type: string
+        caseId:
+          type: string
       description: >
+        For `local-fixture`, `caseId` selects one of the bundled municipality case packs.
         For `law-go-public`, `beforeId` and `afterId` are ordinance sequence IDs from law.go.kr.
         For `korea-law-mcp`, `beforeId` and `afterId` are passed to the configured MCP detail tool.
     LawSourceStatus:
@@ -295,6 +323,10 @@ components:
           items:
             type: string
         searchQueryArgumentName:
+          type: string
+        caseCount:
+          type: integer
+        defaultCaseId:
           type: string
       required:
         - enabled
@@ -347,12 +379,51 @@ components:
         - matchCount
         - reason
         - strategy
+    LocalFixtureCase:
+      type: object
+      properties:
+        caseId:
+          type: string
+        title:
+          type: string
+        municipality:
+          type: string
+        domain:
+          type: string
+        effectiveDate:
+          type: string
+        ordinanceNo:
+          type: string
+        officialUrl:
+          type: string
+        normalizedDemoExcerpts:
+          type: boolean
+        defaultSample:
+          type: boolean
+      required:
+        - caseId
+        - title
+        - municipality
+        - domain
+        - effectiveDate
+        - ordinanceNo
+        - officialUrl
+        - normalizedDemoExcerpts
+        - defaultSample
     AnalyzeInputSource:
       type: object
       properties:
         provider:
           type: string
         mode:
+          type: string
+        caseId:
+          type: string
+        caseTitle:
+          type: string
+        municipality:
+          type: string
+        officialUrl:
           type: string
     AnalyzeResponse:
       type: object

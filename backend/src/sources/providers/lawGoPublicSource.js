@@ -101,6 +101,13 @@ function normalizeDateValue(value) {
   return normalizedValue;
 }
 
+function stripLeadingListIndex(value) {
+  return normalizeEnvValue(value)
+    .replace(/^\d+\.\s*/, "")
+    .replace(/^[^\p{L}\p{N}]+/gu, "")
+    .trim();
+}
+
 function normalizeHistoryDateValue(value) {
   const normalizedValue = normalizeEnvValue(value).replace(/\s+/g, " ");
   const match = normalizedValue.match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
@@ -350,6 +357,43 @@ function mergeSearchResults(primaryResults, historyResults, limit) {
   }
 
   return mergedResults;
+}
+
+function parsePublicHtmlSearchResults(searchHtml, baseUrl) {
+  const itemPattern =
+    /<li id="liBgcolor\d+">\s*<a[^>]+onclick="ordinViewAll\('(\d+)'\s*,\s*'[^']*'\s*,\s*'[^']*'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\);\s*return false;"[^>]*>([\s\S]*?)<\/a>/gi;
+  const results = [];
+  let match;
+
+  while ((match = itemPattern.exec(searchHtml)) !== null) {
+    const [, ordinanceId, gubun, currentFlag, anchorHtml] = match;
+    const titleHtml = anchorHtml.match(/<span[^>]+class="tx"[^>]*>([\s\S]*?)<\/span>/i)?.[1] ?? "";
+    const metadataHtml = anchorHtml.match(/<span[^>]+class="tx2"[^>]*>([\s\S]*?)<\/span>/i)?.[1] ?? "";
+    const title = stripLeadingListIndex(stripHtml(titleHtml));
+    const metadata = stripHtml(metadataHtml);
+    const effectiveDate = normalizeHistoryDateValue(metadata.match(/\[\s*\uC2DC\uD589\s*([^\]]+)\]/)?.[1] ?? "");
+    const promulgationMatch = metadata.match(/\[[^,]+,\s*([^,]+),\s*([^\]]+)\]/);
+    const promulgationDate = normalizeHistoryDateValue(promulgationMatch?.[1] ?? "");
+    const amendmentType = normalizeEnvValue(promulgationMatch?.[2] ?? "");
+
+    if (!ordinanceId || !title) {
+      continue;
+    }
+
+    results.push({
+      id: ordinanceId,
+      title,
+      jurisdiction: "",
+      effectiveDate,
+      promulgationDate,
+      referenceUrl: buildReferenceUrl(baseUrl, ordinanceId),
+      summary: amendmentType ? `Public search / ${amendmentType}` : "Public search",
+      current: currentFlag === "1",
+      gubun: normalizeEnvValue(gubun)
+    });
+  }
+
+  return results;
 }
 
 function parseClauseList(text) {
@@ -603,6 +647,48 @@ async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
   throw lastError ?? buildFetchError("Failed to search ordinances from law.go.kr.");
 }
 
+async function searchPublicHtmlOrdinances({ baseUrls, query, limit }) {
+  let lastError = null;
+
+  for (const baseUrl of baseUrls) {
+    try {
+      const searchUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinScListR.do", {
+        menuId: "3",
+        subMenuId: "27",
+        tabMenuId: "139",
+        q: query,
+        section: "ordinNm",
+        outmax: String(Math.max(limit, 10)),
+        pg: "1",
+        dtlYn: "N"
+      });
+
+      const searchHtml = await fetchText(
+        searchUrl,
+        {},
+        "Failed to search ordinances from the public law.go.kr HTML endpoint.",
+        "query"
+      );
+
+      const results = parsePublicHtmlSearchResults(searchHtml, baseUrl)
+        .filter((candidate, index, array) => array.findIndex((item) => item.id === candidate.id) === index)
+        .slice(0, limit);
+
+      if (results.length > 0) {
+        return results;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return [];
+}
+
 async function fetchHistoryEntries({ baseUrls, ordinanceId, seedResult }) {
   let lastError = null;
 
@@ -820,12 +906,32 @@ export function createLawGoPublicSource({
         throw buildSourceInputError([{ path: "query", message: "is required" }]);
       }
 
-      const results = await searchOfficialOrdinances({
-        baseUrls: baseUrlCandidates,
-        oc: resolvedOc,
-        query,
-        limit
-      });
+      let results = [];
+      let searchBackend = "drf";
+
+      try {
+        results = await searchOfficialOrdinances({
+          baseUrls: baseUrlCandidates,
+          oc: resolvedOc,
+          query,
+          limit
+        });
+      } catch (error) {
+        if (ocMode === "env") {
+          throw error;
+        }
+      }
+
+      if (results.length === 0) {
+        results = await searchPublicHtmlOrdinances({
+          baseUrls: baseUrlCandidates,
+          query,
+          limit
+        });
+        if (results.length > 0) {
+          searchBackend = "html-fallback";
+        }
+      }
 
       let resolvedResults = results;
       let historyExpanded = false;
@@ -853,6 +959,7 @@ export function createLawGoPublicSource({
           provider: "law-go-public",
           mode: "adapter",
           ocMode,
+          searchBackend,
           historyExpanded,
           historySeedId: historyExpanded ? results[0].id : null
         }
