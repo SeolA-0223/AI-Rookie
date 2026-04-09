@@ -6,9 +6,11 @@ import { buildSourceStatus, normalizeEnvValue, SourceResolutionError } from "../
 const DEFAULT_BASE_URL = "https://www.law.go.kr";
 const DEFAULT_OC = "test";
 const DEFAULT_TIMEOUT_MS = 20000;
+const DEFAULT_RETRY_COUNT = 2;
 const MAX_REDIRECTS = 5;
 const DEFAULT_GUBUN = "ELIS";
 const DEFAULT_CHR_CLS_CD = "010202";
+const DEFAULT_DETAIL_GUBUN = "KLAW";
 const JURISDICTION_SUFFIXES = [
   "\uD2B9\uBCC4\uC790\uCE58\uB3C4",
   "\uD2B9\uBCC4\uC790\uCE58\uC2DC",
@@ -276,6 +278,15 @@ function buildReferenceUrl(baseUrl, ordinSeq) {
     chrClsCd: DEFAULT_CHR_CLS_CD,
     gubun: DEFAULT_GUBUN
   }).toString();
+}
+
+function buildInfoPageUrl(baseUrl, ordinSeq, { gubun = DEFAULT_DETAIL_GUBUN, chrClsCd = DEFAULT_CHR_CLS_CD, nwYn = "" } = {}) {
+  return buildAbsoluteUrl(baseUrl, "/LSW/ordinInfoP.do", {
+    ordinSeq,
+    chrClsCd,
+    gubun,
+    nwYn
+  });
 }
 
 function normalizeSearchResult(baseUrl, candidate) {
@@ -647,6 +658,54 @@ function parseClauseList(text) {
     .filter(Boolean);
 }
 
+function parseInfoPageMetadata(infoHtml, fallback = {}) {
+  return {
+    ordinSeq: extractInputValue(infoHtml, "ordinSeq") || normalizeEnvValue(fallback.ordinSeq),
+    ordinId: extractInputValue(infoHtml, "ordinId") || normalizeEnvValue(fallback.ordinId),
+    ancYd: extractInputValue(infoHtml, "ancYd") || normalizeEnvValue(fallback.ancYd),
+    ancNo: extractInputValue(infoHtml, "ancNo") || normalizeEnvValue(fallback.ancNo),
+    lgovOrgCd: extractInputValue(infoHtml, "lgovOrgCd") || normalizeEnvValue(fallback.lgovOrgCd),
+    gubun: extractInputValue(infoHtml, "gubun") || normalizeEnvValue(fallback.gubun) || DEFAULT_DETAIL_GUBUN,
+    nwYn: extractInputValue(infoHtml, "nwYn") || normalizeEnvValue(fallback.nwYn) || "N",
+    chrClsCd: extractInputValue(infoHtml, "chrClsCd") || normalizeEnvValue(fallback.chrClsCd) || DEFAULT_CHR_CLS_CD,
+    title: extractInputValue(infoHtml, "ordinNm") || extractInnerText(infoHtml, /<h2>([\s\S]*?)<\/h2>/i)
+  };
+}
+
+function normalizeTransportErrorMessage(error) {
+  const topLevelMessage = error instanceof Error ? error.message : String(error);
+  const nestedCauseMessage =
+    error instanceof Error && error.cause instanceof Error
+      ? error.cause.message
+      : error instanceof Error && error.cause
+        ? String(error.cause)
+        : "";
+
+  return [topLevelMessage, nestedCauseMessage].filter(Boolean).join(" / ");
+}
+
+function isRetryableTransportError(error) {
+  const message = normalizeTransportErrorMessage(error).toLowerCase();
+
+  return [
+    "econnreset",
+    "socket hang up",
+    "fetch failed",
+    "etimedout",
+    "request timed out",
+    "eai_again",
+    "econnrefused",
+    "terminated",
+    "other side closed"
+  ].some((fragment) => message.includes(fragment));
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function parsePrintClauses(printHtml, clauseEntries) {
   const labelPattern = /<label\s+for=["']([^"']+)["'][^>]*>([\s\S]*?)<\/label>/gi;
   const labels = [];
@@ -724,7 +783,7 @@ function decompressResponseBody(buffer, encoding) {
   return buffer;
 }
 
-async function requestText(url, init = {}, redirectCount = 0) {
+async function requestTextWithNodeClient(url, init = {}, redirectCount = 0) {
   if (redirectCount > MAX_REDIRECTS) {
     throw new Error("too many redirects");
   }
@@ -801,18 +860,79 @@ async function requestText(url, init = {}, redirectCount = 0) {
   });
 }
 
-async function fetchText(url, init, message, path) {
-  try {
-    const response = await requestText(url, init);
-    return readTextResponse(response, message, path);
-  } catch (error) {
-    throw buildFetchError(message, [
-      {
-        path,
-        message: error instanceof Error ? error.message : String(error)
-      }
-    ]);
+async function requestText(url, init = {}, redirectCount = 0) {
+  if (redirectCount > MAX_REDIRECTS) {
+    throw new Error("too many redirects");
   }
+
+  const targetUrl = typeof url === "string" ? new URL(url) : url;
+  const body =
+    typeof init.body === "string"
+      ? init.body
+      : Buffer.isBuffer(init.body)
+        ? init.body
+        : null;
+  const headers = {
+    "user-agent": "AI-Rookie/0.1",
+    accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+    "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "accept-encoding": "gzip, deflate, br",
+    connection: "close",
+    referer: buildAbsoluteUrl(targetUrl, "/").toString(),
+    ...init.headers
+  };
+
+  if (typeof fetch === "function") {
+    try {
+      const response = await fetch(targetUrl, {
+        method: init.method ?? "GET",
+        headers,
+        body,
+        redirect: "manual"
+      });
+
+      if (response.status >= 300 && response.status < 400 && response.headers.get("location")) {
+        const redirectUrl = new URL(response.headers.get("location"), targetUrl);
+        return requestText(redirectUrl, init, redirectCount + 1);
+      }
+
+      return {
+        statusCode: response.status,
+        statusMessage: response.statusText ?? "",
+        body: await response.text()
+      };
+    } catch {
+      // Fall back to the lower-level client for hosts that behave better there.
+    }
+  }
+
+  return requestTextWithNodeClient(targetUrl, { ...init, headers }, redirectCount);
+}
+
+async function fetchText(url, init, message, path) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= DEFAULT_RETRY_COUNT; attempt += 1) {
+    try {
+      const response = await requestText(url, init);
+      return readTextResponse(response, message, path);
+    } catch (error) {
+      lastError = error;
+
+      if (attempt >= DEFAULT_RETRY_COUNT || !isRetryableTransportError(error)) {
+        break;
+      }
+
+      await delay(250 * (attempt + 1));
+    }
+  }
+
+  throw buildFetchError(message, [
+    {
+      path,
+      message: normalizeTransportErrorMessage(lastError)
+    }
+  ]);
 }
 
 async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
@@ -976,20 +1096,19 @@ async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
 
   for (const baseUrl of baseUrls) {
     try {
-      const infoUrl = buildReferenceUrl(baseUrl, ordinSeq);
+      const infoUrl = buildInfoPageUrl(baseUrl, ordinSeq);
       const infoHtml = await fetchText(
         infoUrl,
         {},
         "Failed to fetch the public ordinance detail page.",
         `source.${label}Id`
       );
+      const infoPageMetadata = parseInfoPageMetadata(infoHtml, {
+        ordinSeq,
+        gubun: DEFAULT_DETAIL_GUBUN
+      });
 
-      const ancYd = extractInputValue(infoHtml, "ancYd");
-      const ancNo = extractInputValue(infoHtml, "ancNo");
-      const lgovOrgCd = extractInputValue(infoHtml, "lgovOrgCd");
-      const title = extractInputValue(infoHtml, "ordinNm") || extractInnerText(infoHtml, /<h2>([\s\S]*?)<\/h2>/i);
-
-      if (!ancYd || !ancNo) {
+      if (!infoPageMetadata.ancYd || !infoPageMetadata.ancNo) {
         throw buildFetchError("Failed to parse the public ordinance metadata page.", [
           {
             path: "response.infoPage",
@@ -1002,12 +1121,12 @@ async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
         ordinSeq,
         mode: "99",
         chapNo: "1",
-        gubun: DEFAULT_GUBUN,
+        gubun: infoPageMetadata.gubun,
         paras: "",
-        nwYn: "1",
-        ancYd,
-        ancNo,
-        lgovOrgCd
+        nwYn: infoPageMetadata.nwYn,
+        ancYd: infoPageMetadata.ancYd,
+        ancNo: infoPageMetadata.ancNo,
+        lgovOrgCd: infoPageMetadata.lgovOrgCd
       });
 
       const clauseListText = await fetchText(
@@ -1029,8 +1148,8 @@ async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
 
       const printBody = new URLSearchParams({
         ordinSeq,
-        outPutGubun: DEFAULT_GUBUN,
-        gubun: DEFAULT_GUBUN
+        outPutGubun: infoPageMetadata.gubun,
+        gubun: infoPageMetadata.gubun
       });
 
       clauseEntries.forEach((entry) => {
@@ -1063,7 +1182,7 @@ async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
       }
 
       return {
-        title: title || extractInnerText(printHtml, /<h2>([\s\S]*?)<\/h2>/i) || ordinSeq,
+        title: infoPageMetadata.title || extractInnerText(printHtml, /<h2>([\s\S]*?)<\/h2>/i) || ordinSeq,
         version: version || ordinSeq,
         clauses
       };

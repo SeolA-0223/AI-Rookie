@@ -236,10 +236,13 @@ async function startMockLawGoPublicServer({
         <html>
           <body>
             <input type="hidden" id="ordinSeq" value="${document.ordinSeq}" />
+            <input type="hidden" id="ordinId" value="${document.ordinId ?? document.ordinSeq}" />
             <input type="hidden" id="ancYd" value="${document.ancYd}" />
             <input type="hidden" id="ancNo" value="${document.ancNo}" />
             <input type="hidden" id="ordinNm" value="${document.title}" />
             <input type="hidden" id="lgovOrgCd" value="${document.lgovOrgCd ?? ""}" />
+            <input type="hidden" id="gubun" value="${document.gubun ?? "KLAW"}" />
+            <input type="hidden" id="nwYn" value="${document.nwYn ?? "N"}" />
             <h2>${document.title}</h2>
           </body>
         </html>
@@ -311,6 +314,16 @@ async function startMockLawGoPublicServer({
         res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
         res.end("[]");
         return;
+      }
+
+      if (document.expectedClauseRequest) {
+        for (const [key, expectedValue] of Object.entries(document.expectedClauseRequest)) {
+          if ((requestUrl.searchParams.get(key) ?? "") !== expectedValue) {
+            res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+            res.end("[]");
+            return;
+          }
+        }
       }
 
       const clauseList = document.clauses.map((clause) => ({
@@ -884,6 +897,105 @@ test("createLawSource resolves ordinance pairs through the public law.go.kr flow
       title: "제2조(정의)",
       text: "청년은 19세 이상 34세 이하로 본다."
     });
+  } finally {
+    await server.close();
+  }
+});
+
+test("createLawSource resolves historical ordinance pairs through the public law.go.kr flow", async () => {
+  const server = await startMockLawGoPublicServer({
+    documentsById: {
+      "1811191": {
+        ordinSeq: "1811191",
+        ordinId: "2018334",
+        ancYd: "20230522",
+        ancNo: "8751",
+        title: "Seoul Youth Basic Ordinance",
+        gubun: "KLAW",
+        nwYn: "N",
+        expectedClauseRequest: {
+          gubun: "KLAW",
+          nwYn: "N",
+          ancYd: "20230522",
+          ancNo: "8751"
+        },
+        version: "[시행 2023. 5. 22.] [조례 제8751호, 2023. 5. 22., 일부개정]",
+        clauses: [
+          {
+            joNo: "000100",
+            oriJoNo: "0001",
+            joBrNo: "00",
+            title: "제1조 목적",
+            printTitle: "제1조(목적)",
+            text: "청년정책의 기본 방향을 정한다."
+          },
+          {
+            joNo: "000200",
+            oriJoNo: "0002",
+            joBrNo: "00",
+            title: "제2조 청년의 범위",
+            printTitle: "제2조(청년의 범위)",
+            text: "청년은 19세 이상 34세 이하로 본다."
+          }
+        ]
+      },
+      "2054497": {
+        ordinSeq: "2054497",
+        ordinId: "2018334",
+        ancYd: "20250714",
+        ancNo: "9765",
+        title: "Seoul Youth Basic Ordinance",
+        gubun: "KLAW",
+        nwYn: "Y",
+        expectedClauseRequest: {
+          gubun: "KLAW",
+          nwYn: "Y",
+          ancYd: "20250714",
+          ancNo: "9765"
+        },
+        version: "[시행 2025. 7. 14.] [조례 제9765호, 2025. 7. 14., 일부개정]",
+        clauses: [
+          {
+            joNo: "000100",
+            oriJoNo: "0001",
+            joBrNo: "00",
+            title: "제1조 목적",
+            printTitle: "제1조(목적)",
+            text: "청년정책과 지원체계의 기본 방향을 정한다."
+          },
+          {
+            joNo: "000200",
+            oriJoNo: "0002",
+            joBrNo: "00",
+            title: "제2조 청년의 범위",
+            printTitle: "제2조(청년의 범위)",
+            text: "청년은 19세 이상 39세 이하로 본다."
+          }
+        ]
+      }
+    }
+  });
+
+  try {
+    const source = createLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl
+    });
+
+    const pair = await source.resolveRegulationPair({
+      beforeId: "1811191",
+      afterId: "2054497"
+    });
+
+    assert.equal(pair.meta.provider, "law-go-public");
+    assert.equal(pair.beforeDoc.title, "Seoul Youth Basic Ordinance");
+    assert.equal(pair.afterDoc.title, "Seoul Youth Basic Ordinance");
+    assert.equal(pair.beforeDoc.clauses.length, 2);
+    assert.equal(pair.afterDoc.clauses.length, 2);
+    assert.match(pair.beforeDoc.version, /2023\. 5\. 22/);
+    assert.match(pair.afterDoc.version, /2025\. 7\. 14/);
+    assert.match(pair.beforeDoc.clauses[1].text, /34세 이하/);
+    assert.match(pair.afterDoc.clauses[1].text, /39세 이하/);
   } finally {
     await server.close();
   }

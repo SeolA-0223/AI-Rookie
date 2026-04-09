@@ -20,6 +20,7 @@
 | 다중 사례 평가 | 완료 | `npm run eval`이 `data/cases/*` 전체를 평가하고 aggregate summary를 생성 |
 | 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint + 연혁(`ordinHstListR.do`) + HTML search fallback 정리 |
 | 공개 검색 재정렬 | 완료 | `law-go-public`가 DRF + HTML 후보를 병합하고 body-title query variant까지 사용해 재정렬 |
+| 공개 본문 fetch 정렬 | 완료 | `law-go-public`가 `ordinInfoP.do` hidden input(`gubun`, `nwYn`, `ancYd`, `ancNo`)을 따라 historical/current pair를 로컬에서 분석 가능 |
 | 제품 고도화 | 다음 작업 | 실 OC 확보, live MCP 계약 검증, Vercel 외부 백엔드 런타임 검토 |
 
 ## 완료된 작업
@@ -34,6 +35,7 @@
 - [x] 실제 `law.go.kr` 실서버에서 조문 본문 fetch 검증 (`ordinBdyPrint.do`)
 - [x] `law-go-public` 검색 결과에 `ordinHstListR.do` 연혁 확장을 붙여 추천 pair 보강
 - [x] `law-go-public` 검색 결과를 DRF + HTML 후보 병합 + body-title query variant + match-based reranking으로 보강
+- [x] `law-go-public` detail fetch를 실제 info page hidden input 기반(`gubun`, `nwYn`, `ancYd`, `ancNo`) 흐름으로 보강
 - [x] `/source-status` 추가 및 대시보드 request-level source status 조회 연결
 - [x] `/source-search` 추가 및 `search_local_ordinance` 기반 ID 검색 보조 연결
 - [x] `/source-search` 응답에 추천 `before` / `after` pair 추가
@@ -52,7 +54,7 @@
 - [ ] 실제 Korea-law-mcp 서버의 live contract 확인
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
 - [ ] 실사용 `LAW_GO_OC` 또는 동등한 검색 자격 확보
-- [ ] Vercel에서는 `law-go-public` `/api/source-search`는 응답하지만 `/api/analyze` detail fetch가 아직 `ECONNRESET`로 실패하는 제한 정리
+- [ ] Vercel에서는 `law-go-public` `/api/analyze`가 어느 endpoint(`info`, `clauseList`, `print`)에서 끊기는지 재검증 후 남은 `ECONNRESET` 범위 정리
 - [ ] `LAW_GO_OC=test`에서 여전히 exact title hit가 안 나오는 조례 검색 품질 보정 또는 curated fallback 전략 정리
 
 ## 다음 작업 (우선순위)
