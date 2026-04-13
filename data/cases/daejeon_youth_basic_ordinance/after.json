@@ -1,0 +1,26 @@
+{
+  "title": "Daejeon Youth Basic Ordinance",
+  "version": "normalized-2024-07-01-revision",
+  "clauses": [
+    {
+      "id": "c1",
+      "title": "Eligibility Age Requirement",
+      "text": "Youth refers to Daejeon residents aged 19 to 39."
+    },
+    {
+      "id": "c2",
+      "title": "Required Documents for Participation Programs",
+      "text": "Applicants must submit resident registration, a participation plan, proof of local residence, and a policy feedback consent document."
+    },
+    {
+      "id": "c3",
+      "title": "Annual Implementation Plan Deadline",
+      "text": "The mayor announces the annual youth implementation plan by March 31 and may publish an additional update notice."
+    },
+    {
+      "id": "c4",
+      "title": "Project Support Amount Standard",
+      "text": "Project support amount is up to 7000000 KRW per team and may include mentoring payment."
+    }
+  ]
+}

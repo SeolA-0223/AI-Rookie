@@ -31,11 +31,15 @@ export function listLocalFixtureCases() {
   return readCaseCatalog().map((entry) => ({
     caseId: normalizeEnvValue(entry.caseId),
     title: normalizeEnvValue(entry.title),
+    officialKoreanTitle: normalizeEnvValue(entry.officialKoreanTitle),
     municipality: normalizeEnvValue(entry.municipality),
     domain: normalizeEnvValue(entry.domain),
     effectiveDate: normalizeEnvValue(entry.effectiveDate),
     ordinanceNo: normalizeEnvValue(entry.ordinanceNo),
     officialUrl: normalizeEnvValue(entry.officialUrl),
+    searchAliases: Array.isArray(entry.searchAliases)
+      ? entry.searchAliases.map((value) => normalizeEnvValue(value)).filter(Boolean)
+      : [],
     normalizedDemoExcerpts: entry.normalizedDemoExcerpts === true,
     defaultSample: entry.defaultSample === true
   }));

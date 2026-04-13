@@ -3,10 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
+import { generateDraftsWithConfiguredAI, getDraftGenerationStatus } from "../generation/generateDrafts.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
 import {
   createLawSource,
   getLawSourceStatus,
+  probeLawSource,
   recommendLawSourcePair,
   resolveLawSourceProvider,
   searchLawSource,
@@ -276,14 +278,21 @@ export function buildCaseCatalogPayload() {
   };
 }
 
-export function buildSourceStatusPayload({ provider } = {}) {
+function parseProbeFlag(value) {
+  const normalizedValue = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return normalizedValue === "1" || normalizedValue === "true" || normalizedValue === "yes";
+}
+
+export async function buildSourceStatusPayload({ provider, probe = false } = {}) {
   const requestedProvider = resolveLawSourceProvider({ provider });
+  const source = getLawSourceStatus({
+    provider: requestedProvider
+  });
 
   return {
     requestedProvider,
-    source: getLawSourceStatus({
-      provider: requestedProvider
-    })
+    source,
+    probe: probe ? await probeLawSource({ provider: requestedProvider }) : null
   };
 }
 
@@ -326,6 +335,7 @@ export async function handleHealth(req, res) {
   sendJson(res, 200, {
     status: "ok",
     service: "ai-rookie",
+    ai: getDraftGenerationStatus(),
     storage: analysisStore.getStorageStatus(),
     source: defaultLawSource.getSourceStatus()
   });
@@ -333,8 +343,9 @@ export async function handleHealth(req, res) {
 
 export async function handleSourceStatus(req, res) {
   const requestUrl = getRequestUrl(req);
-  sendJson(res, 200, buildSourceStatusPayload({
-    provider: requestUrl.searchParams.get("provider")
+  sendJson(res, 200, await buildSourceStatusPayload({
+    provider: requestUrl.searchParams.get("provider"),
+    probe: parseProbeFlag(requestUrl.searchParams.get("probe"))
   }));
 }
 
@@ -392,7 +403,13 @@ export async function handleAnalyze(req, res) {
     const { beforeDoc, afterDoc, internalDocs, sourceMeta } = await buildAnalyzeInput(payload);
     const source = detectRunSource(payload);
     const result = runPipeline({ beforeDoc, afterDoc, internalDocs });
+    const draftGeneration = await generateDraftsWithConfiguredAI(result.analysis.changes, result.analysis.risks, {
+      fallbackDrafts: result.drafts
+    });
+
+    result.drafts = draftGeneration.drafts;
     result.meta.inputSource = sourceMeta;
+    result.meta.ai = draftGeneration.meta;
     const persistence = await analysisStore.saveRun({
       source,
       requestPayload: {

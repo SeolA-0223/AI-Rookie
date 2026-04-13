@@ -702,6 +702,7 @@ export function createKoreaLawMcpSource({
     enabled: true,
     mode: "adapter",
     transport: "streamable-http",
+    endpoint: endpoint.toString(),
     detailToolNames: resolvedDetailToolNames,
     idArgumentName: resolvedIdArgumentName,
     searchToolNames: resolvedSearchToolNames,
@@ -711,6 +712,46 @@ export function createKoreaLawMcpSource({
   return {
     getSourceStatus() {
       return status;
+    },
+    async probeConnection() {
+      const client = new Client({
+        name: "ai-rookie-law-source",
+        version: "0.1.0"
+      });
+
+      const transport = new StreamableHTTPClientTransport(endpoint);
+
+      try {
+        await client.connect(transport);
+        const toolList = await client.listTools();
+        const availableToolNames = (toolList?.tools ?? []).map((tool) => tool.name).filter(Boolean);
+        const availableDetailToolNames = resolvedDetailToolNames.filter((name) => availableToolNames.includes(name));
+        const availableSearchToolNames = resolvedSearchToolNames.filter((name) => availableToolNames.includes(name));
+
+        return {
+          success: true,
+          provider: "korea-law-mcp",
+          endpoint: endpoint.toString(),
+          transport: "streamable-http",
+          availableToolCount: availableToolNames.length,
+          availableDetailToolNames,
+          availableSearchToolNames,
+          selectedDetailToolName: availableDetailToolNames[0] ?? resolvedDetailToolNames[0] ?? "",
+          selectedSearchToolName: availableSearchToolNames[0] ?? resolvedSearchToolNames[0] ?? "",
+          idArgumentName: resolvedIdArgumentName,
+          searchQueryArgumentName: resolvedSearchQueryArgumentName
+        };
+      } catch (error) {
+        return {
+          success: false,
+          provider: "korea-law-mcp",
+          endpoint: endpoint.toString(),
+          transport: "streamable-http",
+          error: error instanceof Error ? error.message : String(error)
+        };
+      } finally {
+        await client.close();
+      }
     },
     async searchRegulations(input = {}) {
       const query = normalizeEnvValue(input.query);
@@ -744,6 +785,7 @@ export function createKoreaLawMcpSource({
           meta: {
             provider: "korea-law-mcp",
             mode: "adapter",
+            endpoint: endpoint.toString(),
             toolName: searchResolution.toolName,
             queryArgumentName: resolvedSearchQueryArgumentName
           }
@@ -801,9 +843,11 @@ export function createKoreaLawMcpSource({
           meta: {
             provider: "korea-law-mcp",
             mode: "adapter",
+            endpoint: endpoint.toString(),
             beforeId,
             afterId,
-            toolName: beforeResolution.toolName
+            toolName: beforeResolution.toolName,
+            idArgumentName: resolvedIdArgumentName
           }
         };
       } finally {

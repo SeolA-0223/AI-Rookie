@@ -2,33 +2,64 @@
   {
     "caseId": "ulsan_youth_job_support",
     "title": "Ulsan Youth Job Support Ordinance",
+    "officialKoreanTitle": "울산광역시 청년 구직 지원 조례",
     "municipality": "Ulsan Metropolitan City",
     "domain": "youth-employment",
     "effectiveDate": "2024-03-07",
     "ordinanceNo": "Ulsan Metropolitan City Ordinance No. 2897",
     "officialUrl": "https://www.law.go.kr/LSW/ordinInfoP.do?chrClsCd=010202&gubun=ELIS&ordinSeq=1910937",
+    "searchAliases": [
+      "울산광역시 청년 구직 지원 조례",
+      "울산 청년 구직 지원 조례"
+    ],
     "normalizedDemoExcerpts": true,
     "defaultSample": true
   },
   {
     "caseId": "bucheon_youth_rent_support",
     "title": "Bucheon Newlyweds and Youth Jeonse-Wolse Loan Interest Support Ordinance",
+    "officialKoreanTitle": "부천시 신혼부부 및 청년 전·월세 대출 이자 지원 조례",
     "municipality": "Bucheon, Gyeonggi-do",
     "domain": "youth-housing",
     "effectiveDate": "2023-02-06",
     "ordinanceNo": "Bucheon City Ordinance No. 3927",
     "officialUrl": "https://www.law.go.kr/ordinInfoP.do?ordinSeq=1782147",
+    "searchAliases": [
+      "부천시 신혼부부 및 청년 전·월세 대출 이자 지원 조례",
+      "부천시 청년 전월세 대출 이자 지원 조례"
+    ],
     "normalizedDemoExcerpts": true,
     "defaultSample": false
   },
   {
     "caseId": "seoul_youth_basic_ordinance",
     "title": "Seoul Youth Basic Ordinance",
+    "officialKoreanTitle": "서울특별시 청년 기본 조례",
     "municipality": "Seoul Metropolitan City",
     "domain": "youth-policy-foundation",
     "effectiveDate": "2023-07-24",
     "ordinanceNo": "Seoul Metropolitan City Ordinance No. 8862",
     "officialUrl": "https://law.go.kr/LSW/ordinInfoP.do?ordinSeq=1840747",
+    "searchAliases": [
+      "서울특별시 청년 기본 조례",
+      "서울시 청년 기본 조례"
+    ],
+    "normalizedDemoExcerpts": true,
+    "defaultSample": false
+  },
+  {
+    "caseId": "daejeon_youth_basic_ordinance",
+    "title": "Daejeon Youth Basic Ordinance",
+    "officialKoreanTitle": "대전광역시 청년 기본 조례",
+    "municipality": "Daejeon Metropolitan City",
+    "domain": "youth-policy-governance",
+    "effectiveDate": "2024-07-01",
+    "ordinanceNo": "Daejeon Metropolitan City Ordinance No. 6282",
+    "officialUrl": "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=1943335",
+    "searchAliases": [
+      "대전광역시 청년 기본 조례",
+      "대전시 청년 기본 조례"
+    ],
     "normalizedDemoExcerpts": true,
     "defaultSample": false
   }

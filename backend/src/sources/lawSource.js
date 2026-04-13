@@ -250,3 +250,13 @@ export async function searchLawSource(options = {}) {
     limit: options.limit
   });
 }
+
+export async function probeLawSource(options = {}) {
+  const source = createLawSource(options);
+
+  if (typeof source.probeConnection !== "function") {
+    return null;
+  }
+
+  return source.probeConnection();
+}

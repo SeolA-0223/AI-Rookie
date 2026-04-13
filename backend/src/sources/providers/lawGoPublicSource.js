@@ -2,6 +2,7 @@ import http from "node:http";
 import https from "node:https";
 import zlib from "node:zlib";
 import { buildSourceStatus, normalizeEnvValue, SourceResolutionError } from "../shared.js";
+import { listLocalFixtureCases } from "./localFixtureLawSource.js";
 
 const DEFAULT_BASE_URL = "https://www.law.go.kr";
 const DEFAULT_OC = "test";
@@ -471,6 +472,32 @@ function buildSearchQueryProfile(query) {
   };
 }
 
+function inferDocumentKind(value) {
+  const normalizedValue = normalizeSearchText(value);
+
+  if (!normalizedValue) {
+    return "";
+  }
+  if (normalizedValue.includes("시행규칙") || normalizedValue.includes("규칙")) {
+    return "rule";
+  }
+  if (normalizedValue.includes("조례")) {
+    return "ordinance";
+  }
+
+  return "";
+}
+
+function countExtraJurisdictionTokens(queryProfile, rawJurisdiction) {
+  if (!queryProfile.normalizedJurisdiction) {
+    return 0;
+  }
+
+  return tokenizeSearchText(rawJurisdiction).filter(
+    (token) => !queryProfile.jurisdictionTokens.includes(token)
+  ).length;
+}
+
 function scoreSearchCandidate(result, queryProfile) {
   const rawTitle = normalizeEnvValue(result?.title);
   const inferredTitleParts = splitJurisdictionAndBodyTitle(rawTitle);
@@ -482,6 +509,8 @@ function scoreSearchCandidate(result, queryProfile) {
   const normalizedTitle = normalizeSearchText(rawTitle);
   const normalizedJurisdiction = normalizeSearchText(rawJurisdiction);
   const normalizedBodyTitle = normalizeSearchText(rawBodyTitle);
+  const queryDocumentKind = inferDocumentKind(queryProfile.rawQuery);
+  const resultDocumentKind = inferDocumentKind(`${rawTitle} ${normalizeEnvValue(result?.summary)}`);
   let score = 0;
 
   if (!normalizedTitle || !queryProfile.normalizedQuery) {
@@ -520,15 +549,17 @@ function scoreSearchCandidate(result, queryProfile) {
     if (normalizedJurisdiction === queryProfile.normalizedJurisdiction) {
       score += 8;
     } else if (normalizedJurisdiction.startsWith(queryProfile.normalizedJurisdiction)) {
-      score += 3;
-    } else if (queryProfile.normalizedJurisdiction.startsWith(normalizedJurisdiction)) {
       score += 1;
+      score -= countExtraJurisdictionTokens(queryProfile, rawJurisdiction) * 4;
+    } else if (queryProfile.normalizedJurisdiction.startsWith(normalizedJurisdiction)) {
+      score -= 1;
+    } else {
+      score -= 4;
     }
+  }
 
-    const extraJurisdictionTokens = tokenizeSearchText(rawJurisdiction).filter(
-      (token) => !queryProfile.jurisdictionTokens.includes(token)
-    );
-    score -= extraJurisdictionTokens.length;
+  if (queryDocumentKind && resultDocumentKind && queryDocumentKind !== resultDocumentKind) {
+    score -= 6;
   }
 
   if (result?.current === true) {
@@ -618,6 +649,81 @@ function buildQueryVariants(query) {
   }
 
   return [...variants].filter(Boolean).slice(0, 5);
+}
+
+function buildCuratedFallbackResults(query, baseUrl) {
+  const normalizedQuery = normalizeSearchText(query);
+
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  return listLocalFixtureCases()
+    .map((entry) => {
+      const aliases = [
+        entry.officialKoreanTitle,
+        entry.title,
+        ...(Array.isArray(entry.searchAliases) ? entry.searchAliases : [])
+      ]
+        .map((value) => normalizeEnvValue(value))
+        .filter(Boolean);
+
+      const hasExactAlias = aliases.some((alias) => normalizeSearchText(alias) === normalizedQuery);
+      if (!hasExactAlias) {
+        return null;
+      }
+
+      const ordinanceId = normalizeOrdinanceId(entry.officialUrl);
+      if (!ordinanceId) {
+        return null;
+      }
+
+      const koreanTitle = normalizeEnvValue(entry.officialKoreanTitle) || normalizeEnvValue(entry.title);
+      const inferredTitleParts = splitJurisdictionAndBodyTitle(koreanTitle);
+
+      return {
+        id: ordinanceId,
+        title: koreanTitle,
+        jurisdiction: inferredTitleParts.jurisdiction,
+        effectiveDate: normalizeDateValue(entry.effectiveDate),
+        promulgationDate: normalizeDateValue(entry.effectiveDate),
+        referenceUrl: normalizeEnvValue(entry.officialUrl) || buildReferenceUrl(baseUrl, ordinanceId),
+        summary: `Curated case-pack fallback / ${normalizeEnvValue(entry.caseId)}`,
+        current: false,
+        curatedCaseId: normalizeEnvValue(entry.caseId)
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildSearchDiagnostics({
+  query,
+  queryVariants,
+  results,
+  drfResults,
+  htmlResults,
+  curatedResults,
+  historyExpanded
+}) {
+  const queryProfile = buildSearchQueryProfile(query);
+  const exactTitleMatchCount = results.filter((result) => normalizeSearchText(result.title) === queryProfile.normalizedQuery).length;
+  const exactJurisdictionMatchCount = queryProfile.normalizedJurisdiction
+    ? results.filter((result) => normalizeSearchText(result.jurisdiction) === queryProfile.normalizedJurisdiction).length
+    : 0;
+
+  return {
+    queryVariants,
+    drfResultCount: drfResults.length,
+    htmlResultCount: htmlResults.length,
+    curatedResultCount: curatedResults.length,
+    exactTitleMatchCount,
+    exactJurisdictionMatchCount,
+    curatedFallbackUsed: curatedResults.length > 0,
+    curatedFallbackCaseIds: curatedResults
+      .map((result) => normalizeEnvValue(result.curatedCaseId))
+      .filter(Boolean),
+    historyExpanded
+  };
 }
 
 function parseClauseList(text) {
@@ -935,9 +1041,8 @@ async function fetchText(url, init, message, path) {
   ]);
 }
 
-async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
+async function searchOfficialOrdinances({ baseUrls, oc, query, limit, queryVariants = buildQueryVariants(query) }) {
   let lastError = null;
-  const queryVariants = buildQueryVariants(query);
 
   for (const baseUrl of baseUrls) {
     let sawResponse = false;
@@ -996,9 +1101,8 @@ async function searchOfficialOrdinances({ baseUrls, oc, query, limit }) {
   throw lastError ?? buildFetchError("Failed to search ordinances from law.go.kr.");
 }
 
-async function searchPublicHtmlOrdinances({ baseUrls, query, limit }) {
+async function searchPublicHtmlOrdinances({ baseUrls, query, limit, queryVariants = buildQueryVariants(query) }) {
   let lastError = null;
-  const queryVariants = buildQueryVariants(query);
 
   for (const baseUrl of baseUrls) {
     let sawResponse = false;
@@ -1260,6 +1364,7 @@ export function createLawGoPublicSource({
     async searchRegulations(input = {}) {
       const query = normalizeEnvValue(input.query);
       const limit = parseSearchLimit(input.limit);
+      const queryVariants = buildQueryVariants(query);
 
       if (!query) {
         throw buildSourceInputError([{ path: "query", message: "is required" }]);
@@ -1275,7 +1380,8 @@ export function createLawGoPublicSource({
           baseUrls: baseUrlCandidates,
           oc: resolvedOc,
           query,
-          limit
+          limit,
+          queryVariants
         });
       } catch (error) {
         drfError = error;
@@ -1289,7 +1395,8 @@ export function createLawGoPublicSource({
           htmlResults = await searchPublicHtmlOrdinances({
             baseUrls: baseUrlCandidates,
             query,
-            limit
+            limit,
+            queryVariants
           });
         } catch (error) {
           htmlError = error;
@@ -1307,7 +1414,20 @@ export function createLawGoPublicSource({
         searchBackend = "html-fallback";
       }
 
-      const results = rankSearchResults([drfResults, htmlResults], query, limit);
+      const initialResults = rankSearchResults([drfResults, htmlResults], query, limit);
+      const initialDiagnostics = buildSearchDiagnostics({
+        query,
+        queryVariants,
+        results: initialResults,
+        drfResults,
+        htmlResults,
+        curatedResults: [],
+        historyExpanded: false
+      });
+      const curatedResults = initialDiagnostics.exactTitleMatchCount === 0
+        ? buildCuratedFallbackResults(query, resolvedBaseUrl)
+        : [];
+      const results = rankSearchResults([curatedResults, drfResults, htmlResults], query, limit);
       let resolvedResults = results;
       let historyExpanded = false;
       const historySeed = results[0] ?? null;
@@ -1334,10 +1454,20 @@ export function createLawGoPublicSource({
         meta: {
           provider: "law-go-public",
           mode: "adapter",
+          baseUrl: resolvedBaseUrl.toString().replace(/\/$/, ""),
           ocMode,
           searchBackend,
           historyExpanded,
-          historySeedId: historyExpanded ? historySeed.id : null
+          historySeedId: historyExpanded ? historySeed.id : null,
+          diagnostics: buildSearchDiagnostics({
+            query,
+            queryVariants,
+            results: resolvedResults,
+            drfResults,
+            htmlResults,
+            curatedResults,
+            historyExpanded
+          })
         }
       };
     },
@@ -1376,7 +1506,10 @@ export function createLawGoPublicSource({
           mode: "adapter",
           beforeId,
           afterId,
-          ocMode
+          ocMode,
+          baseUrl: resolvedBaseUrl.toString().replace(/\/$/, ""),
+          beforeReferenceUrl: buildReferenceUrl(resolvedBaseUrl, beforeId),
+          afterReferenceUrl: buildReferenceUrl(resolvedBaseUrl, afterId)
         }
       };
     }

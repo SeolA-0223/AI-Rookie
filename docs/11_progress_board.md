@@ -15,12 +15,15 @@
 | Source Status API | 완료 | `/source-status`로 request-level provider 상태 조회 |
 | Source Search Helper | 완료 | `/source-search`와 대시보드 후보 선택으로 ID 탐색 보조 |
 | Before/After 추천 | 완료 | 검색 결과의 동일 조례군과 날짜 메타데이터를 사용해 추천 pair 계산 |
-| 실사례 케이스 팩 | 완료 | 울산/부천/서울 청년·복지 중심 normalized case pack 3종 추가 |
+| 실사례 케이스 팩 | 완료 | 울산/부천/서울/대전 청년·복지 중심 normalized case pack 4종 추가 |
 | 케이스 카탈로그 | 완료 | `/case-catalog` + 대시보드 dropdown으로 bundled case pack 선택 |
 | 다중 사례 평가 | 완료 | `npm run eval`이 `data/cases/*` 전체를 평가하고 aggregate summary를 생성 |
 | 공식 법령 공개 연동 | 완료 | `law.go.kr` 공개 검색 + 본문 print endpoint + 연혁(`ordinHstListR.do`) + HTML search fallback 정리 |
 | 공개 검색 재정렬 | 완료 | `law-go-public`가 DRF + HTML 후보를 병합하고 body-title query variant까지 사용해 재정렬 |
 | 공개 본문 fetch 정렬 | 완료 | `law-go-public`가 `ordinInfoP.do` hidden input(`gubun`, `nwYn`, `ancYd`, `ancNo`)을 따라 historical/current pair를 로컬과 Vercel에서 분석 가능 |
+| 검색 provenance 보강 | 완료 | `law-go-public`가 query variant, curated fallback, exact-title hit 진단을 `/source-search` meta에 제공 |
+| MCP live probe | 완료 | `/source-status?provider=korea-law-mcp&probe=1`가 실제 MCP `listTools()` handshake 결과를 반환 |
+| Source Provenance UI | 완료 | 대시보드에 provider 설정, MCP probe, search route, analysis input source 패널 추가 |
 | 제품 고도화 | 다음 작업 | 실 OC 확보, live MCP 계약 검증, exact search fallback 정리 |
 
 ## 완료된 작업
@@ -35,12 +38,16 @@
 - [x] 실제 `law.go.kr` 실서버에서 조문 본문 fetch 검증 (`ordinBdyPrint.do`)
 - [x] `law-go-public` 검색 결과에 `ordinHstListR.do` 연혁 확장을 붙여 추천 pair 보강
 - [x] `law-go-public` 검색 결과를 DRF + HTML 후보 병합 + body-title query variant + match-based reranking으로 보강
+- [x] `law-go-public` exact-title miss에 bundled case 기반 curated fallback과 search diagnostics 메타 추가
 - [x] `law-go-public` detail fetch를 실제 info page hidden input 기반(`gubun`, `nwYn`, `ancYd`, `ancNo`) 흐름으로 보강
 - [x] `/source-status` 추가 및 대시보드 request-level source status 조회 연결
+- [x] `/source-status?probe=1`로 `korea-law-mcp` live MCP handshake 결과 노출
 - [x] `/source-search` 추가 및 `search_local_ordinance` 기반 ID 검색 보조 연결
 - [x] `/source-search` 응답에 추천 `before` / `after` pair 추가
+- [x] `/source-search` 응답에 query variant / curated fallback / exact-title hit diagnostics 추가
 - [x] 대시보드에 `Use Recommended Pair` 흐름 추가
-- [x] 지자체 실사례 기반 normalized case pack 3종 추가 (`울산`, `부천`, `서울`)
+- [x] 대시보드에 source/search/analysis provenance 패널 추가
+- [x] 지자체 실사례 기반 normalized case pack 4종 추가 (`울산`, `부천`, `서울`, `대전`)
 - [x] `/case-catalog` 추가 및 `local-fixture caseId` 기반 bundled case pack 선택 지원
 - [x] 기본 `local-fixture` 샘플을 울산 청년 구직지원 사례로 교체
 - [x] 변경 탐지/영향 매핑 키워드를 새 샘플 기준으로 정리
@@ -51,10 +58,10 @@
 - [x] 테스트/스모크 체크 갱신 (`npm run check`, `npm run smoke` 통과)
 
 ## 지금 진행 중
-- [ ] 실제 Korea-law-mcp 서버의 live contract 확인
+- [ ] 실제 공개 또는 사내 Korea-law-mcp 서버에 붙여 probe 결과를 수집하고 contract를 확정
 - [ ] 실제 MCP 서버 기동 검증용 Python/uv 실행 환경 확보
 - [ ] 실사용 `LAW_GO_OC` 또는 동등한 검색 자격 확보
-- [ ] `LAW_GO_OC=test`에서 여전히 exact title hit가 안 나오는 조례 검색 품질 보정 또는 curated fallback 전략 정리
+- [ ] `LAW_GO_OC=test` 외 실사용 검색 자격 확보 후 curated fallback 없이도 exact title hit가 나는지 재검증
 
 ## 다음 작업 (우선순위)
 1. 실사용 `LAW_GO_OC`를 확보하거나 검색을 대체할 live Korea-law-mcp 런타임 확보

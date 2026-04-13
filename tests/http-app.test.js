@@ -76,7 +76,7 @@ test("buildSourceStatusPayload reports request-selected source provider status",
 
   const moduleUrl = new URL(`../backend/src/http/app.js?case=status-${Date.now()}`, import.meta.url);
   const { buildSourceStatusPayload } = await import(moduleUrl);
-  const payload = buildSourceStatusPayload({
+  const payload = await buildSourceStatusPayload({
     provider: "korea-law-mcp"
   });
 
@@ -84,6 +84,7 @@ test("buildSourceStatusPayload reports request-selected source provider status",
   assert.equal(payload.source.provider, "korea-law-mcp");
   assert.equal(payload.source.enabled, false);
   assert.deepEqual(payload.source.missingEnv, ["KOREA_LAW_MCP_BASE_URL"]);
+  assert.equal(payload.probe, null);
 });
 
 test("buildSourceSearchPayload returns empty local-fixture search results", async () => {
@@ -108,6 +109,7 @@ test("buildCaseCatalogPayload exposes bundled local fixture cases", async () => 
 
   assert.equal(payload.provider, "local-fixture");
   assert.equal(payload.defaultCaseId, "ulsan_youth_job_support");
-  assert.equal(payload.cases.length, 3);
+  assert.equal(payload.cases.length, 4);
+  assert.ok(payload.cases.some((entry) => entry.caseId === "daejeon_youth_basic_ordinance"));
   assert.ok(payload.cases.some((entry) => entry.caseId === "seoul_youth_basic_ordinance"));
 });

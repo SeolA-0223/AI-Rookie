@@ -76,6 +76,7 @@ Then call `/analyze` with ordinance sequence IDs:
 `law-go-public` search now expands a high-confidence single result with `ordinHstListR.do` history entries, so `/source-search` can recommend a pre/post pair when the public site exposes ordinance history.
 If the public DRF search returns no structured rows, AI-Rookie now falls back to the public HTML list endpoint `ordinScListR.do`.
 `law-go-public` also merges DRF + HTML candidates and re-ranks them by query match, and it will retry a body-title-only variant for wide-area queries such as `서울특별시 청년 기본 조례`.
+If the current search query exactly matches a bundled case-pack ordinance title, AI-Rookie can also add a curated fallback result so the dashboard still exposes the known official ordinance ID when `LAW_GO_OC=test` misses the exact metropolitan ordinance.
 `law-go-public` detail fetch now follows the live page flow more closely: it reads `gubun`, `nwYn`, `ancYd`, and `ancNo` from `ordinInfoP.do`, then reuses those values for `ordinJoListRInc_XML.do` and `ordinBdyPrint.do`. Local historical pair analysis now works with real ordinance IDs.
 The default public demo `LAW_GO_OC=test` still returns sparse or empty search results in some cases. As of 2026-04-10, some searches like `서울특별시 청년 기본 조례` still return district ordinances instead of the metropolitan-city ordinance. For reliable search, set a real `LAW_GO_OC`. If `recommendation` is still `null`, use known ordinance sequence IDs directly.
 
@@ -133,6 +134,7 @@ To inspect the request-selected source provider directly:
 ```powershell
 Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=korea-law-mcp"
 Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=law-go-public"
+Invoke-RestMethod "http://127.0.0.1:3000/source-status?provider=korea-law-mcp&probe=1"
 ```
 
 To inspect bundled case packs directly:
@@ -149,6 +151,7 @@ Invoke-RestMethod "http://127.0.0.1:3000/source-search?provider=law-go-public&qu
 ```
 
 If the response includes `recommendation`, AI-Rookie judged that the returned candidates include a plausible pre/post amendment pair based on title and ordinance dates.
+When `meta.diagnostics.curatedFallbackUsed=true`, the search response included a bundled known-case fallback because the public search path did not return an exact title match.
 
 ## 6) Local quick check
 Runs tests + eval (does not include smoke).
@@ -163,6 +166,7 @@ Use these files when you want to inspect or extend the normalized demo cases wit
 - `data/cases/ulsan_youth_job_support`
 - `data/cases/bucheon_youth_rent_support`
 - `data/cases/seoul_youth_basic_ordinance`
+- `data/cases/daejeon_youth_basic_ordinance`
 
 Each case pack contains:
 

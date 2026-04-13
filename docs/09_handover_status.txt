@@ -1,31 +1,79 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-10 00:46:13 KST
+Auto-updated: 2026-04-13 21:24:15 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 96285b1 (HEAD -> main) docs: note live public law analysis recovery
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24199261195)
+- Latest commit at update time: 0f0a158 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after live public law recovery
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24199454935)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
-- ## main...origin/main [ahead 1]
-- M  docs/09_handover_status.txt
+- ## main...origin/main
+- M  .env.example
+- M  README.md
+- M  backend/src/generation/generateDrafts.js
+- M  backend/src/http/app.js
+- M  backend/src/sources/lawSource.js
+- M  backend/src/sources/providers/koreaLawMcpSource.js
+- M  backend/src/sources/providers/lawGoPublicSource.js
+- M  backend/src/sources/providers/localFixtureLawSource.js
+- M  data/cases/case_catalog.json
+- A  data/cases/daejeon_youth_basic_ordinance/after.json
+- A  data/cases/daejeon_youth_basic_ordinance/before.json
+- A  data/cases/daejeon_youth_basic_ordinance/internal_docs.json
+- A  data/cases/daejeon_youth_basic_ordinance/meta.json
+- M  data/eval/metrics.json
+- M  docs/07_local_run.md
+- M  docs/11_progress_board.md
+- M  docs/13_vercel_deploy.md
+- M  frontend/index.html
+- M  frontend/src/app.js
+- M  frontend/src/styles.css
+- M  index.html
+- M  tests/evaluate.test.js
+- A  tests/gemini-drafts.test.js
+- M  tests/http-app.test.js
+- M  tests/law-source.test.js
 
 3) Recent Commits (max 8)
-- 96285b1 (HEAD -> main) docs: note live public law analysis recovery
-- 63adfad (origin/main, origin/HEAD) feat: align public law detail fetch with live flow
+- 0f0a158 (HEAD -> main, origin/main, origin/HEAD) docs: refresh handover after live public law recovery
+- 96285b1 docs: note live public law analysis recovery
+- 63adfad feat: align public law detail fetch with live flow
 - 0158f3a docs: refresh handover after live vercel check
 - 7fdadb4 docs: note live vercel law-go-public status
 - 6dbf326 docs: refresh handover after public search ranking
 - 74ee338 feat: improve public law source search ranking
 - d3b5348 docs: refresh handover after case catalog rollout
-- ee4d680 feat: add bundled case catalog and public search fallback
 
 4) Staged Files
-- (none)
+- .env.example
+- README.md
+- backend/src/generation/generateDrafts.js
+- backend/src/http/app.js
+- backend/src/sources/lawSource.js
+- backend/src/sources/providers/koreaLawMcpSource.js
+- backend/src/sources/providers/lawGoPublicSource.js
+- backend/src/sources/providers/localFixtureLawSource.js
+- data/cases/case_catalog.json
+- data/cases/daejeon_youth_basic_ordinance/after.json
+- data/cases/daejeon_youth_basic_ordinance/before.json
+- data/cases/daejeon_youth_basic_ordinance/internal_docs.json
+- data/cases/daejeon_youth_basic_ordinance/meta.json
+- data/eval/metrics.json
+- docs/07_local_run.md
+- docs/11_progress_board.md
+- docs/13_vercel_deploy.md
+- frontend/index.html
+- frontend/src/app.js
+- frontend/src/styles.css
+- index.html
+- tests/evaluate.test.js
+- tests/gemini-drafts.test.js
+- tests/http-app.test.js
+- tests/law-source.test.js
 
 5) Unstaged Files
 - (none)

@@ -11,6 +11,13 @@
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
+## Optional Gemini draft-generation variables
+- `GEMINI_API_KEI`
+- `GEMINI_MODEL=gemini-2.5-flash`
+
+If `GEMINI_API_KEI` is set, `/api/analyze` keeps the existing rule-based change detection pipeline but replaces the draft-generation step with Gemini output.
+If `GEMINI_API_KEI` is missing or the Gemini request fails, the runtime automatically falls back to the built-in template drafts.
+
 ## Optional law source variables
 - `LAW_SOURCE_PROVIDER=local-fixture`
 - `KOREA_LAW_MCP_BASE_URL`

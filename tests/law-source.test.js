@@ -8,6 +8,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import * as z from "zod/v4";
 import {
   createLawSource,
+  probeLawSource,
   recommendLawSourcePair,
   resolveLawSourceProvider,
   searchLawSource,
@@ -25,7 +26,7 @@ test("createLawSource returns local fixture source by default", async () => {
 
   assert.equal(status.provider, "local-fixture");
   assert.equal(status.enabled, true);
-  assert.equal(status.caseCount, 3);
+  assert.equal(status.caseCount, 4);
   assert.equal(status.defaultCaseId, "ulsan_youth_job_support");
   assert.equal(pair.meta.provider, "local-fixture");
   assert.ok(Array.isArray(pair.beforeDoc.clauses));
@@ -44,6 +45,14 @@ test("createLawSource resolves bundled local fixture case packs by caseId", asyn
   assert.match(pair.meta.caseTitle, /Seoul Youth Basic Ordinance/);
   assert.equal(pair.beforeDoc.title, "Seoul Youth Basic Ordinance");
   assert.equal(pair.afterDoc.title, "Seoul Youth Basic Ordinance");
+});
+
+test("createLawSource exposes bundled local fixture search aliases in the catalog-backed status", async () => {
+  const source = createLawSource({ provider: "local-fixture" });
+  const status = source.getSourceStatus();
+
+  assert.equal(status.provider, "local-fixture");
+  assert.equal(status.caseCount, 4);
 });
 
 test("createLawSource reports missing env for korea-law-mcp", async () => {
@@ -471,6 +480,30 @@ test("createLawSource prefers get_local_ordinance_detail when the documented too
   }
 });
 
+test("probeLawSource verifies live korea-law-mcp tool availability through listTools", async () => {
+  const server = await startMockKoreaLawMcpServer({
+    documentsById: {}
+  });
+
+  try {
+    const probe = await probeLawSource({
+      provider: "korea-law-mcp",
+      koreaLawMcpBaseUrl: server.baseUrl
+    });
+
+    assert.equal(probe.success, true);
+    assert.equal(probe.provider, "korea-law-mcp");
+    assert.equal(probe.endpoint, `${server.baseUrl}/mcp`);
+    assert.ok(probe.availableToolCount >= 2);
+    assert.deepEqual(probe.availableDetailToolNames, ["get_local_ordinance_detail"]);
+    assert.deepEqual(probe.availableSearchToolNames, ["search_local_ordinance"]);
+    assert.equal(probe.selectedDetailToolName, "get_local_ordinance_detail");
+    assert.equal(probe.selectedSearchToolName, "search_local_ordinance");
+  } finally {
+    await server.close();
+  }
+});
+
 test("searchLawSource normalizes ordinance search results through korea-law-mcp", async () => {
   const server = await startMockKoreaLawMcpServer({
     documentsById: {},
@@ -629,6 +662,46 @@ test("searchLawSource falls back to public HTML search when DRF search returns n
     assert.equal(result.results[0].summary, "Public search / 타법개정");
     assert.equal(recommendation.before.id, "1800444");
     assert.equal(recommendation.after.id, "1840747");
+  } finally {
+    await server.close();
+  }
+});
+
+test("searchLawSource adds curated exact-title fallback for known bundled ordinance queries", async () => {
+  const server = await startMockLawGoPublicServer({
+    searchResultsByQuery: {
+      "서울특별시 청년 기본 조례": []
+    },
+    htmlSearchResultsByQuery: {
+      "서울특별시 청년 기본 조례": [
+        {
+          id: "1984689",
+          title: "서울특별시 강동구 청년 기본 조례",
+          effectiveDateLabel: "2024. 11. 13.",
+          announcementLabel: "서울특별시 강동구 조례 제0000호",
+          promulgationDateLabel: "2024. 11. 13.",
+          amendmentType: "일부개정",
+          current: true
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: "서울특별시 청년 기본 조례",
+      limit: 5
+    });
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.diagnostics.curatedFallbackUsed, true);
+    assert.deepEqual(result.meta.diagnostics.curatedFallbackCaseIds, ["seoul_youth_basic_ordinance"]);
+    assert.equal(result.meta.diagnostics.exactTitleMatchCount, 1);
+    assert.equal(result.results[0].id, "1840747");
+    assert.equal(result.results[0].title, "서울특별시 청년 기본 조례");
+    assert.match(result.results[0].summary, /Curated case-pack fallback/);
   } finally {
     await server.close();
   }

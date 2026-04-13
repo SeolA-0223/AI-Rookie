@@ -5,12 +5,13 @@ import { buildCaseSuiteReport, buildReport } from "../scripts/evaluate.js";
 test("buildCaseSuiteReport evaluates all municipality case packs", () => {
   const suite = buildCaseSuiteReport();
 
-  assert.equal(suite.summary.evaluatedCaseCount, 3);
-  assert.equal(suite.cases.length, 3);
+  assert.equal(suite.summary.evaluatedCaseCount, 4);
+  assert.equal(suite.cases.length, 4);
   assert.deepEqual(
     suite.cases.map((item) => item.caseId).sort(),
     [
       "bucheon_youth_rent_support",
+      "daejeon_youth_basic_ordinance",
       "seoul_youth_basic_ordinance",
       "ulsan_youth_job_support"
     ]
@@ -23,5 +24,5 @@ test("buildReport keeps sample metrics and adds caseSuite output", () => {
 
   assert.equal(report.sampleData.before, "data/samples/regulation_before.json");
   assert.ok(report.metrics.changeDetection.f1 >= 0);
-  assert.equal(report.caseSuite.summary.evaluatedCaseCount, 3);
+  assert.equal(report.caseSuite.summary.evaluatedCaseCount, 4);
 });

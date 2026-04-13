@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-04-09T15:14:50.063Z",
+  "evaluatedAt": "2026-04-13T12:23:47.997Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
@@ -50,8 +50,8 @@
   },
   "caseSuite": {
     "summary": {
-      "evaluatedCaseCount": 3,
-      "passedCaseCount": 3,
+      "evaluatedCaseCount": 4,
+      "passedCaseCount": 4,
       "suiteRuntimeMs": 2,
       "averageF1": 1,
       "averageMappingCoverage": 1,
@@ -93,6 +93,65 @@
             "rowsWithImpactedDocuments": 4,
             "coverageRate": 1,
             "avgImpactedDocumentsPerChange": 2.75
+          },
+          "risk": {
+            "rows": 4,
+            "distribution": {
+              "빨강": 2,
+              "노랑": 1,
+              "파랑": 1
+            },
+            "highRiskRate": 0.5
+          },
+          "traceability": {
+            "traces": 4,
+            "completeTraces": 4,
+            "completenessRate": 1
+          },
+          "drafts": {
+            "requiredSections": 4,
+            "generatedSections": 4,
+            "completenessRate": 1
+          }
+        },
+        "checks": {
+          "noMissingChanges": true,
+          "noMissingMappings": true,
+          "allTracesComplete": true,
+          "allDraftSectionsGenerated": true
+        }
+      },
+      {
+        "caseId": "daejeon_youth_basic_ordinance",
+        "title": "Daejeon Youth Basic Ordinance",
+        "municipality": "Daejeon Metropolitan City",
+        "domain": "youth-policy-governance",
+        "officialSource": {
+          "effectiveDate": "2024-07-01",
+          "ordinanceNo": "Daejeon Metropolitan City Ordinance No. 6282",
+          "url": "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=1943335"
+        },
+        "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth policy-governance scenario, not verbatim statutory text.",
+        "sampleData": {
+          "before": "data/cases/daejeon_youth_basic_ordinance/before.json",
+          "after": "data/cases/daejeon_youth_basic_ordinance/after.json",
+          "internalDocs": "data/cases/daejeon_youth_basic_ordinance/internal_docs.json"
+        },
+        "runtimeMs": 0,
+        "metrics": {
+          "changeDetection": {
+            "expectedChangedClauses": 4,
+            "predictedChangedClauses": 4,
+            "truePositives": 4,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "mapping": {
+            "rows": 4,
+            "rowsWithImpactedDocuments": 4,
+            "coverageRate": 1,
+            "avgImpactedDocumentsPerChange": 2.5
           },
           "risk": {
             "rows": 4,

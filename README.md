@@ -12,6 +12,11 @@
 - `tests`: Node 테스트
 - `agents`, `AGENTS.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`: Codex 하네스 운영 파일
 
+## AI 사용 현황
+- 현재 변경 탐지, 영향 문서 매핑, 위험도 분류는 모두 규칙 기반 로직입니다.
+- 외부 생성형 AI는 기본 파이프라인에 필수로 들어가 있지 않습니다.
+- 대신 `/api/analyze`의 `drafts` 단계는 `GEMINI_API_KEI`가 설정된 경우 Gemini를 사용하고, 미설정 또는 호출 실패 시 기존 템플릿 초안으로 자동 fallback 합니다.
+
 ## 실행
 1. 의존성 설치
    - `npm install`
@@ -32,6 +37,7 @@
   - `ulsan_youth_job_support`: 울산광역시 청년 구직지원 시나리오, 기준 개정일 `2024-03-07`
   - `bucheon_youth_rent_support`: 부천시 청년 주거지원 시나리오, 기준 개정일 `2023-02-06`
   - `seoul_youth_basic_ordinance`: 서울시 청년 기본정책 시나리오, 기준 개정일 `2023-07-24`
+  - `daejeon_youth_basic_ordinance`: 대전시 청년 기본정책 시나리오, 기준 개정일 `2024-07-01`
 - 각 사례의 제목, 지자체, 기준 개정일, 공식 URL은 `meta.json`에 기록되어 있습니다.
 - 조문 텍스트는 파이프라인 평가용 normalized demo excerpt이며, 원문 법령 전문을 그대로 복제한 데이터는 아닙니다.
 - 기본 `local-fixture` 샘플은 현재 `ulsan_youth_job_support` 사례를 미러링합니다.
@@ -51,6 +57,7 @@
 - `law-go-public`는 검색 결과가 단일 고신뢰 조례로 좁혀지면 `ordinHstListR.do` 연혁 목록을 추가로 읽어 `/source-search` 추천 `before` / `after` 쌍을 보강합니다.
 - `law-go-public`는 `LAW_GO_OC=test`에서 DRF search가 비어 있을 때 공개 HTML search(`ordinScListR.do`)로 fallback 합니다.
 - `law-go-public`는 DRF + HTML 결과를 병합해 query match 기준으로 재정렬하고, 광역 지자체명이 붙은 검색어는 body-title-only variant까지 함께 시도합니다.
+- `law-go-public`는 bundled case pack에 등록된 known ordinance title과 정확히 일치하는 검색어에 대해 curated fallback 결과를 함께 섞어 exact-title miss를 완화합니다.
 - `law-go-public`의 detail fetch는 이제 `ordinInfoP.do` hidden input에서 `gubun`, `nwYn`, `ancYd`, `ancNo`를 읽어 실제 law.go.kr 화면 흐름과 같은 방식으로 clause/print endpoint를 호출합니다. 로컬에서는 historical ordinance pair도 이 경로로 분석할 수 있습니다.
 - 다만 공개 demo `OC=test`는 검색 결과가 비어 있거나 제한될 수 있습니다. 2026-04-10 기준 `서울특별시 청년 기본 조례` 같은 검색어는 여전히 자치구 조례 위주로 돌아올 수 있습니다. 실사용 검색 품질이 필요하면 실제 `LAW_GO_OC`를 넣고, 그래도 결과가 부족하면 조례 일련번호를 직접 입력해야 합니다.
 - `LAW_SOURCE_PROVIDER=korea-law-mcp`를 쓰면 Streamable HTTP MCP endpoint에서 전/후 문서를 가져옵니다.
@@ -61,9 +68,18 @@
 - 대시보드에서도 `Local Fixture`, `law.go.kr Public`, `Korea Law MCP`를 선택할 수 있으며, 원격 provider를 고르면 `beforeId` / `afterId`를 직접 입력합니다.
 - 대시보드에서 `Local Fixture`를 고르면 `/api/case-catalog`에서 불러온 bundled case pack을 dropdown으로 바로 선택할 수 있습니다.
 - 대시보드는 `/api/source-status?provider=...`를 호출해 선택한 provider의 request-level 상태를 직접 확인합니다.
+- `korea-law-mcp`를 고르면 대시보드는 `/api/source-status?provider=...&probe=1`로 실제 MCP `listTools()` handshake를 시도해 live endpoint/tool 가용성까지 provenance에 표시합니다.
 - 대시보드는 `/api/source-search?provider=...&query=...`를 호출해 조례명 후보를 찾고, 결과에서 `Before` / `After` ID를 채워 넣을 수 있습니다.
 - `/api/source-search`는 후보 목록 외에 `recommendation`도 반환하며, 같은 조례명과 날짜 메타데이터를 기준으로 추천 `before` / `after` 쌍을 계산합니다.
+- `/api/source-search`의 `meta.diagnostics`는 query variant, fallback 여부, exact-title hit 수 같은 검색 provenance를 담습니다.
 - 대시보드는 추천 쌍이 있으면 `Use Recommended Pair` 버튼으로 `Before ID` / `After ID`를 한 번에 채울 수 있습니다.
+- 대시보드에는 별도 `Source Provenance` 패널이 있어 provider 설정, MCP live probe, 최근 search route, 마지막 analysis input source를 함께 보여줍니다.
+
+## Gemini 초안 생성
+- Vercel 또는 로컬 환경변수에 `GEMINI_API_KEI`를 넣으면 `/api/analyze`가 반환하는 `drafts`를 Gemini로 생성합니다.
+- 선택적으로 `GEMINI_MODEL`을 지정할 수 있으며 기본값은 `gemini-2.5-flash`입니다.
+- Gemini 호출 정보는 `/api/health`의 `ai` 필드와 `/api/analyze` 결과의 `meta.ai`에 포함됩니다.
+- `GEMINI_API_KEI`가 없거나 Gemini 응답이 실패하면 기존 규칙 기반 템플릿 초안으로 즉시 fallback 합니다.
 
 ## 테스트/점검
 - `npm run harness:check`

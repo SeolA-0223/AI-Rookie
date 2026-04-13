@@ -1,0 +1,14 @@
+{
+  "caseId": "daejeon_youth_basic_ordinance",
+  "officialTitle": "Daejeon Youth Basic Ordinance",
+  "municipality": "Daejeon Metropolitan City",
+  "domain": "youth-policy-governance",
+  "beforeVersionLabel": "normalized-pre-2024-revision",
+  "afterVersionLabel": "normalized-2024-07-01-revision",
+  "officialSource": {
+    "effectiveDate": "2024-07-01",
+    "ordinanceNo": "Daejeon Metropolitan City Ordinance No. 6282",
+    "url": "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=1943335"
+  },
+  "normalizationNote": "The ordinance title and effective date come from the official page. Clause texts are normalized demo excerpts for the youth policy-governance scenario, not verbatim statutory text."
+}
