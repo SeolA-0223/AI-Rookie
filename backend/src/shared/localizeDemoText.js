@@ -5,8 +5,10 @@ const CLAUSE_TITLE_TRANSLATIONS = {
   "Application Deadline": "신청 기한",
   "Support Amount": "지원 금액",
   "Required Documents for Survey": "실태조사 제출 서류",
+  "Plan Publication Deadline": "시행계획 공표 기한",
   "Support Amount Standard": "지원 금액 기준",
   "Required Documents for Participation Programs": "참여사업 제출 서류",
+  "Annual Implementation Plan Deadline": "연차 시행계획 공표 기한",
   "Project Support Amount Standard": "사업 지원금 기준"
 };
 

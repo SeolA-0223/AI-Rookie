@@ -5,22 +5,22 @@
     {
       "id": "c1",
       "title": "Eligibility Age Requirement",
-      "text": "Eligible applicants were unemployed Ulsan residents aged 19 to 34."
+      "text": "지원 대상은 울산광역시에 주민등록을 둔 미취업 청년 중 만 19세 이상 34세 이하인 사람으로 한다."
     },
     {
       "id": "c2",
       "title": "Required Documents",
-      "text": "Applicants had to submit resident registration, job-seeking proof, and a bankbook copy."
+      "text": "신청자는 주민등록등본, 구직활동 증빙서류, 통장 사본을 제출해야 한다."
     },
     {
       "id": "c3",
       "title": "Application Deadline",
-      "text": "Applications closed on March 31 each year."
+      "text": "신청은 매년 3월 31일까지 접수한다."
     },
     {
       "id": "c4",
       "title": "Support Amount",
-      "text": "Interview preparation support amount was up to 300000 KRW per person."
+      "text": "면접 준비 지원금은 1인당 최대 30만원으로 한다."
     }
   ]
 }

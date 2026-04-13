@@ -2,31 +2,31 @@
   {
     "id": "d1",
     "type": "guide",
-    "title": "Youth Policy Guide",
-    "text": "Guide for eligibility age, publication deadline, and support amount standards."
+    "title": "청년정책 안내서",
+    "text": "청년 연령 기준, 시행계획 공표 기한, 지원금 기준을 안내하는 문서."
   },
   {
     "id": "d2",
     "type": "faq",
-    "title": "Youth Policy FAQ",
-    "text": "FAQ for eligibility requirements, required documents, and support amount standards."
+    "title": "청년정책 FAQ",
+    "text": "자격 요건, 실태조사 제출 서류, 지원금 기준 관련 자주 묻는 질문 모음."
   },
   {
     "id": "d3",
     "type": "checklist",
-    "title": "Plan Preparation Checklist",
-    "text": "Checklist for survey documents, department submission files, and participation reports."
+    "title": "계획 수립 준비 점검표",
+    "text": "실태조사 자료, 부서 제출 자료, 정책 참여 결과보고서 준비 여부를 점검하는 체크리스트."
   },
   {
     "id": "d4",
     "type": "notice",
-    "title": "Publication Deadline Memo",
-    "text": "Internal memo for publication deadline and review schedule changes."
+    "title": "공표 일정 내부 메모",
+    "text": "시행계획 공표 기한과 검토 일정 변경을 공유하는 내부 메모."
   },
   {
     "id": "d5",
     "type": "script",
-    "title": "Youth Policy Call Script",
-    "text": "Script for eligibility age and support amount questions from citizens."
+    "title": "청년정책 상담 스크립트",
+    "text": "청년 연령 기준과 지원금 기준 문의에 응답하기 위한 상담 스크립트."
   }
 ]

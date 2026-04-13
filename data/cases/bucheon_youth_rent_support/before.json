@@ -5,22 +5,22 @@
     {
       "id": "c1",
       "title": "Eligibility Age Requirement",
-      "text": "Youth applicants had to be Bucheon residents aged 19 to 34."
+      "text": "청년 신청자는 부천시에 주민등록을 둔 만 19세 이상 34세 이하의 사람이어야 한다."
     },
     {
       "id": "c2",
       "title": "Required Documents",
-      "text": "Applicants had to submit a lease contract, resident registration, and a loan certificate."
+      "text": "신청자는 임대차계약서, 주민등록등본, 대출 확인서를 제출해야 한다."
     },
     {
       "id": "c3",
       "title": "Application Deadline",
-      "text": "Applications closed on September 30 each year."
+      "text": "신청은 매년 9월 30일까지 접수한다."
     },
     {
       "id": "c4",
       "title": "Support Amount",
-      "text": "Interest support amount was up to 1000000 KRW per year."
+      "text": "이자 지원금은 연 최대 100만원으로 한다."
     }
   ]
 }

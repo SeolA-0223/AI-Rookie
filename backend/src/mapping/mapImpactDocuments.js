@@ -34,7 +34,6 @@ const KEYWORDS = {
   ],
   "\uAE08\uC561": [
     "amount",
-    "support",
     "krw",
     "payment",
     "\uAE08\uC561",

@@ -2,31 +2,31 @@
   {
     "id": "d1",
     "type": "guide",
-    "title": "Citizen Guide for Youth Job Support",
-    "text": "Guide for eligibility age, application deadline, and support amount."
+    "title": "청년 구직 지원 시민 안내서",
+    "text": "지원 연령, 신청 기한, 지원 금액 기준을 안내하는 시민용 문서."
   },
   {
     "id": "d2",
     "type": "faq",
-    "title": "Youth Job Support FAQ",
-    "text": "FAQ for required documents, eligibility requirements, and support amount."
+    "title": "청년 구직 지원 FAQ",
+    "text": "제출 서류, 자격 요건, 지원 금액 관련 자주 묻는 질문 모음."
   },
   {
     "id": "d3",
     "type": "checklist",
-    "title": "Application Document Checklist",
-    "text": "Checklist for resident registration, proof documents, employment insurance history, and bankbook files."
+    "title": "신청 서류 점검표",
+    "text": "주민등록등본, 증빙서류, 고용보험 이력내역서, 통장 사본 제출 여부를 점검하는 체크리스트."
   },
   {
     "id": "d4",
     "type": "notice",
-    "title": "Internal Deadline Notice",
-    "text": "Internal note for application deadline changes and additional notice rounds."
+    "title": "접수 기한 내부 공지",
+    "text": "접수 기한 변경과 추가 공고 여부를 공유하는 내부 공지."
   },
   {
     "id": "d5",
     "type": "script",
-    "title": "Call Center Script",
-    "text": "Support script for eligibility age, deadline, and support amount questions."
+    "title": "콜센터 응대 스크립트",
+    "text": "지원 연령, 접수 기한, 지원 금액 문의에 응답하기 위한 상담 스크립트."
   }
 ]

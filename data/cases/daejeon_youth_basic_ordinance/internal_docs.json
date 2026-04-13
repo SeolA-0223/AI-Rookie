@@ -2,31 +2,31 @@
   {
     "id": "d1",
     "type": "guide",
-    "title": "Daejeon Youth Policy Guide",
-    "text": "Guide for eligibility age, annual implementation plan deadline, and project support amount."
+    "title": "대전 청년정책 안내서",
+    "text": "청년 연령 기준, 연차 시행계획 공표 기한, 사업 지원금 기준을 안내하는 문서."
   },
   {
     "id": "d2",
     "type": "faq",
-    "title": "Daejeon Youth Policy FAQ",
-    "text": "FAQ for required documents, eligibility requirements, and support amount standards."
+    "title": "대전 청년정책 FAQ",
+    "text": "참여사업 제출 서류, 자격 요건, 지원금 기준 관련 자주 묻는 질문 모음."
   },
   {
     "id": "d3",
     "type": "checklist",
-    "title": "Participation Program Document Checklist",
-    "text": "Checklist for resident registration, proof documents, participation plan files, and policy feedback consent document submission."
+    "title": "참여사업 서류 점검표",
+    "text": "주민등록등본, 지역 거주 증빙서류, 참여계획서, 정책 의견수렴 동의서 제출 여부를 점검하는 체크리스트."
   },
   {
     "id": "d4",
     "type": "notice",
-    "title": "Annual Plan Deadline Notice",
-    "text": "Internal notice for annual plan deadline changes and additional update notice rounds."
+    "title": "연차 계획 공표 내부 공지",
+    "text": "연차 시행계획 공표 기한 변경과 추가 변경 공지를 공유하는 내부 공지."
   },
   {
     "id": "d5",
     "type": "script",
-    "title": "Youth Policy Call Script",
-    "text": "Script for eligibility age and project support amount questions from citizens."
+    "title": "청년정책 상담 스크립트",
+    "text": "청년 연령 기준과 사업 지원금 문의에 응답하기 위한 상담 스크립트."
   }
 ]

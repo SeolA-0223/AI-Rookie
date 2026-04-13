@@ -44,14 +44,13 @@ const CHANGE_KEYWORDS = [
     type: CHANGE_TYPES.amount,
     keywords: [
       "amount",
-      "support",
       "krw",
       "payment",
       "\uAE08\uC561",
       "\uC9C0\uC6D0\uAE08",
       "\uC9C0\uC6D0\uC561",
       "\uC774\uC790",
-      "\uC6D0"
+      "\uB9CC\uC6D0"
     ]
   },
   {

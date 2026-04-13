@@ -2,31 +2,31 @@
   {
     "id": "d1",
     "type": "guide",
-    "title": "Citizen Guide for Rent Interest Support",
-    "text": "Guide for eligibility age, application deadline, and support amount."
+    "title": "전월세 이자 지원 시민 안내서",
+    "text": "지원 연령, 신청 기한, 지원 금액 기준을 안내하는 시민용 문서."
   },
   {
     "id": "d2",
     "type": "faq",
-    "title": "Housing Support FAQ",
-    "text": "FAQ for lease documents, proof files, and support amount questions."
+    "title": "주거 지원 FAQ",
+    "text": "임대차 서류, 증빙서류, 지원 금액 문의에 대한 자주 묻는 질문 모음."
   },
   {
     "id": "d3",
     "type": "checklist",
-    "title": "Housing Support Checklist",
-    "text": "Checklist for lease contract, resident registration, loan certificate, and proof documents."
+    "title": "주거 지원 서류 점검표",
+    "text": "임대차계약서, 주민등록등본, 대출 확인서, 이자 납부 증빙서류 제출 여부를 점검하는 체크리스트."
   },
   {
     "id": "d4",
     "type": "notice",
-    "title": "Additional Notice Memo",
-    "text": "Internal memo for application deadline changes and additional notice periods."
+    "title": "추가 모집 내부 메모",
+    "text": "신청 기한 변경과 추가 모집 공고 여부를 공유하는 내부 메모."
   },
   {
     "id": "d5",
     "type": "script",
-    "title": "Housing Support Call Script",
-    "text": "Script for eligibility, deadline, and support amount questions from citizens."
+    "title": "주거 지원 상담 스크립트",
+    "text": "자격 요건, 신청 기한, 지원 금액 문의에 응답하기 위한 상담 스크립트."
   }
 ]
