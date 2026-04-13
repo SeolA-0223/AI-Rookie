@@ -26,8 +26,8 @@ const risks = [
 
 test("generateDrafts returns three drafts and comparison table", () => {
   const drafts = generateDrafts(changes, risks);
-  assert.ok(drafts.internalNoticeDraft.includes("High risk items: 1"));
-  assert.ok(drafts.citizenGuideDraft.includes("Age Requirement"));
-  assert.ok(drafts.faqDraft.includes("What changed?"));
-  assert.ok(drafts.comparisonTable.includes("| Type | Clause | Before | After |"));
+  assert.ok(drafts.internalNoticeDraft.includes("고위험 항목 수: 1"));
+  assert.ok(drafts.citizenGuideDraft.includes("연령 요건"));
+  assert.ok(drafts.faqDraft.includes("Q. 무엇이 바뀌었나요?"));
+  assert.ok(drafts.comparisonTable.includes("| 유형 | 조항 | 변경 요약 |"));
 });

@@ -26,7 +26,7 @@ test("runPipeline returns integrated result shape", () => {
   assert.equal(result.mapped.length, 4);
   assert.equal(result.risks.length, 4);
   assert.equal(result.traces.length, 4);
-  assert.ok(result.drafts.internalNoticeDraft.includes("Internal Notice Draft"));
+  assert.ok(result.drafts.internalNoticeDraft.includes("[내부 공지 초안]"));
 });
 
 test("runPipeline validates input payload shape", () => {

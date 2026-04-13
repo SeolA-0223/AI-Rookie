@@ -23,6 +23,8 @@ test("detectChanges identifies four update types", () => {
 test("detectChanges creates readable summaries", () => {
   const changes = detectChanges(before.clauses, after.clauses);
   for (const change of changes) {
-    assert.ok(change.summary.includes("changed") || change.summary.includes("Clause"));
+    assert.ok(change.summary.includes("변경되었습니다"));
+    assert.ok(change.summary.includes("변경 전:"));
+    assert.ok(change.summary.includes("변경 후:"));
   }
 });

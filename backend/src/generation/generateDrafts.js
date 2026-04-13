@@ -1,16 +1,16 @@
+import { localizeClauseTitle } from "../shared/localizeDemoText.js";
+
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 const DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const REQUIRED_DRAFT_KEYS = ["internalNoticeDraft", "citizenGuideDraft", "faqDraft", "comparisonTable"];
 
 function lineForChange(change) {
-  return `- [${change.changeType}] ${change.title}: ${change.beforeText ?? "(none)"} -> ${change.afterText ?? "(none)"}`;
+  return `- [${change.changeType}] ${localizeClauseTitle(change.title)}: ${change.summary ?? "변경 사항을 검토하세요."}`;
 }
 
 function buildComparisonTable(changes) {
-  const header = "| Type | Clause | Before | After |\n|---|---|---|---|";
-  const rows = changes.map(
-    (change) => `| ${change.changeType} | ${change.title} | ${change.beforeText ?? ""} | ${change.afterText ?? ""} |`
-  );
+  const header = "| 유형 | 조항 | 변경 요약 |\n|---|---|---|";
+  const rows = changes.map((change) => `| ${change.changeType} | ${localizeClauseTitle(change.title)} | ${change.summary ?? ""} |`);
   return [header, ...rows].join("\n");
 }
 
@@ -19,26 +19,26 @@ export function generateDrafts(changes, riskRows) {
   const highRisk = riskRows.filter((item) => item.risk.level === "빨강");
 
   const internalNoticeDraft = [
-    "[Internal Notice Draft]",
+    "[내부 공지 초안]",
     "",
-    "The following policy changes were detected:",
+    "다음 조례 변경 사항이 감지되었습니다.",
     changeLines,
     "",
-    `High risk items: ${highRisk.length}`
+    `고위험 항목 수: ${highRisk.length}`
   ].join("\n");
 
   const citizenGuideDraft = [
-    "[Citizen Guide Update Draft]",
+    "[시민 안내문 초안]",
     "",
-    "Please review and apply these updates:",
+    "아래 변경 사항을 검토하고 안내문에 반영해 주세요.",
     changeLines
   ].join("\n");
 
   const faqDraft = [
-    "[FAQ Update Draft]",
+    "[FAQ 초안]",
     "",
-    "Q: What changed?",
-    "A: See summarized changes below.",
+    "Q. 무엇이 바뀌었나요?",
+    "A. 아래 변경 요약을 확인해 주세요.",
     changeLines
   ].join("\n");
 
@@ -100,7 +100,7 @@ function buildPrompt(changes, riskRows) {
     "Requirements:",
     "- Write in Korean.",
     "- Base the drafts only on the provided change and risk data.",
-    "- Keep the comparisonTable as a markdown table with header: | Type | Clause | Before | After |",
+    "- Keep the comparisonTable as a markdown table written in Korean.",
     "- If a detail is uncertain, ask the reviewer to verify it instead of inventing facts.",
     "",
     "Change data:",

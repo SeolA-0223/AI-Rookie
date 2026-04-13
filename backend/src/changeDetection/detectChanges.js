@@ -1,3 +1,5 @@
+import { localizeClauseTitle } from "../shared/localizeDemoText.js";
+
 const CHANGE_TYPES = {
   eligibility: "\uC694\uAC74",
   document: "\uC11C\uB958",
@@ -89,18 +91,18 @@ function summarizeChange(clause, changeType) {
   const after = clause.afterText ?? "";
 
   if (changeType === CHANGE_TYPES.eligibility) {
-    return `Eligibility requirement changed: ${before} -> ${after}`;
+    return `자격 요건이 변경되었습니다. 변경 전: ${before} / 변경 후: ${after}`;
   }
   if (changeType === CHANGE_TYPES.document) {
-    return `Required document condition changed: ${before} -> ${after}`;
+    return `제출 서류 기준이 변경되었습니다. 변경 전: ${before} / 변경 후: ${after}`;
   }
   if (changeType === CHANGE_TYPES.deadline) {
-    return `Deadline changed: ${before} -> ${after}`;
+    return `신청 기한이 변경되었습니다. 변경 전: ${before} / 변경 후: ${after}`;
   }
   if (changeType === CHANGE_TYPES.amount) {
-    return `Support amount changed: ${before} -> ${after}`;
+    return `지원 금액 기준이 변경되었습니다. 변경 전: ${before} / 변경 후: ${after}`;
   }
-  return `Clause changed: ${before} -> ${after}`;
+  return `조문 내용이 변경되었습니다. 변경 전: ${before} / 변경 후: ${after}`;
 }
 
 export function detectChanges(beforeClauses, afterClauses) {
@@ -116,7 +118,7 @@ export function detectChanges(beforeClauses, afterClauses) {
     if (!before && after) {
       const merged = {
         id,
-        title: after.title,
+        title: localizeClauseTitle(after.title),
         beforeText: null,
         afterText: after.text,
         operation: "added"
@@ -133,7 +135,7 @@ export function detectChanges(beforeClauses, afterClauses) {
     if (before && !after) {
       const merged = {
         id,
-        title: before.title,
+        title: localizeClauseTitle(before.title),
         beforeText: before.text,
         afterText: null,
         operation: "removed"
@@ -150,7 +152,7 @@ export function detectChanges(beforeClauses, afterClauses) {
     if (before?.text !== after?.text) {
       const merged = {
         id,
-        title: after.title,
+        title: localizeClauseTitle(after.title),
         beforeText: before.text,
         afterText: after.text,
         operation: "updated"
