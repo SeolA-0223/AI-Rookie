@@ -1,67 +1,47 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-13 22:01:43 KST
+Auto-updated: 2026-04-13 22:46:03 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 96f629b (HEAD -> main, origin/main, origin/HEAD) fix: localize analysis summaries and draft output
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24344427130)
+- Latest commit at update time: a6baf93 (HEAD -> main, origin/main, origin/HEAD) fix: localize bundled analysis sample content
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24344793296)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  backend/src/changeDetection/detectChanges.js
-- M  backend/src/mapping/mapImpactDocuments.js
-- M  backend/src/shared/localizeDemoText.js
-- M  data/cases/bucheon_youth_rent_support/after.json
-- M  data/cases/bucheon_youth_rent_support/before.json
-- M  data/cases/bucheon_youth_rent_support/internal_docs.json
-- M  data/cases/daejeon_youth_basic_ordinance/after.json
-- M  data/cases/daejeon_youth_basic_ordinance/before.json
-- M  data/cases/daejeon_youth_basic_ordinance/internal_docs.json
-- M  data/cases/seoul_youth_basic_ordinance/after.json
-- M  data/cases/seoul_youth_basic_ordinance/before.json
-- M  data/cases/seoul_youth_basic_ordinance/internal_docs.json
-- M  data/cases/ulsan_youth_job_support/after.json
-- M  data/cases/ulsan_youth_job_support/before.json
-- M  data/cases/ulsan_youth_job_support/internal_docs.json
+- M  README.md
 - M  data/eval/metrics.json
-- M  data/samples/internal_docs.json
-- M  data/samples/regulation_after.json
-- M  data/samples/regulation_before.json
+- A  docs/16_user_quickstart_ko.md
+- M  frontend/index.html
+- M  frontend/src/app.js
+- A  frontend/src/i18n.js
+- M  frontend/src/styles.css
+- A  frontend/src/view.js
+- M  index.html
 
 3) Recent Commits (max 8)
-- 96f629b (HEAD -> main, origin/main, origin/HEAD) fix: localize analysis summaries and draft output
+- a6baf93 (HEAD -> main, origin/main, origin/HEAD) fix: localize bundled analysis sample content
+- 96f629b fix: localize analysis summaries and draft output
 - 7b12db4 feat: localize dashboard and add gemini drafts
 - 0f0a158 docs: refresh handover after live public law recovery
 - 96285b1 docs: note live public law analysis recovery
 - 63adfad feat: align public law detail fetch with live flow
 - 0158f3a docs: refresh handover after live vercel check
 - 7fdadb4 docs: note live vercel law-go-public status
-- 6dbf326 docs: refresh handover after public search ranking
 
 4) Staged Files
-- backend/src/changeDetection/detectChanges.js
-- backend/src/mapping/mapImpactDocuments.js
-- backend/src/shared/localizeDemoText.js
-- data/cases/bucheon_youth_rent_support/after.json
-- data/cases/bucheon_youth_rent_support/before.json
-- data/cases/bucheon_youth_rent_support/internal_docs.json
-- data/cases/daejeon_youth_basic_ordinance/after.json
-- data/cases/daejeon_youth_basic_ordinance/before.json
-- data/cases/daejeon_youth_basic_ordinance/internal_docs.json
-- data/cases/seoul_youth_basic_ordinance/after.json
-- data/cases/seoul_youth_basic_ordinance/before.json
-- data/cases/seoul_youth_basic_ordinance/internal_docs.json
-- data/cases/ulsan_youth_job_support/after.json
-- data/cases/ulsan_youth_job_support/before.json
-- data/cases/ulsan_youth_job_support/internal_docs.json
+- README.md
 - data/eval/metrics.json
-- data/samples/internal_docs.json
-- data/samples/regulation_after.json
-- data/samples/regulation_before.json
+- docs/16_user_quickstart_ko.md
+- frontend/index.html
+- frontend/src/app.js
+- frontend/src/i18n.js
+- frontend/src/styles.css
+- frontend/src/view.js
+- index.html
 
 5) Unstaged Files
 - (none)

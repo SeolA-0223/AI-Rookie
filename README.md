@@ -2,13 +2,30 @@
 
 규정 변경 누락 방지 MVP 저장소입니다.
 
+## 1분 사용
+1. 의존성 설치
+   - `npm install`
+2. API 서버 실행
+   - `npm run start`
+3. 브라우저에서 `http://127.0.0.1:3000` 열기
+4. 기본 `샘플 체험` 모드에서 케이스를 고른 뒤 `샘플 케이스 분석하기`
+5. 실제 조례를 보려면 `실제 조례 조회` 모드로 바꾸고 조례명을 검색한 뒤 추천 pair 또는 before/after ID 사용
+
+웹 기준 빠른 사용법은 `docs/16_user_quickstart_ko.md`에 따로 정리되어 있습니다.
+
+## 대시보드 사용 흐름
+- `샘플 체험`: 번들 케이스 팩을 선택하고 바로 분석합니다. 가장 쉬운 데모 경로입니다.
+- `실제 조례 조회`: `law.go.kr 공개` 또는 `Korea Law MCP`로 조례명을 검색하고 before/after ID를 채워 분석합니다.
+- `고급 설정과 출처 확인`: provider 상태, search provenance, 최근 분석 입력, live probe를 접힌 영역에서 확인합니다.
+- 결과 패널은 `변경 요약 -> 영향 문서 -> 위험 우선순위 -> 초안 미리보기` 순서로 읽으면 됩니다.
+
 ## 구조
 - `backend`: 변경 탐지, 영향 매핑, 위험도 분류, 초안 생성 API
-- `frontend`: 대시보드 UI 샘플
+- `frontend`: 웹 대시보드 UI
 - `shared`: API 계약
-- `data/samples`: 샘플 데이터
+- `data/samples`: 기본 샘플 데이터
 - `data/cases`: 지자체 실사례 기반 normalized demo case pack
-- `docs`: 기획/설계 문서
+- `docs`: 사용/배포/운영 문서
 - `tests`: Node 테스트
 - `agents`, `AGENTS.md`, `SPEC.md`, `SELF_CHECK.md`, `QA_REPORT.md`: Codex 하네스 운영 파일
 
@@ -22,7 +39,7 @@
    - `npm install`
 2. API 서버 실행
    - `npm run start`
-3. 스모크 체크
+3. 빠른 점검
    - `npm run smoke`
 
 `/analyze`는 body가 없어도 샘플 데이터를 사용해 결과를 반환합니다.
@@ -108,6 +125,7 @@
 
 ## 협업
 - 로컬 실행 가이드: `docs/07_local_run.md`
+- 웹 빠른 시작: `docs/16_user_quickstart_ko.md`
 - 평가 리포트: `docs/03_eval_report.md`
 - 데모 스크립트: `docs/04_demo_script.md`
 - PR 기반 흐름: `docs/06_pr_workflow.md`

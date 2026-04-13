@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -15,118 +15,210 @@
   <body>
     <main class="layout">
       <header class="hero">
-        <p class="eyebrow">지자체 개정 코파일럿</p>
-        <h1>규정 변경 대응 대시보드</h1>
-        <p class="hero-copy">조례 개정 흐름을 추적하고 영향을 받는 내부 지침을 찾은 뒤 후속 초안을 검토 가능한 상태로 유지합니다.</p>
+        <div class="hero-top">
+          <div class="hero-copy-block">
+            <p class="eyebrow" data-i18n="hero.eyebrow">지자체 개정 코파일럿</p>
+            <h1 data-i18n="hero.title">규정 변경 대응 대시보드</h1>
+            <p class="hero-copy" data-i18n="hero.copy">
+              조례 개정 흐름을 빠르게 점검하고, 어떤 문서가 함께 바뀌어야 하는지 찾은 뒤, 후속 공지 초안까지 바로 검토할 수 있도록 구성했습니다.
+            </p>
+          </div>
+          <div class="language-switch" role="group" aria-label="언어 전환">
+            <button id="lang-ko" class="language-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
+            <button id="lang-en" class="language-btn" type="button" data-locale="en" aria-pressed="false">English</button>
+          </div>
+        </div>
         <div class="hero-actions">
-          <button id="analyze-btn" class="run-btn" type="button">분석 실행</button>
+          <button id="analyze-btn" class="run-btn" type="button">샘플 케이스 분석하기</button>
           <p id="status-msg" class="status" role="status" aria-live="polite">준비됨.</p>
         </div>
       </header>
 
+      <section class="panel onboarding-panel" id="guide-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow" data-i18n="guide.eyebrow">빠른 시작</p>
+            <h2 data-i18n="guide.title">처음 쓰는 사용자를 위한 3단계</h2>
+          </div>
+          <p class="subtle" data-i18n="guide.subtitle">
+            기본은 샘플 체험입니다. 실제 조례 조회는 아래에서 모드를 바꾸면 됩니다.
+          </p>
+        </div>
+        <div id="quickstart-steps" class="step-grid"></div>
+        <div class="panel-actions">
+          <button id="sample-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.sampleShortcut">
+            샘플 케이스로 바로 시작
+          </button>
+          <button id="live-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.liveShortcut">
+            실제 조례 조회로 전환
+          </button>
+        </div>
+      </section>
+
       <section class="panel panel-source" id="source-panel">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">입력 경로</p>
-            <h2>분석 소스</h2>
+            <p class="eyebrow" data-i18n="source.eyebrow">입력 경로</p>
+            <h2 data-i18n="source.title">분석 설정</h2>
           </div>
           <p id="source-status" class="subtle">소스 상태를 불러오는 중...</p>
         </div>
-        <div class="source-grid">
-          <label class="field">
-            <span class="field-label">제공자</span>
-            <select id="source-provider" class="field-input">
-              <option value="local-fixture">로컬 샘플</option>
-              <option value="law-go-public">law.go.kr 공개</option>
-              <option value="korea-law-mcp">Korea Law MCP</option>
-            </select>
-          </label>
-          <label class="field" id="source-case-group">
-            <span class="field-label">케이스 팩</span>
-            <select id="source-case-id" class="field-input">
-              <option value="">번들 케이스를 불러오는 중...</option>
-            </select>
-          </label>
-          <label class="field" id="source-before-group" hidden>
-            <span class="field-label">이전 버전 ID</span>
-            <input
-              id="source-before-id"
-              class="field-input field-input-mono"
-              type="text"
-              placeholder="조례-이전-ID"
-              autocomplete="off"
-            />
-          </label>
-          <label class="field" id="source-after-group" hidden>
-            <span class="field-label">개정 버전 ID</span>
-            <input
-              id="source-after-id"
-              class="field-input field-input-mono"
-              type="text"
-              placeholder="조례-개정-ID"
-              autocomplete="off"
-            />
-          </label>
-        </div>
-        <div id="source-search-group" class="source-search" hidden>
-          <label class="field">
-            <span class="field-label">조례 검색</span>
-            <div class="field-inline">
-              <input
-                id="source-search-query"
-                class="field-input"
-                type="text"
-                placeholder="예: 서울특별시 청년 기본 조례"
-                autocomplete="off"
-              />
-              <button id="source-search-btn" class="secondary-btn" type="button">ID 찾기</button>
-            </div>
-          </label>
-          <p id="source-search-status" class="subtle">사용할 수 있는 ID를 찾으려면 조례명을 검색하세요.</p>
-          <div id="source-search-recommendation" class="search-recommendation"></div>
-          <div id="source-search-results" class="search-results"></div>
-        </div>
-        <p id="source-help" class="source-help">기본값으로 번들 샘플 조례 쌍이 선택되어 있습니다.</p>
-      </section>
 
-      <section class="panel" id="provenance-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">추적</p>
-            <h2>출처 추적</h2>
-          </div>
-          <p class="subtle">제공자 설정, 라이브 probe, 검색 경로, 현재 분석 입력을 보여줍니다.</p>
+        <div class="mode-toggle" role="tablist" aria-label="분석 모드">
+          <button id="mode-sample-btn" class="mode-btn is-active" type="button" aria-pressed="true" data-i18n="source.sampleTab">
+            샘플 체험
+          </button>
+          <button id="mode-live-btn" class="mode-btn" type="button" aria-pressed="false" data-i18n="source.liveTab">
+            실제 조례 조회
+          </button>
         </div>
-        <div id="provenance-cards" class="provenance-grid"></div>
+
+        <p id="source-mode-summary" class="source-mode-summary" data-i18n="source.sampleSummary">
+          현재 샘플 체험 모드입니다. 케이스를 고르고 바로 분석하세요.
+        </p>
+
+        <div id="sample-mode-panel" class="mode-panel">
+          <article class="setup-card setup-card-emphasis">
+            <h3 data-i18n="source.sampleTitle">샘플 케이스로 바로 체험</h3>
+            <p data-i18n="source.sampleBody">번들 사례 팩을 선택하면 즉시 분석할 수 있습니다. ID 입력이 필요 없습니다.</p>
+            <label class="field">
+              <span class="field-label" data-i18n="source.caseLabel">케이스 팩</span>
+              <select id="source-case-id" class="field-input">
+                <option value="">번들 케이스를 불러오는 중...</option>
+              </select>
+            </label>
+          </article>
+        </div>
+
+        <div id="live-mode-panel" class="mode-panel" hidden>
+          <article class="setup-card">
+            <h3 data-i18n="source.liveTitle">실제 조례를 찾아 분석</h3>
+            <p data-i18n="source.liveBody">
+              조례명을 검색해 추천 pair를 적용하거나, 이미 아는 before/after 조례 ID를 직접 입력할 수 있습니다.
+            </p>
+            <div class="source-grid">
+              <label class="field">
+                <span class="field-label" data-i18n="source.providerLabel">조회 제공자</span>
+                <select id="source-provider" class="field-input"></select>
+              </label>
+              <label class="field">
+                <span class="field-label" data-i18n="source.searchLabel">조례명 검색</span>
+                <div class="field-inline">
+                  <input
+                    id="source-search-query"
+                    class="field-input"
+                    type="text"
+                    placeholder="예: 서울특별시 청년 기본 조례"
+                    data-i18n-placeholder="source.searchPlaceholder"
+                    autocomplete="off"
+                  />
+                  <button id="source-search-btn" class="secondary-btn" type="button">ID 찾기</button>
+                </div>
+              </label>
+            </div>
+            <p id="source-search-status" class="subtle" data-i18n="source.searchHint">
+              조례명을 검색하면 사용할 수 있는 ID 후보와 추천 조합을 보여줍니다.
+            </p>
+            <div id="source-search-recommendation" class="search-recommendation"></div>
+            <div id="source-search-results" class="search-results"></div>
+            <div class="source-grid source-id-grid">
+              <label class="field">
+                <span class="field-label" data-i18n="source.beforeLabel">이전 버전 ID</span>
+                <input
+                  id="source-before-id"
+                  class="field-input field-input-mono"
+                  type="text"
+                  data-i18n-placeholder="source.beforePlaceholder"
+                  placeholder="예: 1840746"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="field">
+                <span class="field-label" data-i18n="source.afterLabel">개정 버전 ID</span>
+                <input
+                  id="source-after-id"
+                  class="field-input field-input-mono"
+                  type="text"
+                  data-i18n-placeholder="source.afterPlaceholder"
+                  placeholder="예: 1840747"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+          </article>
+        </div>
+
+        <p id="source-help" class="source-help subtle" data-i18n="source.localHint">
+          샘플 모드에서는 번들 케이스만 사용합니다. 가장 쉬운 데모 경로입니다.
+        </p>
+
+        <details class="details-inline" id="advanced-details">
+          <summary data-i18n="source.advancedSummary">고급 설정과 출처 확인</summary>
+          <div class="details-body">
+            <p class="subtle" data-i18n="source.advancedBody">
+              provider 상태, live probe, 검색 provenance, 최근 분석 입력 정보를 확인할 수 있습니다.
+            </p>
+            <div id="provenance-cards" class="provenance-grid"></div>
+          </div>
+        </details>
       </section>
 
       <section class="panel" id="summary-panel">
-        <h2>변경 요약</h2>
+        <div class="panel-heading compact-heading">
+          <div>
+            <h2 data-i18n="sections.summaryTitle">변경 요약</h2>
+            <p class="subtle" data-i18n="sections.summaryNote">무엇이 바뀌었는지 조항 단위로 정리합니다.</p>
+          </div>
+        </div>
         <div id="summary-cards" class="cards"></div>
       </section>
 
       <section class="panel" id="impact-panel">
-        <h2>영향 문서</h2>
+        <div class="panel-heading compact-heading">
+          <div>
+            <h2 data-i18n="sections.impactTitle">영향 문서</h2>
+            <p class="subtle" data-i18n="sections.impactNote">함께 갱신해야 할 내부 문서를 우선순위와 함께 보여줍니다.</p>
+          </div>
+        </div>
         <ul id="impact-list"></ul>
       </section>
 
       <section class="panel" id="risk-panel">
-        <h2>위험 우선순위</h2>
+        <div class="panel-heading compact-heading">
+          <div>
+            <h2 data-i18n="sections.riskTitle">위험 우선순위</h2>
+            <p class="subtle" data-i18n="sections.riskNote">대민 안내 오류 가능성이 큰 항목부터 먼저 확인하세요.</p>
+          </div>
+        </div>
         <ul id="risk-list"></ul>
       </section>
 
-      <section class="panel" id="history-panel">
-        <div class="panel-heading">
-          <h2>최근 실행</h2>
-          <p id="history-status" class="subtle">분석 이력을 불러오는 중...</p>
-        </div>
-        <div id="history-list" class="history-list"></div>
-      </section>
-
       <section class="panel" id="draft-panel">
-        <h2>초안 미리보기</h2>
+        <div class="panel-heading compact-heading">
+          <div>
+            <h2 data-i18n="sections.draftTitle">초안 미리보기</h2>
+            <p class="subtle" data-i18n="sections.draftNote">내부 공지, 시민 안내문, FAQ, 비교표를 한 번에 검토할 수 있습니다.</p>
+          </div>
+        </div>
+        <p class="subtle panel-footnote" data-i18n="sections.draftLanguageNote">
+          분석 결과 본문은 현재 소스 문구 언어를 그대로 유지합니다.
+        </p>
         <pre id="draft-view"></pre>
       </section>
+
+      <details class="panel details-panel" id="history-panel">
+        <summary data-i18n="history.detailsSummary">최근 실행 이력 보기</summary>
+        <div class="details-body">
+          <div class="panel-heading compact-heading">
+            <div>
+              <h2 data-i18n="history.title">최근 실행 이력</h2>
+              <p class="subtle" data-i18n="history.subtitle">저장된 분석 결과를 다시 열어볼 수 있습니다.</p>
+            </div>
+            <p id="history-status" class="subtle">분석 이력을 불러오는 중...</p>
+          </div>
+          <div id="history-list" class="history-list"></div>
+        </div>
+      </details>
     </main>
     <script type="module" src="./src/app.js"></script>
   </body>
