@@ -14,6 +14,7 @@ const DEFAULT_PROVIDER = "law-go-public";
 const MAX_DOCUMENT_CHARS = 20000;
 const MAX_ORDINANCE_CONTEXT_CHARS = 12000;
 const MAX_ORDINANCE_CLAUSES = 12;
+const TITLE_STOP_WORDS = new Set(["조례", "규칙", "기본", "안내문", "가이드", "문서", "ordinance", "rule", "guide"]);
 const DAEJEON_DONGGU_REFERENCE_FILE = fileURLToPath(
   new URL("../../../data/reference-documents/daejeon_donggu_youth_basic_ordinance_latest.json", import.meta.url)
 );
@@ -465,6 +466,30 @@ function buildHeuristicReviewEnhanced({ documentText, ordinance, detection }) {
   };
 }
 
+function getMeaningfulTitleTokens(title, municipalityNames = []) {
+  const ignoredTokens = new Set([
+    ...TITLE_STOP_WORDS,
+    ...municipalityNames.flatMap((name) => tokenize(name))
+  ]);
+
+  return unique(tokenize(title).filter((token) => token.length >= 2 && !ignoredTokens.has(token)));
+}
+
+function shouldPreferHeuristicTitle({ heuristicTitle, detectedTitle, municipalityNames = [] }) {
+  const normalizedHeuristicTitle = normalizeText(heuristicTitle);
+  const normalizedDetectedTitle = normalizeText(detectedTitle);
+
+  if (!normalizedHeuristicTitle || !normalizedDetectedTitle) {
+    return false;
+  }
+
+  const heuristicTokens = getMeaningfulTitleTokens(normalizedHeuristicTitle, municipalityNames);
+  const detectedTokenSet = new Set(getMeaningfulTitleTokens(normalizedDetectedTitle, municipalityNames));
+  const overlap = heuristicTokens.filter((token) => detectedTokenSet.has(token)).length;
+
+  return heuristicTokens.length > 0 && detectedTokenSet.size > 0 && overlap === 0;
+}
+
 async function detectApplicableOrdinance({
   documentText,
   requestedMunicipalities,
@@ -491,14 +516,26 @@ async function detectApplicableOrdinance({
     ...requestedMunicipalities,
     ...(Array.isArray(merged.municipalityHints) ? merged.municipalityHints : [])
   ]);
+  const municipalityNames = getMunicipalityNames(municipalityCodes);
+  const preferHeuristicTitle = shouldPreferHeuristicTitle({
+    heuristicTitle: heuristic.ordinanceTitleQuery,
+    detectedTitle: normalizeText(merged.ordinanceTitleQuery),
+    municipalityNames
+  });
 
   return {
-    ordinanceTitleQuery: normalizeText(merged.ordinanceTitleQuery) || heuristic.ordinanceTitleQuery,
-    municipalityHints: getMunicipalityNames(municipalityCodes),
+    ordinanceTitleQuery: preferHeuristicTitle
+      ? heuristic.ordinanceTitleQuery
+      : normalizeText(merged.ordinanceTitleQuery) || heuristic.ordinanceTitleQuery,
+    municipalityHints: municipalityNames,
     municipalityCodes,
-    keywords: unique(Array.isArray(merged.keywords) ? merged.keywords.map(normalizeText) : heuristic.keywords).slice(0, 8),
-    reasoning: normalizeText(merged.reasoning) || heuristic.reasoning,
-    confidence: normalizeText(merged.confidence) || heuristic.confidence,
+    keywords: preferHeuristicTitle
+      ? heuristic.keywords
+      : unique(Array.isArray(merged.keywords) ? merged.keywords.map(normalizeText) : heuristic.keywords).slice(0, 8),
+    reasoning: preferHeuristicTitle
+      ? `${heuristic.reasoning} 문서에 직접 나타난 조례명과 AI 후보의 핵심어가 겹치지 않아 제목 후보는 규칙 기반 추출값을 우선 사용했습니다.`
+      : normalizeText(merged.reasoning) || heuristic.reasoning,
+    confidence: preferHeuristicTitle ? heuristic.confidence : normalizeText(merged.confidence) || heuristic.confidence,
     documentType: normalizeText(merged.documentType) || heuristic.documentType,
     ai: aiResult.meta
   };

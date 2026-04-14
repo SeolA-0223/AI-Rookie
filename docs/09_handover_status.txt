@@ -1,49 +1,35 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-14 22:49:43 KST
+Auto-updated: 2026-04-14 22:52:18 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: e4f19f0 (HEAD -> main, origin/main, origin/HEAD) feat: localize dynamic review flows
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24401721924)
+- Latest commit at update time: 334372d (HEAD -> main, origin/main, origin/HEAD) fix: tighten municipality filters and document review reasoning
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24402734796)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  backend/src/http/app.js
-- M  backend/src/inspection/documentLocalization.js
 - M  backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
-- M  backend/src/sources/lawSource.js
-- M  backend/src/sources/providers/lawGoPublicSource.js
 - M  data/eval/metrics.json
-- M  frontend/src/app.js
 - M  tests/document-inspection.test.js
-- M  tests/document-localization.test.js
-- M  tests/law-source.test.js
 
 3) Recent Commits (max 8)
-- e4f19f0 (HEAD -> main, origin/main, origin/HEAD) feat: localize dynamic review flows
+- 334372d (HEAD -> main, origin/main, origin/HEAD) fix: tighten municipality filters and document review reasoning
+- e4f19f0 feat: localize dynamic review flows
 - b1eae03 fix: add resilient page tab fallback
 - 003f694 fix: add fallback for dong-gu document review
 - 8824986 fix: split pages and add document inspect api routes
 - c160791 feat: redesign dashboard and add document inspection
 - e81744c feat: simplify dashboard onboarding and clarify risk items
 - a6baf93 fix: localize bundled analysis sample content
-- 96f629b fix: localize analysis summaries and draft output
 
 4) Staged Files
-- backend/src/http/app.js
-- backend/src/inspection/documentLocalization.js
 - backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
-- backend/src/sources/lawSource.js
-- backend/src/sources/providers/lawGoPublicSource.js
 - data/eval/metrics.json
-- frontend/src/app.js
 - tests/document-inspection.test.js
-- tests/document-localization.test.js
-- tests/law-source.test.js
 
 5) Unstaged Files
 - (none)

@@ -109,6 +109,75 @@ test("inspectDocumentAgainstLatestOrdinance preserves municipality filters when 
   assert.equal(result.ordinance.matched.id, "1840747");
 });
 
+test("inspectDocumentAgainstLatestOrdinance keeps the explicit ordinance title when AI suggests an unrelated title", async () => {
+  let discoverArgs = null;
+  const responses = [
+    {
+      ordinanceTitleQuery: "대전광역시 대덕구 관급공사의 지역건설근로자 체불임금 방지 및 고용안정 보호에 관한 조례",
+      municipalityHints: ["대전광역시"],
+      keywords: ["대전광역시", "대덕구", "관급공사"],
+      reasoning: "AI first-pass detection drifted to another Daejeon ordinance.",
+      confidence: "high",
+      documentType: "guide"
+    },
+    {
+      summary: "문서는 청년 조례 기준으로 다시 확인해야 합니다.",
+      reasoning: "문서 제목과 조항 키워드를 기준으로 청년 조례를 비교했습니다.",
+      riskLevel: "medium",
+      issues: [],
+      checklist: [],
+      revisedDraft: "개정 초안"
+    }
+  ];
+
+  await inspectDocumentAgainstLatestOrdinance(
+    {
+      documentText: "대전광역시 동구 청년 기본 조례 안내문\n지원 대상은 만 19세 이상 39세 이하 청년입니다.",
+      fileName: "daejeon-donggu-youth-basic-guide.md",
+      municipalities: ["6300000"]
+    },
+    {
+      env: {
+        GEMINI_API_KEI: "demo-key",
+        GEMINI_MODEL: "gemini-2.5-flash"
+      },
+      fetchImpl: async () => ({
+        ok: true,
+        async json() {
+          return {
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: JSON.stringify(responses.shift())
+                    }
+                  ]
+                }
+              }
+            ]
+          };
+        }
+      }),
+      discoverLawSourceFn: async (input) => {
+        discoverArgs = input;
+        return {
+          results: [createLatestMatch()],
+          meta: {
+            mode: "discover",
+            route: "discover"
+          }
+        };
+      },
+      readLawSourceDocumentFn: async () => createLatestDocument(),
+      searchLawSourceFn: async () => ({ results: [], meta: {} }),
+      recommendLawSourcePairFn: () => null
+    }
+  );
+
+  assert.equal(discoverArgs?.query, "대전광역시 동구 청년 기본 조례 안내문");
+});
+
 test("inspectDocumentAgainstLatestOrdinance uses Gemini output when configured", async () => {
   const responses = [
     {
