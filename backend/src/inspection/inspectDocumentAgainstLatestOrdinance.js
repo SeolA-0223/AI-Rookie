@@ -246,13 +246,17 @@ function buildComparisonPrompt({
   return [
     "You review a municipal working document against the latest ordinance.",
     "Return JSON only with these keys:",
-    "summary, riskLevel, issues, checklist, revisedDraft",
+    "summary, reasoning, riskLevel, issues, checklist, revisedDraft",
     "issues must be an array of objects with keys: section, severity, problem, ordinanceBasis, suggestion.",
     "checklist must be an array of short Korean action items.",
     "Requirements:",
     "- Write everything in Korean.",
-    "- Explain mismatches or outdated statements in the document.",
+    "- Explain concrete mismatches or outdated statements in the document.",
     "- Base claims only on the provided document and ordinance context.",
+    "- summary must name the most important sections or criteria that need revision.",
+    "- reasoning must explain why the ordinance applies and which clauses were compared.",
+    "- riskLevel must be one of: high, medium, low.",
+    "- Quote or paraphrase the document sentence that appears outdated when possible.",
     "- revisedDraft must be a usable revised document draft, not only bullet points.",
     "- If the evidence is weak, say verification is needed.",
     "",
@@ -321,6 +325,143 @@ function buildHeuristicReview({ documentText, ordinance, detection }) {
     checklist,
     revisedDraft,
     reasoning: detection.reasoning
+  };
+}
+
+function splitDocumentSegments(documentText) {
+  return cleanDocumentText(documentText)
+    .split(/\n{2,}/)
+    .flatMap((block) => block.split(/\n/))
+    .map((segment) => normalizeText(segment))
+    .filter((segment) => segment.length >= 8)
+    .slice(0, 40);
+}
+
+function extractComparableValues(text) {
+  return unique((normalizeText(text).match(/\d+(?:\.\d+)?/g) ?? []).map((value) => value.trim()));
+}
+
+function scoreSegmentAgainstClause(segment, clause) {
+  const clauseTokens = unique(tokenize(`${clause.title} ${clause.text}`));
+  const segmentTokens = new Set(tokenize(segment));
+  const keywordOverlap = clauseTokens.filter((token) => segmentTokens.has(token)).length;
+  const clauseNumbers = extractComparableValues(`${clause.title} ${clause.text}`);
+  const segmentNumbers = new Set(extractComparableValues(segment));
+  const numberOverlap = clauseNumbers.filter((value) => segmentNumbers.has(value)).length;
+  const titleBoost = normalizeLookupText(segment).includes(normalizeLookupText(clause.title)) ? 3 : 0;
+
+  return keywordOverlap * 2 + numberOverlap * 3 + titleBoost;
+}
+
+function findBestDocumentEvidence(documentText, clause) {
+  const segments = splitDocumentSegments(documentText);
+  let bestMatch = null;
+
+  for (const segment of segments) {
+    const score = scoreSegmentAgainstClause(segment, clause);
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = {
+        text: segment,
+        score
+      };
+    }
+  }
+
+  return bestMatch && bestMatch.score > 0 ? bestMatch : null;
+}
+
+function inferIssueSeverity(clause, evidence) {
+  const clauseText = `${clause.title ?? ""} ${clause.text ?? ""}`;
+  if (/(연령|나이|자격|대상|지원금|금액|기간|기한|신청|제출|서류)/u.test(clauseText)) {
+    return evidence?.score >= 4 ? "high" : "medium";
+  }
+
+  return evidence?.score >= 6 ? "high" : evidence?.score >= 3 ? "medium" : "low";
+}
+
+function buildEnhancedHeuristicIssue(documentText, clause, index) {
+  const section = normalizeText(clause.title) || `조항 ${index + 1}`;
+  const evidence = findBestDocumentEvidence(documentText, clause);
+  const evidenceSnippet = evidence?.text ? shorten(evidence.text, 110) : "";
+  const keyValues = extractComparableValues(`${clause.title} ${clause.text}`).slice(0, 3);
+  const problem = evidenceSnippet
+    ? `문서의 "${evidenceSnippet}" 문장이 최신 조례의 ${section} 기준과 다른지 확인이 필요합니다.`
+    : `${section} 관련 최신 기준이 문서에 반영되었는지 검토가 필요합니다.`;
+  const ordinanceBasis = evidenceSnippet
+    ? `${section}: ${summarizeClause(clause, 180)} / 문서 근거: ${evidenceSnippet}`
+    : `${section}: ${summarizeClause(clause, 180)}`;
+  const suggestion = evidenceSnippet
+    ? `문서의 해당 문장을 최신 조례 문구${keyValues.length ? `와 핵심 수치(${keyValues.join(", ")})` : ""}에 맞게 다시 작성하세요.`
+    : `${section} 관련 안내를 최신 조례 문구와 기준에 맞게 보강하세요.`;
+
+  return {
+    section,
+    severity: inferIssueSeverity(clause, evidence),
+    problem,
+    ordinanceBasis,
+    suggestion,
+    score: evidence?.score ?? 0
+  };
+}
+
+function buildEnhancedHeuristicSummary(ordinance, issues = []) {
+  const title = ordinance.matched?.title ?? "최신 조례";
+  const sections = issues.slice(0, 3).map((issue) => issue.section).filter(Boolean);
+
+  if (!sections.length) {
+    return `${title} 기준으로 문서를 검토했습니다. 핵심 조항 반영 여부를 추가 확인해야 합니다.`;
+  }
+
+  return `${title} 기준으로 문서를 비교한 결과 ${sections.join(", ")} 항목에서 최신 기준 반영 여부를 우선 확인해야 합니다.`;
+}
+
+function buildEnhancedHeuristicReasoning(detection, ordinance, issues = []) {
+  const title = ordinance.matched?.title ?? detection.ordinanceTitleQuery ?? "관련 조례";
+  const sections = issues.slice(0, 2).map((issue) => issue.section).filter(Boolean);
+  const hintText = detection.municipalityHints?.length
+    ? `${detection.municipalityHints.join(", ")} 지자체 힌트와 문서 제목/본문 키워드`
+    : "문서 제목과 본문 키워드";
+
+  if (!sections.length) {
+    return `${hintText}를 바탕으로 ${title}를 적용 조례로 판단했고, 최신 조항 반영 여부를 검토했습니다.`;
+  }
+
+  return `${hintText}를 바탕으로 ${title}를 적용 조례로 판단했고, ${sections.join(", ")} 조항을 중심으로 문서 문장과 최신 기준을 대조했습니다.`;
+}
+
+function buildHeuristicReviewEnhanced({ documentText, ordinance, detection }) {
+  const clauses = Array.isArray(ordinance.document?.clauses) ? ordinance.document.clauses.slice(0, 6) : [];
+  const rankedIssues = clauses
+    .map((clause, index) => buildEnhancedHeuristicIssue(documentText, clause, index))
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 4);
+  const issues = rankedIssues.map(({ score, ...issue }) => issue);
+  const topSections = issues.slice(0, 3).map((issue) => issue.section);
+  const checklist = unique([
+    `${ordinance.matched?.title ?? "최신 조례"} 적용 대상과 범위를 다시 확인하기`,
+    topSections.length > 0 ? `${topSections.join(", ")} 안내 문장을 최신 기준으로 수정하기` : "",
+    "연령, 자격, 제출 서류, 신청 기한, 지원 금액 등 수치와 조건 다시 점검하기",
+    "시민 안내문과 내부 문서의 표현을 동일한 최신 기준으로 맞추기"
+  ].filter(Boolean));
+
+  const revisedDraft = [
+    `${ordinance.matched?.title ?? "최신 조례"} 반영 수정 초안`,
+    "",
+    "아래 초안은 최신 조례 반영을 위한 검토용 문안입니다.",
+    "",
+    documentText,
+    "",
+    "검토 메모:",
+    ...issues.map((issue) => `- ${issue.section}: ${issue.suggestion}`)
+  ].join("\n");
+
+  return {
+    summary: buildEnhancedHeuristicSummary(ordinance, issues),
+    reasoning: buildEnhancedHeuristicReasoning(detection, ordinance, issues),
+    riskLevel: issues.some((issue) => issue.severity === "high") ? "high" : "medium",
+    issues,
+    checklist,
+    revisedDraft
   };
 }
 
@@ -450,7 +591,8 @@ async function resolveLatestOrdinance({
       search = await searchLawSourceFn({
         provider,
         query: detection.ordinanceTitleQuery,
-        limit: 8
+        limit: 8,
+        municipalities: detection.municipalityCodes
       });
       candidates = Array.isArray(search.results) ? search.results : [];
       searchMeta = {
@@ -528,7 +670,7 @@ async function compareAgainstLatestOrdinance({
   env,
   fetchImpl
 }) {
-  const fallback = buildHeuristicReview({
+  const fallback = buildHeuristicReviewEnhanced({
     documentText,
     ordinance,
     detection
@@ -558,6 +700,7 @@ async function compareAgainstLatestOrdinance({
 
   return {
     summary: normalizeText(payload.summary) || fallback.summary,
+    reasoning: normalizeText(payload.reasoning) || fallback.reasoning,
     riskLevel: normalizeText(payload.riskLevel) || fallback.riskLevel,
     issues,
     checklist,
@@ -621,7 +764,10 @@ export async function inspectDocumentAgainstLatestOrdinance(
   const downloadContent = buildMarkdownDownload({
     fileName,
     ordinance,
-    detection,
+    detection: {
+      ...detection,
+      reasoning: review.reasoning || detection.reasoning
+    },
     review
   });
 
@@ -661,6 +807,7 @@ export async function inspectDocumentAgainstLatestOrdinance(
     },
     review: {
       summary: review.summary,
+      reasoning: review.reasoning,
       riskLevel: review.riskLevel,
       issues: review.issues,
       checklist: review.checklist,

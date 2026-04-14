@@ -54,6 +54,7 @@ test("localizeDocumentInspection translates review content and download markdown
       }
     },
     review: {
+      reasoning: "??議?吏?????議고빆怨??낅젰 臾몄꽌? 鍮꾧탳?섏뿀?듬땲??",
       summary: "최신 조례 기준으로 검토가 필요합니다.",
       riskLevel: "medium",
       issues: [
@@ -97,7 +98,8 @@ test("localizeDocumentInspection translates review content and download markdown
                     {
                       text: JSON.stringify({
                         translatedDocumentText: "Eligible applicants are young people aged 39 or younger.",
-                        reasoning: "The ordinance title and body clearly point to the Dong-gu youth ordinance.",
+                        detectionReasoning: "The ordinance title and body clearly point to the Dong-gu youth ordinance.",
+                        reviewReasoning: "The review compares the uploaded age guidance against the latest age limit clause.",
                         summary: "The document should be revised to match the latest ordinance.",
                         issues: [
                           {
@@ -125,6 +127,8 @@ test("localizeDocumentInspection translates review content and download markdown
 
   assert.equal(result.locale, "en");
   assert.equal(result.ai.provider, "gemini");
+  assert.equal(result.detection.reasoning, "The ordinance title and body clearly point to the Dong-gu youth ordinance.");
+  assert.equal(result.review.reasoning, "The review compares the uploaded age guidance against the latest age limit clause.");
   assert.equal(result.review.summary, "The document should be revised to match the latest ordinance.");
   assert.equal(result.review.issues[0].section, "Eligibility");
   assert.equal(result.review.riskLevel, "medium");

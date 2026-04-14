@@ -815,6 +815,31 @@ function buildSearchDiagnostics({
   };
 }
 
+function matchesMunicipalitySelection(result, municipalityNames = []) {
+  if (!Array.isArray(municipalityNames) || municipalityNames.length === 0) {
+    return true;
+  }
+
+  const searchableFields = [
+    normalizeSearchText(result?.jurisdiction),
+    normalizeSearchText(result?.title)
+  ].filter(Boolean);
+
+  return municipalityNames.some((name) => {
+    const normalizedName = normalizeSearchText(name);
+    return normalizedName && searchableFields.some((field) => field.includes(normalizedName));
+  });
+}
+
+function filterSearchResultsByMunicipality(results = [], municipalityCodes = []) {
+  const municipalityNames = getMunicipalityNames(municipalityCodes);
+  if (!municipalityNames.length) {
+    return results;
+  }
+
+  return results.filter((result) => matchesMunicipalitySelection(result, municipalityNames));
+}
+
 function parseClauseList(text) {
   let parsed;
 
@@ -1551,6 +1576,8 @@ export function createLawGoPublicSource({
     async searchRegulations(input = {}) {
       const query = normalizeEnvValue(input.query);
       const limit = parseSearchLimit(input.limit);
+      const municipalityCodes = normalizeMunicipalityCodes(input.municipalities);
+      const effectiveLimit = municipalityCodes.length > 0 ? Math.max(limit * 3, 12) : limit;
       const queryVariants = buildQueryVariants(query);
 
       if (!query) {
@@ -1567,7 +1594,7 @@ export function createLawGoPublicSource({
           baseUrls: baseUrlCandidates,
           oc: resolvedOc,
           query,
-          limit,
+          limit: effectiveLimit,
           queryVariants
         });
       } catch (error) {
@@ -1582,7 +1609,7 @@ export function createLawGoPublicSource({
           htmlResults = await searchPublicHtmlOrdinances({
             baseUrls: baseUrlCandidates,
             query,
-            limit,
+            limit: effectiveLimit,
             queryVariants
           });
         } catch (error) {
@@ -1590,7 +1617,10 @@ export function createLawGoPublicSource({
         }
       }
 
-      const earlyCuratedResults = buildCuratedFallbackResults(query, resolvedBaseUrl);
+      const earlyCuratedResults = filterSearchResultsByMunicipality(
+        buildCuratedFallbackResults(query, resolvedBaseUrl),
+        municipalityCodes
+      );
 
       if (drfResults.length === 0 && htmlResults.length === 0 && earlyCuratedResults.length > 0) {
         return {
@@ -1603,6 +1633,8 @@ export function createLawGoPublicSource({
             searchBackend: "curated-fallback",
             historyExpanded: false,
             historySeedId: null,
+            municipalityCodes,
+            municipalityNames: getMunicipalityNames(municipalityCodes),
             diagnostics: buildSearchDiagnostics({
               query,
               queryVariants,
@@ -1627,7 +1659,10 @@ export function createLawGoPublicSource({
         searchBackend = "html-fallback";
       }
 
-      const initialResults = rankSearchResults([drfResults, htmlResults], query, limit);
+      const initialResults = filterSearchResultsByMunicipality(
+        rankSearchResults([drfResults, htmlResults], query, effectiveLimit),
+        municipalityCodes
+      ).slice(0, limit);
       const initialDiagnostics = buildSearchDiagnostics({
         query,
         queryVariants,
@@ -1638,9 +1673,12 @@ export function createLawGoPublicSource({
         historyExpanded: false
       });
       const curatedResults = initialDiagnostics.exactTitleMatchCount === 0
-        ? buildCuratedFallbackResults(query, resolvedBaseUrl)
+        ? filterSearchResultsByMunicipality(buildCuratedFallbackResults(query, resolvedBaseUrl), municipalityCodes)
         : [];
-      const results = rankSearchResults([curatedResults, drfResults, htmlResults], query, limit);
+      const results = filterSearchResultsByMunicipality(
+        rankSearchResults([curatedResults, drfResults, htmlResults], query, effectiveLimit),
+        municipalityCodes
+      ).slice(0, limit);
       let resolvedResults = results;
       let historyExpanded = false;
       const historySeed = results[0] ?? null;
@@ -1654,7 +1692,10 @@ export function createLawGoPublicSource({
           });
 
           if (historyResults.length > 1) {
-            resolvedResults = rankSearchResults([results, historyResults], query, limit);
+            resolvedResults = filterSearchResultsByMunicipality(
+              rankSearchResults([results, historyResults], query, effectiveLimit),
+              municipalityCodes
+            ).slice(0, limit);
             historyExpanded = true;
           }
         } catch {
@@ -1672,6 +1713,8 @@ export function createLawGoPublicSource({
           searchBackend,
           historyExpanded,
           historySeedId: historyExpanded ? historySeed.id : null,
+          municipalityCodes,
+          municipalityNames: getMunicipalityNames(municipalityCodes),
           diagnostics: buildSearchDiagnostics({
             query,
             queryVariants,

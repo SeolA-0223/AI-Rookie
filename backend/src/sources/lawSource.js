@@ -247,7 +247,8 @@ export function getLawSourceStatus(options = {}) {
 export async function searchLawSource(options = {}) {
   return createLawSource(options).searchRegulations({
     query: options.query,
-    limit: options.limit
+    limit: options.limit,
+    municipalities: options.municipalities
   });
 }
 

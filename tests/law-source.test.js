@@ -828,6 +828,49 @@ test("discoverLawSource returns the latest law-go-public ordinances filtered by 
   }
 });
 
+test("searchLawSource filters public law.go.kr search results by municipality selection", async () => {
+  const query = "\uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840";
+  const server = await startMockLawGoPublicServer({
+    htmlSearchResultsByQuery: {
+      [query]: [
+        {
+          id: "1840747",
+          title: "\uC11C\uC6B8\uD2B9\uBCC4\uC2DC \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840",
+          effectiveDateLabel: "2026. 4. 10.",
+          announcementLabel: "\uC11C\uC6B8\uD2B9\uBCC4\uC2DC\uC870\uB840 \uC81C805\uD638",
+          promulgationDateLabel: "2026. 4. 10.",
+          amendmentType: "\uAC1C\uC815",
+          current: true
+        },
+        {
+          id: "2118913",
+          title: "\uB300\uC804\uAD11\uC5ED\uC2DC \uB3D9\uAD6C \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840",
+          effectiveDateLabel: "2026. 4. 9.",
+          announcementLabel: "\uB300\uC804\uAD11\uC5ED\uC2DC\uB3D9\uAD6C\uC870\uB840 \uC81C913\uD638",
+          promulgationDateLabel: "2026. 4. 9.",
+          amendmentType: "\uAC1C\uC815",
+          current: true
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query,
+      municipalities: ["6300000"],
+      limit: 5
+    });
+
+    assert.deepEqual(result.meta.municipalityCodes, ["6300000"]);
+    assert.deepEqual(result.results.map((item) => item.id), ["2118913"]);
+  } finally {
+    await server.close();
+  }
+});
+
 test("searchLawSource tries a body-title-only query variant for public law.go.kr search", async () => {
   const rawQuery = "\uC11C\uC6B8\uD2B9\uBCC4\uC2DC \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840";
   const bodyTitleQuery = "\uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840";

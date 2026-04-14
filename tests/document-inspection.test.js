@@ -64,10 +64,49 @@ test("inspectDocumentAgainstLatestOrdinance falls back without Gemini and return
   assert.equal(result.meta.generatedAt, "2026-04-14T00:00:00.000Z");
   assert.equal(result.detection.municipalityNames[0], "서울특별시");
   assert.equal(result.ordinance.matched.id, "1840747");
-  assert.ok(result.review.summary.includes("최신 조례"));
+  assert.ok(result.review.summary.length > 0);
+  assert.ok(result.review.reasoning);
+  assert.notEqual(result.review.reasoning, result.detection.reasoning);
   assert.ok(result.review.issues.length >= 1);
   assert.equal(result.download.fileName, "youth-guide.txt-revision.md");
   assert.ok(result.download.content.includes("문서 검사 결과"));
+});
+
+test("inspectDocumentAgainstLatestOrdinance preserves municipality filters when it falls back to source search", async () => {
+  let searchArgs = null;
+
+  const result = await inspectDocumentAgainstLatestOrdinance(
+    {
+      documentText: "?쒖슱?밸퀎??泥?뀈 湲곕낯 議곕? ?덈궡臾?n吏?먮??곸? 19???댁긽 29???댄븯濡??덈궡?⑸땲??",
+      fileName: "search-fallback.txt",
+      municipalities: ["6110000"]
+    },
+    {
+      env: {},
+      discoverLawSourceFn: async () => ({
+        results: [],
+        meta: {
+          mode: "discover",
+          route: "discover"
+        }
+      }),
+      searchLawSourceFn: async (input) => {
+        searchArgs = input;
+        return {
+          results: [createLatestMatch()],
+          meta: {
+            mode: "search",
+            route: "search"
+          }
+        };
+      },
+      readLawSourceDocumentFn: async () => createLatestDocument(),
+      recommendLawSourcePairFn: () => null
+    }
+  );
+
+  assert.deepEqual(searchArgs?.municipalities, ["6110000"]);
+  assert.equal(result.ordinance.matched.id, "1840747");
 });
 
 test("inspectDocumentAgainstLatestOrdinance uses Gemini output when configured", async () => {
@@ -82,6 +121,7 @@ test("inspectDocumentAgainstLatestOrdinance uses Gemini output when configured",
     },
     {
       summary: "문서의 연령 기준이 최신 조례와 다릅니다.",
+      reasoning: "泥?뀈 ?곕졊 湲곗??낅젰 臾몄꽌? 理쒖떊 議곕? ??2 議곕?鍮꾧탳?ㅼ뒿?덈떎.",
       riskLevel: "high",
       issues: [
         {
@@ -143,6 +183,7 @@ test("inspectDocumentAgainstLatestOrdinance uses Gemini output when configured",
   assert.equal(result.meta.reviewAi.usedAI, true);
   assert.equal(result.detection.confidence, "high");
   assert.equal(result.review.riskLevel, "high");
+  assert.equal(result.review.reasoning, "泥?뀈 ?곕졊 湲곗??낅젰 臾몄꽌? 理쒖떊 議곕? ??2 議곕?鍮꾧탳?ㅼ뒿?덈떎.");
   assert.equal(result.review.issues[0].section, "지원대상");
   assert.ok(result.review.revisedDraft.includes("34세 이하"));
 });

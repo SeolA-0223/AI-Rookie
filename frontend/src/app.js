@@ -644,12 +644,34 @@ function renderMunicipalityFiltersFromState() {
       checked ? next.add(code) : next.delete(code);
       state.selectedMunicipalities = [...next];
       renderMunicipalityFiltersFromState();
-      void loadLatestDiscovery();
+      void refreshMunicipalityScopedViews();
     }
   };
   const municipalities = getMunicipalityOptions();
   renderMunicipalityFilters(refs.municipalityFilterView, municipalities, options);
   renderMunicipalityFilters(refs.documentMunicipalityFilterView, municipalities, options);
+}
+
+async function refreshMunicipalityScopedViews() {
+  if (state.mode !== "live") {
+    return;
+  }
+
+  if (currentProvider() === "law-go-public") {
+    await loadLatestDiscovery();
+  }
+
+  const query = refs.sourceSearchQueryField?.value.trim() ?? "";
+  if (query) {
+    await runSourceSearch();
+    return;
+  }
+
+  if (state.latestSourceSearchResult) {
+    state.latestSourceSearchResult = null;
+    renderSourceSearchFromState();
+    renderProvenance();
+  }
 }
 
 function renderSourceSearchFromState() {
@@ -746,7 +768,7 @@ function renderDocumentInspectResult() {
   }
   if (refs.documentAiSummaryView) {
     refs.documentAiSummaryView.textContent = result
-      ? `${copy().documentInspect.reasoningLabel}: ${result.detection?.reasoning || copy().labels.unknown}`
+      ? `${copy().documentInspect.reasoningLabel}: ${result.review?.reasoning || result.detection?.reasoning || copy().labels.unknown}`
       : copy().documentInspect.emptySummary;
   }
   renderDocumentReviewMeta(result);
@@ -1047,8 +1069,9 @@ async function runSourceSearch() {
   }
   setSourceSearchStatus(copy().messages.sourceSearchLoading, "neutral");
   try {
+    const municipalities = encodeURIComponent(state.selectedMunicipalities.join(","));
     state.latestSourceSearchResult = await fetchJson(
-      `${ENDPOINTS.sourceSearch}?provider=${encodeURIComponent(currentProvider())}&query=${encodeURIComponent(query)}&limit=6`
+      `${ENDPOINTS.sourceSearch}?provider=${encodeURIComponent(currentProvider())}&query=${encodeURIComponent(query)}&limit=6&municipalities=${municipalities}`
     );
     renderSourceSearchFromState();
     renderProvenance();
@@ -1322,12 +1345,12 @@ function attachEventListeners() {
   const selectAll = () => {
     state.selectedMunicipalities = MUNICIPALITIES.map((item) => item.code);
     renderMunicipalityFiltersFromState();
-    void loadLatestDiscovery();
+    void refreshMunicipalityScopedViews();
   };
   const clearAll = () => {
     state.selectedMunicipalities = [];
     renderMunicipalityFiltersFromState();
-    void loadLatestDiscovery();
+    void refreshMunicipalityScopedViews();
   };
   refs.municipalitySelectAllButton?.addEventListener("click", selectAll);
   refs.documentMunicipalitySelectAllButton?.addEventListener("click", selectAll);

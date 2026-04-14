@@ -396,7 +396,7 @@ export async function buildSourceStatusPayload({ provider, probe = false } = {})
   };
 }
 
-export async function buildSourceSearchPayload({ provider, query, limit } = {}) {
+export async function buildSourceSearchPayload({ provider, query, limit, municipalities } = {}) {
   const requestedProvider = resolveLawSourceProvider({ provider });
   const normalizedQuery = typeof query === "string" ? query.trim() : "";
 
@@ -416,7 +416,8 @@ export async function buildSourceSearchPayload({ provider, query, limit } = {}) 
   const searchResult = await searchLawSource({
     provider: requestedProvider,
     query: normalizedQuery,
-    limit
+    limit,
+    municipalities
   });
 
   return {
@@ -493,7 +494,8 @@ export async function handleSourceSearch(req, res) {
     const payload = await buildSourceSearchPayload({
       provider: requestUrl.searchParams.get("provider"),
       query,
-      limit: parseSourceSearchLimit(requestUrl.searchParams.get("limit"))
+      limit: parseSourceSearchLimit(requestUrl.searchParams.get("limit")),
+      municipalities: parseMunicipalityList(requestUrl.searchParams.get("municipalities"))
     });
     sendJson(res, 200, payload);
   } catch (error) {

@@ -72,6 +72,7 @@ function fallbackInspectionLocalization({ inspectionResult, documentText, target
       reasoning: normalizeText(inspectionResult?.detection?.reasoning)
     },
     review: {
+      reasoning: normalizeText(inspectionResult?.review?.reasoning),
       summary: normalizeText(inspectionResult?.review?.summary),
       riskLevel: translateRiskLevel(inspectionResult?.review?.riskLevel, locale),
       issues: Array.isArray(inspectionResult?.review?.issues)
@@ -117,7 +118,7 @@ function buildInspectionLocalizationPrompt({ inspectionResult, documentText, tar
     "You translate a Korean ordinance review result into clear English.",
     `Target locale: ${normalizeTargetLocale(targetLocale)}`,
     "Return JSON only with these keys:",
-    "translatedDocumentText, reasoning, summary, issues, checklist, revisedDraft, downloadMarkdown",
+    "translatedDocumentText, detectionReasoning, reviewReasoning, summary, issues, checklist, revisedDraft, downloadMarkdown",
     "issues must be an array of objects with keys:",
     "section, severity, problem, ordinanceBasis, suggestion",
     "Requirements:",
@@ -228,9 +229,10 @@ export async function localizeDocumentInspection(
     locale,
     translatedDocumentText: normalizeText(payload.translatedDocumentText) || fallback.translatedDocumentText,
     detection: {
-      reasoning: normalizeText(payload.reasoning) || fallback.detection.reasoning
+      reasoning: normalizeText(payload.detectionReasoning) || fallback.detection.reasoning
     },
     review: {
+      reasoning: normalizeText(payload.reviewReasoning) || fallback.review.reasoning,
       summary: normalizeText(payload.summary) || fallback.review.summary,
       riskLevel: fallback.review.riskLevel,
       issues,
