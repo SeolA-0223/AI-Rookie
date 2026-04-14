@@ -1,11 +1,11 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-14 22:52:18 KST
+Auto-updated: 2026-04-14 22:56:29 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 334372d (HEAD -> main, origin/main, origin/HEAD) fix: tighten municipality filters and document review reasoning
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24402734796)
+- Latest commit at update time: 24c1a80 (HEAD -> main, origin/main, origin/HEAD) fix: guard ordinance title detection against drift
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24402862370)
 - PR link: (not applicable on main)
 
 2) Working Tree
@@ -14,22 +14,20 @@ Auto-updated: 2026-04-14 22:52:18 KST
 - ## main...origin/main
 - M  backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
 - M  data/eval/metrics.json
-- M  tests/document-inspection.test.js
 
 3) Recent Commits (max 8)
-- 334372d (HEAD -> main, origin/main, origin/HEAD) fix: tighten municipality filters and document review reasoning
+- 24c1a80 (HEAD -> main, origin/main, origin/HEAD) fix: guard ordinance title detection against drift
+- 334372d fix: tighten municipality filters and document review reasoning
 - e4f19f0 feat: localize dynamic review flows
 - b1eae03 fix: add resilient page tab fallback
 - 003f694 fix: add fallback for dong-gu document review
 - 8824986 fix: split pages and add document inspect api routes
 - c160791 feat: redesign dashboard and add document inspection
 - e81744c feat: simplify dashboard onboarding and clarify risk items
-- a6baf93 fix: localize bundled analysis sample content
 
 4) Staged Files
 - backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
 - data/eval/metrics.json
-- tests/document-inspection.test.js
 
 5) Unstaged Files
 - (none)

@@ -172,6 +172,7 @@ function buildHeuristicDetection(documentText, requestedMunicipalities = []) {
 
   return {
     ordinanceTitleQuery: titleCandidate,
+    hasExplicitOrdinanceLine: ordinanceLineCandidates.length > 0,
     municipalityHints,
     keywords: unique(tokenize(titleCandidate).slice(0, 8)),
     reasoning: "문서 본문에서 조례명 후보와 지자체명을 단순 추출한 규칙 기반 판정입니다.",
@@ -521,7 +522,7 @@ async function detectApplicableOrdinance({
     heuristicTitle: heuristic.ordinanceTitleQuery,
     detectedTitle: normalizeText(merged.ordinanceTitleQuery),
     municipalityNames
-  });
+  }) || heuristic.hasExplicitOrdinanceLine;
 
   return {
     ordinanceTitleQuery: preferHeuristicTitle
@@ -535,7 +536,7 @@ async function detectApplicableOrdinance({
     reasoning: preferHeuristicTitle
       ? `${heuristic.reasoning} 문서에 직접 나타난 조례명과 AI 후보의 핵심어가 겹치지 않아 제목 후보는 규칙 기반 추출값을 우선 사용했습니다.`
       : normalizeText(merged.reasoning) || heuristic.reasoning,
-    confidence: preferHeuristicTitle ? heuristic.confidence : normalizeText(merged.confidence) || heuristic.confidence,
+    confidence: normalizeText(merged.confidence) || heuristic.confidence,
     documentType: normalizeText(merged.documentType) || heuristic.documentType,
     ai: aiResult.meta
   };
