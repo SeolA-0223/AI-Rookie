@@ -425,6 +425,70 @@
         </section>
       </section>
     </main>
+    <script>
+      (() => {
+        const refs = {
+          sheetFront: document.getElementById("sheet-front"),
+          pageCurrent: document.getElementById("page-current"),
+          pageCurrentLabel: document.getElementById("page-current-label"),
+          sheetFooterCopy: document.getElementById("sheet-footer-copy"),
+          searchButton: document.getElementById("page-search-btn"),
+          inspectButton: document.getElementById("page-inspect-btn"),
+          searchPage: document.getElementById("page-search"),
+          inspectPage: document.getElementById("page-inspect")
+        };
+
+        const copy = {
+          search: "조례 검색",
+          inspect: "문서 검사",
+          footerSearch: "탭을 눌러 페이지를 전환하고 조례 검색 또는 문서 검사를 진행하세요.",
+          footerInspect: "문서를 붙여넣거나 업로드한 뒤 문서 검사를 실행하세요."
+        };
+
+        function applyPage(page) {
+          const resolvedPage = page === "inspect" ? "inspect" : "search";
+          const isSearch = resolvedPage === "search";
+
+          if (refs.sheetFront) {
+            refs.sheetFront.dataset.activePage = resolvedPage;
+          }
+          if (refs.searchPage) {
+            refs.searchPage.hidden = !isSearch;
+            refs.searchPage.classList.toggle("is-active", isSearch);
+            refs.searchPage.setAttribute("aria-hidden", String(!isSearch));
+          }
+          if (refs.inspectPage) {
+            refs.inspectPage.hidden = isSearch;
+            refs.inspectPage.classList.toggle("is-active", !isSearch);
+            refs.inspectPage.setAttribute("aria-hidden", String(isSearch));
+          }
+          if (refs.searchButton) {
+            refs.searchButton.classList.toggle("is-active", isSearch);
+            refs.searchButton.setAttribute("aria-selected", String(isSearch));
+            refs.searchButton.setAttribute("aria-pressed", String(isSearch));
+          }
+          if (refs.inspectButton) {
+            refs.inspectButton.classList.toggle("is-active", !isSearch);
+            refs.inspectButton.setAttribute("aria-selected", String(!isSearch));
+            refs.inspectButton.setAttribute("aria-pressed", String(!isSearch));
+          }
+          if (refs.pageCurrent) {
+            refs.pageCurrent.textContent = isSearch ? "01" : "02";
+          }
+          if (refs.pageCurrentLabel) {
+            refs.pageCurrentLabel.textContent = isSearch ? copy.search : copy.inspect;
+          }
+          if (refs.sheetFooterCopy) {
+            refs.sheetFooterCopy.textContent = isSearch ? copy.footerSearch : copy.footerInspect;
+          }
+        }
+
+        refs.searchButton?.addEventListener("click", () => applyPage("search"));
+        refs.inspectButton?.addEventListener("click", () => applyPage("inspect"));
+        window.__setAiRookiePage = applyPage;
+        applyPage(window.location.hash === "#inspect" ? "inspect" : "search");
+      })();
+    </script>
     <script type="module" src="./src/app.js"></script>
   </body>
 </html>

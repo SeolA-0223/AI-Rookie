@@ -348,6 +348,9 @@ function applyStaticCopy() {
 
 function setPage(page) {
   state.page = page === "inspect" ? "inspect" : "search";
+  if (typeof window.__setAiRookiePage === "function") {
+    window.__setAiRookiePage(state.page);
+  }
   if (refs.sheetFront) {
     refs.sheetFront.dataset.activePage = state.page;
   }
