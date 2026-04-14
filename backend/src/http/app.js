@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { generateDraftsWithConfiguredAI, getDraftGenerationStatus } from "../generation/generateDrafts.js";
+import { localizeDocumentInspection, localizeDocumentText } from "../inspection/documentLocalization.js";
 import { inspectDocumentAgainstLatestOrdinance } from "../inspection/inspectDocumentAgainstLatestOrdinance.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
 import {
@@ -32,6 +33,7 @@ try {
 const MAX_BODY_BYTES = 1024 * 1024;
 const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs", "source"]);
 const ALLOWED_DOCUMENT_INSPECT_FIELDS = new Set(["documentText", "fileName", "municipalities", "provider"]);
+const ALLOWED_DOCUMENT_LOCALIZE_FIELDS = new Set(["mode", "documentText", "inspectionResult", "targetLocale"]);
 const analysisStore = createAnalysisStore();
 const defaultLawSource = createLawSource();
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
@@ -48,7 +50,8 @@ const ROUTES = {
   sourceDiscover: new Set(["/source-discover", "/api/source-discover"]),
   sourceStatus: new Set(["/source-status", "/api/source-status"]),
   analyze: new Set(["/analyze", "/api/analyze"]),
-  documentInspect: new Set(["/document-inspect", "/api/document-inspect"])
+  documentInspect: new Set(["/document-inspect", "/api/document-inspect"]),
+  documentLocalize: new Set(["/document-localize", "/api/document-localize"])
 };
 
 function isPlainObject(value) {
@@ -255,6 +258,38 @@ function validateDocumentInspectRequest(payload) {
         }
       });
     }
+  }
+
+  return details;
+}
+
+function validateDocumentLocalizeRequest(payload) {
+  const details = [];
+
+  if (!isPlainObject(payload)) {
+    return [{ path: "body", message: "must be a JSON object" }];
+  }
+
+  for (const key of Object.keys(payload)) {
+    if (!ALLOWED_DOCUMENT_LOCALIZE_FIELDS.has(key)) {
+      details.push({ path: `body.${key}`, message: "is not allowed" });
+    }
+  }
+
+  if (payload.mode !== "document-text" && payload.mode !== "document-review") {
+    details.push({ path: "body.mode", message: "must be one of: document-text, document-review" });
+  }
+
+  if (typeof payload.documentText !== "string" || payload.documentText.trim() === "") {
+    details.push({ path: "body.documentText", message: "must be a non-empty string" });
+  }
+
+  if ("targetLocale" in payload && typeof payload.targetLocale !== "string") {
+    details.push({ path: "body.targetLocale", message: "must be a string" });
+  }
+
+  if (payload.mode === "document-review" && !isPlainObject(payload.inspectionResult)) {
+    details.push({ path: "body.inspectionResult", message: "must be an object when mode is document-review" });
   }
 
   return details;
@@ -594,6 +629,41 @@ export async function handleDocumentInspect(req, res) {
     sendError(res, 500, "INTERNAL_ERROR", error instanceof Error ? error.message : "Unexpected server error.");
   }
 }
+
+export async function handleDocumentLocalize(req, res) {
+  try {
+    const payload = await collectJson(req);
+    const requestErrors = validateDocumentLocalizeRequest(payload);
+    if (requestErrors.length > 0) {
+      sendError(res, 400, "INVALID_REQUEST", "Document localization request is invalid.", requestErrors);
+      return;
+    }
+
+    const result = payload.mode === "document-review"
+      ? await localizeDocumentInspection({
+          inspectionResult: payload.inspectionResult,
+          documentText: payload.documentText,
+          targetLocale: payload.targetLocale
+        })
+      : await localizeDocumentText({
+          documentText: payload.documentText,
+          targetLocale: payload.targetLocale
+        });
+
+    sendJson(res, 200, result);
+  } catch (error) {
+    if (error?.code === "INVALID_JSON") {
+      sendError(res, 400, "INVALID_JSON", error.message);
+      return;
+    }
+    if (error?.code === "REQUEST_TOO_LARGE") {
+      sendError(res, 413, "REQUEST_TOO_LARGE", error.message);
+      return;
+    }
+
+    sendError(res, 500, "INTERNAL_ERROR", error instanceof Error ? error.message : "Unexpected server error.");
+  }
+}
  
 export async function routeRequest(req, res) {
   if (await serveStaticIfMatched(req, res)) {
@@ -639,6 +709,11 @@ export async function routeRequest(req, res) {
 
   if (req.method === "POST" && ROUTES.documentInspect.has(pathname)) {
     await handleDocumentInspect(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && ROUTES.documentLocalize.has(pathname)) {
+    await handleDocumentLocalize(req, res);
     return;
   }
  

@@ -508,7 +508,7 @@ export function renderDocumentMatch(container, payload, { copy, formatTimelineLa
   container.append(card);
 }
 
-export function renderDocumentIssues(container, issues = [], { copy }) {
+export function renderDocumentIssues(container, issues = [], { copy, translateRiskLevel = (value) => value }) {
   if (!container) {
     return;
   }
@@ -525,7 +525,7 @@ export function renderDocumentIssues(container, issues = [], { copy }) {
     item.className = `document-issue ${riskClassForLevel(issue.severity)}`;
 
     const title = document.createElement("strong");
-    title.textContent = `${issue.section} [${issue.severity}]`;
+    title.textContent = `${issue.section} [${translateRiskLevel(issue.severity)}]`;
 
     const problem = document.createElement("p");
     problem.textContent = issue.problem;

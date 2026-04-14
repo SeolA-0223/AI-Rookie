@@ -297,15 +297,18 @@
                 <div class="source-grid">
                   <label class="field">
                     <span class="field-label" data-i18n="documentInspect.fileLabel">문서 파일</span>
+                    <div class="file-picker-row">
+                      <button id="document-file-trigger-btn" class="secondary-btn" type="button">파일 선택</button>
+                      <span id="document-file-name" class="subtle" data-i18n="documentInspect.fileHint">
+                        `.txt`, `.md`, `.json`, `.html` 같은 텍스트 파일을 읽을 수 있습니다.
+                      </span>
+                    </div>
                     <input
                       id="document-file-input"
                       class="field-input field-input-file"
                       type="file"
                       accept=".txt,.md,.json,.html,.csv,text/plain,text/markdown,application/json,text/html,text/csv"
                     />
-                    <span id="document-file-name" class="subtle" data-i18n="documentInspect.fileHint">
-                      `.txt`, `.md`, `.json`, `.html` 같은 텍스트 파일을 읽을 수 있습니다.
-                    </span>
                   </label>
                 </div>
 
@@ -319,6 +322,18 @@
                     placeholder="예: 시민 안내문, 신청 안내, 내부 업무 매뉴얼 내용을 붙여넣으세요."
                   ></textarea>
                 </label>
+
+                <section id="document-translation-panel" class="panel inset-panel" hidden>
+                  <div class="panel-heading compact-heading">
+                    <div>
+                      <h3 id="document-translation-title">자동 번역 미리보기</h3>
+                      <p id="document-translation-note" class="subtle">
+                        영어 화면에서는 업로드한 문서의 번역본을 함께 보여줍니다. 검사에는 원문이 사용됩니다.
+                      </p>
+                    </div>
+                  </div>
+                  <pre id="document-translation-preview"></pre>
+                </section>
 
                 <div class="latest-section">
                   <div class="latest-toolbar">

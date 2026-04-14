@@ -1,4 +1,5 @@
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, getCopy, getMessage } from "./i18n.js";
+import { localizeAnalysisForUi } from "./analysisLocalizer.js";
 import {
   renderDocumentChecklist,
   renderDocumentIssues,
@@ -23,6 +24,7 @@ const ENDPOINTS = {
   sourceStatus: "/api/source-status",
   analyze: "/api/analyze",
   documentInspect: "/api/document-inspect",
+  documentLocalize: "/api/document-localize",
   history: "/api/history?limit=6"
 };
 const LOCALE_STORAGE_KEY = "ai-rookie-locale";
@@ -49,6 +51,26 @@ const MUNICIPALITIES = [
 ].map(([code, name]) => ({ code, name }));
 
 const $ = (id) => document.getElementById(id);
+const MUNICIPALITY_EN_LABELS = new Map([
+  ["6110000", "Seoul"],
+  ["6260000", "Busan"],
+  ["6270000", "Daegu"],
+  ["6280000", "Incheon"],
+  ["6290000", "Gwangju"],
+  ["6300000", "Daejeon"],
+  ["5690000", "Sejong"],
+  ["6310000", "Ulsan"],
+  ["6410000", "Gyeonggi-do"],
+  ["6530000", "Gangwon State"],
+  ["6430000", "Chungcheongbuk-do"],
+  ["6440000", "Chungcheongnam-do"],
+  ["6540000", "Jeonbuk State"],
+  ["6460000", "Jeollanam-do"],
+  ["6470000", "Gyeongsangbuk-do"],
+  ["6480000", "Gyeongsangnam-do"],
+  ["6500000", "Jeju State"],
+  ["6550000", "Chungcheong Regional Union"]
+]);
 
 const refs = {
   sheetFront: $("sheet-front"),
@@ -96,10 +118,15 @@ const refs = {
   liveModePanel: $("live-mode-panel"),
   documentStatusView: $("document-status"),
   documentFileInput: $("document-file-input"),
+  documentFileTriggerButton: $("document-file-trigger-btn"),
   documentFileNameView: $("document-file-name"),
   documentTextField: $("document-text"),
   documentInspectButton: $("document-inspect-btn"),
   documentClearButton: $("document-clear-btn"),
+  documentTranslationPanel: $("document-translation-panel"),
+  documentTranslationTitleView: $("document-translation-title"),
+  documentTranslationNoteView: $("document-translation-note"),
+  documentTranslationView: $("document-translation-preview"),
   documentMatchCardView: $("document-match-card"),
   documentSummaryView: $("document-summary"),
   documentAiSummaryView: $("document-ai-summary"),
@@ -125,8 +152,12 @@ const state = {
   latestAnalysisResult: null,
   latestHistoryPayload: null,
   latestDocumentInspection: null,
+  localizedDocumentInspection: {},
   selectedMunicipalities: [],
-  currentDocumentFileName: ""
+  currentDocumentFileName: "",
+  documentTextTranslations: {},
+  documentTextTranslationPending: false,
+  documentTextTranslationError: ""
 };
 
 function loadStoredLocale() {
@@ -167,8 +198,70 @@ function translateRiskLevel(value) {
   return copy().riskLevels[value] ?? value ?? copy().labels.unknown;
 }
 
+function formatMunicipalityName(municipality = {}) {
+  if (state.locale !== "en") {
+    return municipality.name ?? "";
+  }
+  return MUNICIPALITY_EN_LABELS.get(municipality.code) ?? municipality.name ?? "";
+}
+
+function getMunicipalityOptions() {
+  return MUNICIPALITIES.map((municipality) => ({
+    ...municipality,
+    name: formatMunicipalityName(municipality)
+  }));
+}
+
+function getLocalizedDocumentInspection() {
+  return state.locale === "en" ? state.localizedDocumentInspection.en ?? null : null;
+}
+
+function getDocumentInspectionViewModel() {
+  const result = state.latestDocumentInspection;
+  const localized = getLocalizedDocumentInspection();
+
+  if (!result || !localized) {
+    return result;
+  }
+
+  return {
+    ...result,
+    detection: {
+      ...(result.detection ?? {}),
+      ...(localized.detection ?? {})
+    },
+    review: {
+      ...(result.review ?? {}),
+      ...(localized.review ?? {})
+    },
+    download: localized.download ?? result.download
+  };
+}
+
 function formatProviderLabel(provider) {
   return copy().providers[provider] ?? provider ?? copy().labels.unknown;
+}
+
+function documentTranslationCopy() {
+  if (state.locale === "en") {
+    return {
+      triggerLabel: "Choose file",
+      title: "Translated Preview",
+      note: "In English mode, the uploaded document is shown with an English preview. The original text is still used for review.",
+      pending: "Preparing the English translation...",
+      empty: "The English translation preview is not ready yet.",
+      failure: (message) => `English translation is unavailable right now: ${message}`
+    };
+  }
+
+  return {
+    triggerLabel: "파일 선택",
+    title: "자동 번역 미리보기",
+    note: "영어 화면에서는 업로드한 문서의 번역본을 함께 보여줍니다. 검사에는 원문이 사용됩니다.",
+    pending: "영문 번역을 준비하는 중...",
+    empty: "영문 번역이 아직 준비되지 않았습니다.",
+    failure: (message) => `영문 번역을 불러오지 못했습니다: ${message}`
+  };
 }
 
 function formatTimelineLabel(result = {}) {
@@ -258,7 +351,7 @@ function formatMunicipalityScope(codes = state.selectedMunicipalities) {
   if (!codes.length) {
     return copy().messages.latestNationwide;
   }
-  const names = MUNICIPALITIES.filter((item) => codes.includes(item.code)).map((item) => item.name);
+  const names = MUNICIPALITIES.filter((item) => codes.includes(item.code)).map((item) => formatMunicipalityName(item));
   return names.length <= 2 ? names.join(", ") : copy().messages.latestMunicipalityCount(names.length);
 }
 
@@ -270,6 +363,37 @@ function normalizeAnalyzeResponse(result = {}) {
     risks: analysis.risks ?? result.risks ?? [],
     drafts: result.drafts ?? {}
   };
+}
+
+function renderDocumentTranslationPreview() {
+  if (!refs.documentTranslationPanel || !refs.documentTranslationView) {
+    return;
+  }
+
+  const translationUi = documentTranslationCopy();
+  const translatedText = state.locale === "en" ? state.documentTextTranslations.en ?? "" : "";
+  const shouldShowPanel =
+    state.locale === "en" &&
+    Boolean((refs.documentTextField?.value ?? "").trim()) &&
+    (state.documentTextTranslationPending || Boolean(translatedText) || Boolean(state.documentTextTranslationError));
+
+  refs.documentTranslationPanel.hidden = !shouldShowPanel;
+  if (!shouldShowPanel) {
+    refs.documentTranslationView.textContent = "";
+    return;
+  }
+
+  if (state.documentTextTranslationPending) {
+    refs.documentTranslationView.textContent = translationUi.pending;
+    return;
+  }
+
+  if (state.documentTextTranslationError) {
+    refs.documentTranslationView.textContent = translationUi.failure(state.documentTextTranslationError);
+    return;
+  }
+
+  refs.documentTranslationView.textContent = translatedText || translationUi.empty;
 }
 
 function renderDocumentFileName() {
@@ -343,6 +467,15 @@ function applyStaticCopy() {
   populateProviderOptions();
   populateCaseCatalog();
   renderQuickStart(refs.quickStartView, copy().guide.steps);
+  if (refs.documentFileTriggerButton) {
+    refs.documentFileTriggerButton.textContent = documentTranslationCopy().triggerLabel;
+  }
+  if (refs.documentTranslationTitleView) {
+    refs.documentTranslationTitleView.textContent = documentTranslationCopy().title;
+  }
+  if (refs.documentTranslationNoteView) {
+    refs.documentTranslationNoteView.textContent = documentTranslationCopy().note;
+  }
   renderDocumentFileName();
 }
 
@@ -472,8 +605,11 @@ function buildProvenanceCards() {
     fields.municipalities,
     latestPayload?.meta?.nationwide
       ? copy().messages.latestNationwide
-      : Array.isArray(latestPayload?.meta?.municipalityNames)
-        ? latestPayload.meta.municipalityNames.join(", ")
+      : Array.isArray(latestPayload?.meta?.municipalityCodes)
+        ? latestPayload.meta.municipalityCodes
+            .map((code) => formatMunicipalityName(MUNICIPALITIES.find((item) => item.code === code) ?? {}))
+            .filter(Boolean)
+            .join(", ")
         : ""
   );
 
@@ -511,8 +647,9 @@ function renderMunicipalityFiltersFromState() {
       void loadLatestDiscovery();
     }
   };
-  renderMunicipalityFilters(refs.municipalityFilterView, MUNICIPALITIES, options);
-  renderMunicipalityFilters(refs.documentMunicipalityFilterView, MUNICIPALITIES, options);
+  const municipalities = getMunicipalityOptions();
+  renderMunicipalityFilters(refs.municipalityFilterView, municipalities, options);
+  renderMunicipalityFilters(refs.documentMunicipalityFilterView, municipalities, options);
 }
 
 function renderSourceSearchFromState() {
@@ -553,7 +690,8 @@ function renderLatestDiscoveryFromState() {
 }
 
 function renderCurrentResult() {
-  const normalized = normalizeAnalyzeResponse(state.latestAnalysisResult ?? {});
+  const localizedResult = localizeAnalysisForUi(state.latestAnalysisResult ?? {}, state.locale);
+  const normalized = normalizeAnalyzeResponse(localizedResult);
   const changesById = new Map(normalized.changes.map((change) => [change.id, change]));
   renderSummaryCards(refs.summaryContainer, normalized.changes, { copy: copy(), translateChangeType });
   renderImpactList(refs.impactListView, normalized.mapped, { copy: copy(), changesById });
@@ -590,7 +728,7 @@ function renderDocumentReviewMeta(result) {
 }
 
 function renderDocumentInspectResult() {
-  const result = state.latestDocumentInspection;
+  const result = getDocumentInspectionViewModel();
   renderDocumentMatch(
     refs.documentMatchCardView,
     result
@@ -612,7 +750,7 @@ function renderDocumentInspectResult() {
       : copy().documentInspect.emptySummary;
   }
   renderDocumentReviewMeta(result);
-  renderDocumentIssues(refs.documentIssuesListView, result?.review?.issues ?? [], { copy: copy() });
+  renderDocumentIssues(refs.documentIssuesListView, result?.review?.issues ?? [], { copy: copy(), translateRiskLevel });
   renderDocumentChecklist(refs.documentChecklistListView, result?.review?.checklist ?? [], { copy: copy() });
   if (refs.documentDraftView) {
     refs.documentDraftView.textContent = result?.review?.revisedDraft || copy().documentInspect.emptyDraft;
@@ -620,6 +758,7 @@ function renderDocumentInspectResult() {
   if (refs.documentDownloadButton) {
     refs.documentDownloadButton.disabled = !(result?.download?.content && result?.download?.fileName);
   }
+  renderDocumentTranslationPreview();
 }
 
 function appendEmptyHistoryMessage(text) {
@@ -735,6 +874,88 @@ async function fetchJson(url, init) {
     throw new Error(parseErrorMessage(json) || `HTTP ${response.status}`);
   }
   return json;
+}
+
+function resetDocumentLocalizations() {
+  state.localizedDocumentInspection = {};
+}
+
+function resetDocumentTextTranslations() {
+  state.documentTextTranslations = {};
+  state.documentTextTranslationPending = false;
+  state.documentTextTranslationError = "";
+}
+
+async function localizeDocumentTextIfNeeded({ force = false } = {}) {
+  const documentText = refs.documentTextField?.value.trim() ?? "";
+  if (state.locale !== "en" || !documentText) {
+    renderDocumentTranslationPreview();
+    return null;
+  }
+  if (!force && state.documentTextTranslations.en) {
+    renderDocumentTranslationPreview();
+    return state.documentTextTranslations.en;
+  }
+
+  state.documentTextTranslationPending = true;
+  state.documentTextTranslationError = "";
+  renderDocumentTranslationPreview();
+
+  try {
+    const payload = await fetchJson(ENDPOINTS.documentLocalize, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "document-text",
+        targetLocale: "en",
+        documentText
+      })
+    });
+    state.documentTextTranslations.en = payload.translatedDocumentText || documentText;
+    state.documentTextTranslationError = "";
+    return state.documentTextTranslations.en;
+  } catch (error) {
+    state.documentTextTranslations.en = "";
+    state.documentTextTranslationError = error.message;
+    return null;
+  } finally {
+    state.documentTextTranslationPending = false;
+    renderDocumentTranslationPreview();
+  }
+}
+
+async function localizeDocumentInspectionIfNeeded({ force = false } = {}) {
+  if (state.locale !== "en" || !state.latestDocumentInspection) {
+    renderDocumentInspectResult();
+    return null;
+  }
+  if (!force && state.localizedDocumentInspection.en) {
+    renderDocumentInspectResult();
+    return state.localizedDocumentInspection.en;
+  }
+
+  try {
+    const payload = await fetchJson(ENDPOINTS.documentLocalize, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "document-review",
+        targetLocale: "en",
+        documentText: refs.documentTextField?.value ?? "",
+        inspectionResult: state.latestDocumentInspection
+      })
+    });
+    state.localizedDocumentInspection.en = payload;
+    if (payload.translatedDocumentText) {
+      state.documentTextTranslations.en = payload.translatedDocumentText;
+      state.documentTextTranslationError = "";
+    }
+    renderDocumentInspectResult();
+    return payload;
+  } catch {
+    renderDocumentInspectResult();
+    return null;
+  }
 }
 
 async function loadCaseCatalog() {
@@ -914,15 +1135,21 @@ async function runDocumentInspect() {
   }
   setDocumentStatus(copy().messages.documentInspecting, "loading");
   try {
+    resetDocumentLocalizations();
     state.latestDocumentInspection = await fetchJson(ENDPOINTS.documentInspect, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(buildDocumentInspectPayload())
     });
     renderDocumentInspectResult();
-    setDocumentStatus(copy().messages.documentInspectSuccess(state.latestDocumentInspection.ordinance?.matched?.title ?? copy().labels.unknown), "success");
+    if (state.locale === "en") {
+      await localizeDocumentInspectionIfNeeded({ force: true });
+    }
+    const viewModel = getDocumentInspectionViewModel();
+    setDocumentStatus(copy().messages.documentInspectSuccess(viewModel?.ordinance?.matched?.title ?? copy().labels.unknown), "success");
   } catch (error) {
     state.latestDocumentInspection = null;
+    resetDocumentLocalizations();
     renderDocumentInspectResult();
     setDocumentStatus(copy().messages.documentInspectFailure(error.message), "error");
   } finally {
@@ -945,14 +1172,24 @@ async function handleDocumentFileChange(event) {
   try {
     const text = await file.text();
     state.currentDocumentFileName = file.name;
+    state.latestDocumentInspection = null;
+    resetDocumentLocalizations();
+    resetDocumentTextTranslations();
     if (refs.documentTextField) {
       refs.documentTextField.value = text;
     }
     renderDocumentFileName();
+    renderDocumentInspectResult();
     setDocumentStatus(copy().messages.documentFileLoaded(file.name), "success");
+    if (state.locale === "en") {
+      await localizeDocumentTextIfNeeded({ force: true });
+    }
   } catch (error) {
     state.currentDocumentFileName = "";
+    resetDocumentLocalizations();
+    resetDocumentTextTranslations();
     renderDocumentFileName();
+    renderDocumentInspectResult();
     setDocumentStatus(copy().messages.documentInspectFailure(error.message), "error");
   }
 }
@@ -960,6 +1197,8 @@ async function handleDocumentFileChange(event) {
 function clearDocumentInput() {
   state.currentDocumentFileName = "";
   state.latestDocumentInspection = null;
+  resetDocumentLocalizations();
+  resetDocumentTextTranslations();
   if (refs.documentTextField) {
     refs.documentTextField.value = "";
   }
@@ -972,7 +1211,7 @@ function clearDocumentInput() {
 }
 
 function downloadDocumentDraft() {
-  const download = state.latestDocumentInspection?.download;
+  const download = getDocumentInspectionViewModel()?.download;
   if (!download?.content || !download.fileName) {
     return;
   }
@@ -1026,6 +1265,24 @@ function setLanguage(locale) {
   renderDocumentInspectResult();
   renderProvenance();
   updateSourceControls();
+  if (state.latestAnalysisResult) {
+    const normalized = renderCurrentResult();
+    setStatus(copy().messages.analysisSuccess(normalized.changes.length), "success");
+  }
+  if (state.latestDocumentInspection) {
+    const viewModel = getDocumentInspectionViewModel() ?? state.latestDocumentInspection;
+    setDocumentStatus(copy().messages.documentInspectSuccess(viewModel?.ordinance?.matched?.title ?? copy().labels.unknown), "success");
+  } else if (state.currentDocumentFileName) {
+    setDocumentStatus(copy().messages.documentFileLoaded(state.currentDocumentFileName), "success");
+  } else {
+    setDocumentStatus(copy().messages.ready, "neutral");
+  }
+  if (state.locale === "en") {
+    void localizeDocumentTextIfNeeded();
+    void localizeDocumentInspectionIfNeeded();
+  } else {
+    renderDocumentTranslationPreview();
+  }
 }
 
 function attachEventListeners() {
@@ -1076,7 +1333,15 @@ function attachEventListeners() {
   refs.documentMunicipalitySelectAllButton?.addEventListener("click", selectAll);
   refs.municipalityClearButton?.addEventListener("click", clearAll);
   refs.documentMunicipalityClearButton?.addEventListener("click", clearAll);
+  refs.documentFileTriggerButton?.addEventListener("click", () => refs.documentFileInput?.click());
   refs.documentFileInput?.addEventListener("change", (event) => void handleDocumentFileChange(event));
+  refs.documentTextField?.addEventListener("input", () => {
+    state.latestDocumentInspection = null;
+    resetDocumentLocalizations();
+    resetDocumentTextTranslations();
+    renderDocumentInspectResult();
+    renderDocumentFileName();
+  });
   refs.documentInspectButton?.addEventListener("click", () => void runDocumentInspect());
   refs.documentClearButton?.addEventListener("click", clearDocumentInput);
   refs.documentDownloadButton?.addEventListener("click", downloadDocumentDraft);

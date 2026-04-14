@@ -701,6 +701,30 @@ a {
   white-space: pre-wrap;
 }
 
+.file-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.field-input-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.inset-panel {
+  margin-top: 18px;
+  border-style: dashed;
+  background: rgba(255, 247, 238, 0.82);
+}
+
 .document-meta-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
