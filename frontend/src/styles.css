@@ -278,8 +278,18 @@ a {
   gap: 16px;
 }
 
+.page-shared {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .page-panel {
   animation: page-in 240ms ease;
+}
+
+.page-panel[hidden] {
+  display: none !important;
 }
 
 .panel {

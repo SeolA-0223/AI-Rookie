@@ -33,6 +33,7 @@
               class="page-btn is-active"
               type="button"
               role="tab"
+              aria-controls="page-search"
               aria-selected="true"
               aria-pressed="true"
               data-i18n="pages.search"
@@ -44,6 +45,7 @@
               class="page-btn"
               type="button"
               role="tab"
+              aria-controls="page-inspect"
               aria-selected="false"
               aria-pressed="false"
               data-i18n="pages.inspect"
@@ -63,7 +65,7 @@
             </div>
           </div>
 
-          <div id="page-search" class="page-stack page-panel is-active">
+          <section class="page-shared">
             <section class="panel onboarding-panel" id="guide-panel">
               <div class="panel-heading">
                 <div>
@@ -75,15 +77,10 @@
                 </p>
               </div>
               <div id="quickstart-steps" class="step-grid"></div>
-              <div class="panel-actions">
-                <button id="sample-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.sampleShortcut">
-                  샘플 케이스로 시작
-                </button>
-                <button id="live-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.liveShortcut">
-                  실제 조례 찾기
-                </button>
-              </div>
             </section>
+          </section>
+
+          <div id="page-search" class="page-stack page-panel is-active" aria-hidden="false">
 
             <section class="panel panel-source" id="source-panel">
               <div class="panel-heading">
@@ -280,7 +277,7 @@
             </details>
           </div>
 
-          <div id="page-inspect" class="page-stack page-panel" hidden>
+          <div id="page-inspect" class="page-stack page-panel" aria-hidden="true" hidden>
             <section class="panel panel-source">
               <div class="panel-heading">
                 <div>

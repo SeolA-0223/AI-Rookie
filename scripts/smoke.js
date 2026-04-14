@@ -23,6 +23,27 @@ async function fetchJson(path, init = {}) {
   }
 }
 
+async function fetchRaw(path, init = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SMOKE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal
+    });
+    const bodyText = await response.text();
+    const json = bodyText ? JSON.parse(bodyText) : {};
+
+    return {
+      status: response.status,
+      json
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -82,6 +103,15 @@ async function main() {
   assert(Array.isArray(sourceDiscover.results), "Missing results[] in /source-discover response.");
   assert(sourceDiscover.meta?.mode === "discover", "Unexpected mode in /source-discover response.");
   console.log(`Source discover endpoint check passed. Loaded ${sourceDiscover.results.length} discovery result(s).`);
+
+  const documentInspect = await fetchRaw("/document-inspect", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  assert(documentInspect.status === 400, "Expected /document-inspect to return 400 for an invalid request.");
+  assert(documentInspect.json?.error?.code === "INVALID_REQUEST", "Unexpected error code in /document-inspect response.");
+  console.log("Document inspect endpoint check passed.");
 
   const analyze = await fetchJson("/analyze", {
     method: "POST",

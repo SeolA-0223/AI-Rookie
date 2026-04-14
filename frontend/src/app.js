@@ -351,11 +351,14 @@ function setPage(page) {
   if (refs.sheetFront) {
     refs.sheetFront.dataset.activePage = state.page;
   }
-  if (refs.searchPageView) {
-    refs.searchPageView.hidden = state.page !== "search";
-  }
-  if (refs.inspectPageView) {
-    refs.inspectPageView.hidden = state.page !== "inspect";
+  for (const [panel, name] of [[refs.searchPageView, "search"], [refs.inspectPageView, "inspect"]]) {
+    if (!panel) {
+      continue;
+    }
+    const active = state.page === name;
+    panel.hidden = !active;
+    panel.classList.toggle("is-active", active);
+    panel.setAttribute("aria-hidden", String(!active));
   }
   if (refs.pageCurrentView) {
     refs.pageCurrentView.textContent = state.page === "search" ? "01" : "02";

@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-04-14T01:04:15.893Z",
+  "evaluatedAt": "2026-04-14T05:44:56.630Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
@@ -52,7 +52,7 @@
     "summary": {
       "evaluatedCaseCount": 4,
       "passedCaseCount": 4,
-      "suiteRuntimeMs": 2,
+      "suiteRuntimeMs": 18,
       "averageF1": 1,
       "averageMappingCoverage": 1,
       "averageTraceCompleteness": 1,
@@ -137,7 +137,7 @@
           "after": "data/cases/daejeon_youth_basic_ordinance/after.json",
           "internalDocs": "data/cases/daejeon_youth_basic_ordinance/internal_docs.json"
         },
-        "runtimeMs": 0,
+        "runtimeMs": 16,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,

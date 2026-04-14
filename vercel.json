@@ -21,6 +21,14 @@
       "destination": "/api/source-search"
     },
     {
+      "source": "/source-discover",
+      "destination": "/api/source-discover"
+    },
+    {
+      "source": "/document-inspect",
+      "destination": "/api/document-inspect"
+    },
+    {
       "source": "/analyze",
       "destination": "/api/analyze"
     }
