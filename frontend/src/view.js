@@ -5,12 +5,29 @@ function createEmptyMessage(tagName, text) {
   return element;
 }
 
-function setTextContent(element, text) {
-  if (!element) {
-    return;
+function createMetaLine(label, value) {
+  const line = document.createElement("p");
+  line.className = "search-meta";
+  line.textContent = `${label}: ${value}`;
+  return line;
+}
+
+function createLinkLine(label, href, fallbackText) {
+  const line = document.createElement("p");
+  line.className = "search-meta search-link";
+
+  if (!href) {
+    line.textContent = fallbackText;
+    return line;
   }
 
-  element.textContent = text;
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = href;
+  line.append(`${label}: `, anchor);
+  return line;
 }
 
 function createInfoCard(title, items, tone = "neutral", emptyText = "") {
@@ -42,13 +59,6 @@ function createInfoCard(title, items, tone = "neutral", emptyText = "") {
 
   card.append(list);
   return card;
-}
-
-function createSearchMeta(copy, label, value) {
-  const line = document.createElement("p");
-  line.className = "search-meta";
-  line.textContent = `${label}: ${value}`;
-  return line;
 }
 
 export function renderQuickStart(container, steps = []) {
@@ -118,14 +128,18 @@ export function renderSourceSearchRecommendation(
     const blockTitle = document.createElement("h3");
     blockTitle.textContent = blockName === "before" ? copy.search.beforeVersion : copy.search.afterVersion;
 
-    const idLine = createSearchMeta(copy, copy.search.idLabel, recommendation[blockName].id);
-    const nameLine = document.createElement("p");
-    nameLine.textContent = recommendation[blockName].title ?? recommendation[blockName].id;
-    const timelineLine = document.createElement("p");
-    timelineLine.className = "search-meta";
-    timelineLine.textContent = formatTimelineLabel(recommendation[blockName]);
+    block.append(
+      blockTitle,
+      createMetaLine(copy.search.idLabel, recommendation[blockName].id),
+      Object.assign(document.createElement("p"), {
+        textContent: recommendation[blockName].title ?? recommendation[blockName].id
+      }),
+      Object.assign(document.createElement("p"), {
+        className: "search-meta",
+        textContent: formatTimelineLabel(recommendation[blockName])
+      })
+    );
 
-    block.append(blockTitle, idLine, nameLine, timelineLine);
     grid.append(block);
   }
 
@@ -162,8 +176,6 @@ export function renderSourceSearchResults(
     const title = document.createElement("h3");
     title.textContent = result.title ?? result.id ?? copy.labels.unknown;
 
-    const idLine = createSearchMeta(copy, copy.search.idLabel, result.id ?? copy.labels.unknown);
-
     const metaLine = document.createElement("p");
     metaLine.className = "search-meta";
     metaLine.textContent = [result.jurisdiction, formatTimelineLabel(result)].filter(Boolean).join(" / ");
@@ -171,7 +183,7 @@ export function renderSourceSearchResults(
     const summary = document.createElement("p");
     summary.textContent = result.summary || copy.labels.notAvailable;
 
-    card.append(title, idLine, metaLine, summary);
+    card.append(title, createMetaLine(copy.search.idLabel, result.id ?? copy.labels.unknown), metaLine, summary);
 
     if (result.curatedCaseId) {
       const badge = document.createElement("p");
@@ -180,19 +192,7 @@ export function renderSourceSearchResults(
       card.append(badge);
     }
 
-    const reference = document.createElement("p");
-    reference.className = "search-meta search-link";
-
-    if (result.referenceUrl) {
-      const anchor = document.createElement("a");
-      anchor.href = result.referenceUrl;
-      anchor.target = "_blank";
-      anchor.rel = "noreferrer";
-      anchor.textContent = result.referenceUrl;
-      reference.append(`${copy.search.sourceLabel}: `, anchor);
-    } else {
-      reference.textContent = copy.search.referenceMissing;
-    }
+    card.append(createLinkLine(copy.search.sourceLabel, result.referenceUrl, copy.search.referenceMissing));
 
     const actions = document.createElement("div");
     actions.className = "search-actions";
@@ -212,7 +212,86 @@ export function renderSourceSearchResults(
     afterButton.addEventListener("click", () => onUseAfter(result));
 
     actions.append(beforeButton, afterButton);
-    card.append(reference, actions);
+    card.append(actions);
+    container.append(card);
+  }
+}
+
+export function renderMunicipalityFilters(container, municipalities = [], { selectedCodes = [], onToggle }) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  const selected = new Set(selectedCodes);
+
+  for (const municipality of municipalities) {
+    const label = document.createElement("label");
+    label.className = "checkbox-chip";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = selected.has(municipality.code);
+    input.addEventListener("change", () => onToggle(municipality.code, input.checked));
+
+    const text = document.createElement("span");
+    text.textContent = municipality.name;
+
+    label.append(input, text);
+    container.append(label);
+  }
+}
+
+export function renderLatestOrdinanceList(
+  container,
+  results = [],
+  { copy, formatTimelineLabel, onSearchPair, onUseAsAfter }
+) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!results.length) {
+    container.append(createEmptyMessage("p", copy.latest.empty));
+    return;
+  }
+
+  for (const result of results) {
+    const card = document.createElement("article");
+    card.className = "latest-item";
+
+    const title = document.createElement("h3");
+    title.textContent = result.title ?? result.id ?? copy.labels.unknown;
+
+    const meta = document.createElement("p");
+    meta.className = "latest-meta";
+    meta.textContent = [result.jurisdiction, formatTimelineLabel(result)].filter(Boolean).join(" / ");
+
+    const summary = document.createElement("p");
+    summary.textContent = result.summary || copy.labels.notAvailable;
+
+    card.append(title, meta, summary, createLinkLine(copy.search.sourceLabel, result.referenceUrl, copy.search.referenceMissing));
+
+    const actions = document.createElement("div");
+    actions.className = "search-actions";
+
+    const pairButton = document.createElement("button");
+    pairButton.type = "button";
+    pairButton.className = "secondary-btn";
+    pairButton.textContent = copy.buttons.searchLatestPair;
+    pairButton.addEventListener("click", () => onSearchPair(result));
+
+    const afterButton = document.createElement("button");
+    afterButton.type = "button";
+    afterButton.className = "secondary-btn";
+    afterButton.textContent = copy.buttons.useAsLatestAfter;
+    afterButton.disabled = !result.id;
+    afterButton.addEventListener("click", () => onUseAsAfter(result));
+
+    actions.append(pairButton, afterButton);
+    card.append(actions);
     container.append(card);
   }
 }
@@ -289,10 +368,11 @@ export function renderImpactList(container, mapped = [], { copy, changesById }) 
 }
 
 function riskClassForLevel(level) {
-  if (level === "빨강" || level === "red") {
+  const normalizedLevel = String(level ?? "").toLowerCase();
+  if (normalizedLevel === "빨강" || normalizedLevel === "red" || normalizedLevel === "high") {
     return "risk-red";
   }
-  if (level === "노랑" || level === "yellow") {
+  if (normalizedLevel === "노랑" || normalizedLevel === "yellow" || normalizedLevel === "medium") {
     return "risk-yellow";
   }
   return "risk-blue";
@@ -369,14 +449,115 @@ export function renderHistoryList(container, runs = [], { copy, formatRunTime, d
     meta.textContent = copy.history.itemMeta(run.totalChanges, run.highRiskChangeCount);
 
     const breakdown = document.createElement("p");
-    const changeTypes = Object.entries(run.changeTypeBreakdown ?? {})
+    breakdown.textContent = Object.entries(run.changeTypeBreakdown ?? {})
       .map(([type, count]) => `${translateChangeType(type)} ${count}`)
-      .join(" / ");
-    setTextContent(breakdown, changeTypes || copy.history.emptyBreakdown);
+      .join(" / ") || copy.history.emptyBreakdown;
 
     button.append(title, meta, breakdown);
     button.addEventListener("click", () => onSelectRun(run));
     item.append(button);
+    container.append(item);
+  }
+}
+
+export function renderDocumentMatch(container, payload, { copy, formatTimelineLabel }) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  const matched = payload?.matched;
+  if (!matched) {
+    container.append(createEmptyMessage("p", copy.documentInspect.matchedEmpty));
+    return;
+  }
+
+  const card = document.createElement("article");
+  card.className = "search-result";
+
+  const title = document.createElement("h3");
+  title.textContent = matched.title ?? copy.labels.unknown;
+
+  const meta = document.createElement("p");
+  meta.className = "search-meta";
+  meta.textContent = [matched.jurisdiction, formatTimelineLabel(matched)].filter(Boolean).join(" / ");
+
+  const detailList = document.createElement("div");
+  detailList.className = "document-meta-grid";
+
+  const rows = [
+    [copy.documentInspect.matchedIdLabel, matched.id],
+    [copy.documentInspect.detectedQueryLabel, payload.query],
+    [copy.documentInspect.confidenceLabel, payload.confidence],
+    [copy.documentInspect.clauseCountLabel, payload.clauseCount]
+  ];
+
+  for (const [label, value] of rows) {
+    if (!value && value !== 0) {
+      continue;
+    }
+
+    const item = document.createElement("p");
+    item.className = "search-meta";
+    item.textContent = `${label}: ${value}`;
+    detailList.append(item);
+  }
+
+  card.append(title, meta, detailList, createLinkLine(copy.documentInspect.sourceUrlLabel, matched.referenceUrl, copy.search.referenceMissing));
+  container.append(card);
+}
+
+export function renderDocumentIssues(container, issues = [], { copy }) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!issues.length) {
+    container.append(createEmptyMessage("li", copy.documentInspect.emptyIssues));
+    return;
+  }
+
+  for (const issue of issues) {
+    const item = document.createElement("li");
+    item.className = `document-issue ${riskClassForLevel(issue.severity)}`;
+
+    const title = document.createElement("strong");
+    title.textContent = `${issue.section} [${issue.severity}]`;
+
+    const problem = document.createElement("p");
+    problem.textContent = issue.problem;
+
+    const basis = document.createElement("p");
+    basis.className = "search-meta";
+    basis.textContent = `${copy.documentInspect.ordinanceBasisLabel}: ${issue.ordinanceBasis}`;
+
+    const suggestion = document.createElement("p");
+    suggestion.className = "search-meta";
+    suggestion.textContent = `${copy.documentInspect.suggestionLabel}: ${issue.suggestion}`;
+
+    item.append(title, problem, basis, suggestion);
+    container.append(item);
+  }
+}
+
+export function renderDocumentChecklist(container, checklist = [], { copy }) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+
+  if (!checklist.length) {
+    container.append(createEmptyMessage("li", copy.documentInspect.emptyChecklist));
+    return;
+  }
+
+  for (const entry of checklist) {
+    const item = document.createElement("li");
+    item.textContent = entry;
     container.append(item);
   }
 }

@@ -1,0 +1,700 @@
+import {
+  discoverLawSource,
+  readLawSourceDocument,
+  recommendLawSourcePair,
+  searchLawSource,
+  SourceResolutionError
+} from "../sources/lawSource.js";
+import { LAW_GO_MUNICIPALITIES, getMunicipalityNames, normalizeMunicipalityCodes } from "../sources/providers/lawGoMunicipalities.js";
+import { normalizeEnvValue } from "../sources/shared.js";
+import { getDraftGenerationStatus } from "../generation/generateDrafts.js";
+
+const DEFAULT_PROVIDER = "law-go-public";
+const MAX_DOCUMENT_CHARS = 20000;
+const MAX_ORDINANCE_CONTEXT_CHARS = 12000;
+const MAX_ORDINANCE_CLAUSES = 12;
+
+function normalizeText(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanDocumentText(value) {
+  return normalizeText(value).replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+}
+
+function buildInspectionInputError(path, message) {
+  return new SourceResolutionError({
+    code: "SOURCE_INPUT_INVALID",
+    message: "Document inspection request is invalid.",
+    details: [
+      {
+        path,
+        message
+      }
+    ],
+    statusCode: 400
+  });
+}
+
+function buildInspectionResolutionError(message) {
+  return new SourceResolutionError({
+    code: "SOURCE_FETCH_FAILED",
+    message,
+    statusCode: 502
+  });
+}
+
+function tokenize(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+function unique(values = []) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function summarizeClause(clause = {}, maxLength = 220) {
+  const text = normalizeText(clause.text).replace(/\s+/g, " ");
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength - 1)}…`;
+}
+
+function shorten(value, maxLength = 200) {
+  const text = normalizeText(value).replace(/\s+/g, " ");
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return `${text.slice(0, maxLength - 1)}…`;
+}
+
+function sanitizeFileStem(value) {
+  return normalizeText(value)
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
+
+function buildMarkdownDownload({ fileName, ordinance, detection, review }) {
+  const issueLines = (review.issues ?? []).map((issue, index) =>
+    `${index + 1}. [${issue.severity}] ${issue.section}: ${issue.problem}\n   - 근거: ${issue.ordinanceBasis}\n   - 수정: ${issue.suggestion}`
+  );
+  const checklistLines = (review.checklist ?? []).map((item, index) => `${index + 1}. ${item}`);
+
+  return [
+    `# 문서 검사 결과 - ${normalizeText(fileName) || "입력 문서"}`,
+    "",
+    "## 판정된 최신 조례",
+    `- 조례명: ${ordinance.matched?.title ?? "미확인"}`,
+    `- 지자체: ${ordinance.matched?.jurisdiction ?? "미확인"}`,
+    `- 조례 ID: ${ordinance.matched?.id ?? "미확인"}`,
+    `- 공포일: ${ordinance.matched?.promulgationDate ?? "미확인"}`,
+    `- 시행일: ${ordinance.matched?.effectiveDate ?? "미확인"}`,
+    `- 출처: ${ordinance.matched?.referenceUrl ?? "미확인"}`,
+    "",
+    "## 적용 판단",
+    review.summary ?? "요약 없음",
+    "",
+    "## AI 판정 메모",
+    detection.reasoning ?? "판정 메모 없음",
+    "",
+    "## 수정 필요 항목",
+    ...(issueLines.length > 0 ? issueLines : ["- 없음"]),
+    "",
+    "## 검토 체크리스트",
+    ...(checklistLines.length > 0 ? checklistLines : ["- 없음"]),
+    "",
+    "## 수정본 초안",
+    review.revisedDraft ?? "수정본 초안 없음"
+  ].join("\n");
+}
+
+function buildHeuristicDetection(documentText, requestedMunicipalities = []) {
+  const lines = documentText
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const ordinanceLineCandidates = lines.filter((line) => /(조례|규칙|ordinance|rule)/i.test(line));
+  const titleCandidate =
+    ordinanceLineCandidates.sort((left, right) => right.length - left.length)[0] ||
+    lines.find((line) => /청년|지원|신청|자격|운영|안내/.test(line)) ||
+    "지자체 조례";
+
+  const municipalityHints = unique([
+    ...requestedMunicipalities,
+    ...LAW_GO_MUNICIPALITIES.filter((item) => documentText.includes(item.name)).map((item) => item.name)
+  ]);
+
+  return {
+    ordinanceTitleQuery: titleCandidate,
+    municipalityHints,
+    keywords: unique(tokenize(titleCandidate).slice(0, 8)),
+    reasoning: "문서 본문에서 조례명 후보와 지자체명을 단순 추출한 규칙 기반 판정입니다.",
+    confidence: municipalityHints.length > 0 && ordinanceLineCandidates.length > 0 ? "medium" : "low",
+    documentType: /안내|공지/.test(documentText) ? "guide" : "document"
+  };
+}
+
+function resolveGeminiApiKey(env = process.env) {
+  const keyFromKei = normalizeEnvValue(env.GEMINI_API_KEI);
+  if (keyFromKei) {
+    return {
+      apiKey: keyFromKei,
+      apiKeyEnvName: "GEMINI_API_KEI"
+    };
+  }
+
+  const keyFromKey = normalizeEnvValue(env.GEMINI_API_KEY);
+  if (keyFromKey) {
+    return {
+      apiKey: keyFromKey,
+      apiKeyEnvName: "GEMINI_API_KEY"
+    };
+  }
+
+  return {
+    apiKey: "",
+    apiKeyEnvName: null
+  };
+}
+
+function readCandidateText(payload = {}) {
+  const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+  return candidates
+    .flatMap((candidate) => candidate?.content?.parts ?? [])
+    .map((part) => (typeof part?.text === "string" ? part.text : ""))
+    .join("\n")
+    .trim();
+}
+
+function extractJsonObject(text) {
+  const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fencedMatch ? fencedMatch[1].trim() : text.trim();
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+
+  if (start < 0 || end < start) {
+    throw new Error("Gemini response did not include a JSON object.");
+  }
+
+  return JSON.parse(candidate.slice(start, end + 1));
+}
+
+async function requestGeminiJson(prompt, {
+  env = process.env,
+  fetchImpl = globalThis.fetch,
+  temperature = 0.2
+} = {}) {
+  const status = getDraftGenerationStatus({ env });
+  const { apiKey, apiKeyEnvName } = resolveGeminiApiKey(env);
+
+  if (!status.enabled || typeof fetchImpl !== "function") {
+    return {
+      ok: false,
+      value: null,
+      meta: {
+        provider: status.enabled ? "gemini" : "template",
+        configured: status.enabled,
+        usedAI: false,
+        model: status.model,
+        apiKeyEnvName,
+        reason: status.enabled ? "fetch_unavailable" : "missing_api_key"
+      }
+    };
+  }
+
+  const endpoint = `${status.baseUrl}/models/${encodeURIComponent(status.model)}:generateContent`;
+
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature
+        }
+      }),
+      signal: AbortSignal.timeout(20000)
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `Gemini request failed with ${response.status}`);
+    }
+
+    const candidateText = readCandidateText(payload);
+    if (!candidateText) {
+      throw new Error("Gemini response did not include text.");
+    }
+
+    return {
+      ok: true,
+      value: extractJsonObject(candidateText),
+      meta: {
+        provider: "gemini",
+        configured: true,
+        usedAI: true,
+        model: status.model,
+        endpoint,
+        apiKeyEnvName
+      }
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      value: null,
+      meta: {
+        provider: "gemini",
+        configured: true,
+        usedAI: false,
+        model: status.model,
+        endpoint,
+        apiKeyEnvName,
+        reason: "fallback_after_error",
+        error: error.message
+      }
+    };
+  }
+}
+
+function buildDetectionPrompt(documentText, requestedMunicipalityNames = []) {
+  return [
+    "You identify the most likely Korean municipal ordinance that governs a document.",
+    "Return JSON only with these keys:",
+    "ordinanceTitleQuery, municipalityHints, keywords, reasoning, confidence, documentType",
+    "Requirements:",
+    "- Write the ordinanceTitleQuery in Korean.",
+    "- municipalityHints must be an array of municipality names in Korean when inferable.",
+    "- keywords must be a short array of Korean search keywords.",
+    "- Do not invent an exact ordinance title unless the document strongly implies it.",
+    "",
+    `Requested municipality hints: ${JSON.stringify(requestedMunicipalityNames)}`,
+    "",
+    "Document text:",
+    documentText
+  ].join("\n");
+}
+
+function buildClauseContext(documentText, clauses = []) {
+  const documentTokens = new Set(tokenize(documentText));
+  const scoredClauses = clauses.map((clause, index) => {
+    const clauseTokens = tokenize(`${clause.title} ${clause.text}`);
+    const overlap = clauseTokens.filter((token) => documentTokens.has(token)).length;
+
+    return {
+      clause,
+      index,
+      overlap
+    };
+  });
+
+  const rankedClauses = scoredClauses
+    .sort((left, right) => {
+      if (left.overlap !== right.overlap) {
+        return right.overlap - left.overlap;
+      }
+
+      return left.index - right.index;
+    })
+    .slice(0, MAX_ORDINANCE_CLAUSES)
+    .map((entry) => entry.clause);
+
+  const selectedClauses = rankedClauses.length > 0 ? rankedClauses : clauses.slice(0, MAX_ORDINANCE_CLAUSES);
+  const lines = [];
+  let totalChars = 0;
+
+  for (const clause of selectedClauses) {
+    const line = `- ${clause.title}: ${summarizeClause(clause, 400)}`;
+    if (totalChars + line.length > MAX_ORDINANCE_CONTEXT_CHARS) {
+      break;
+    }
+    lines.push(line);
+    totalChars += line.length;
+  }
+
+  return lines.join("\n");
+}
+
+function buildComparisonPrompt({
+  documentText,
+  ordinance,
+  clauseContext,
+  detection
+}) {
+  return [
+    "You review a municipal working document against the latest ordinance.",
+    "Return JSON only with these keys:",
+    "summary, riskLevel, issues, checklist, revisedDraft",
+    "issues must be an array of objects with keys: section, severity, problem, ordinanceBasis, suggestion.",
+    "checklist must be an array of short Korean action items.",
+    "Requirements:",
+    "- Write everything in Korean.",
+    "- Explain mismatches or outdated statements in the document.",
+    "- Base claims only on the provided document and ordinance context.",
+    "- revisedDraft must be a usable revised document draft, not only bullet points.",
+    "- If the evidence is weak, say verification is needed.",
+    "",
+    `Detected ordinance query: ${detection.ordinanceTitleQuery}`,
+    `Detected reasoning: ${detection.reasoning}`,
+    "",
+    "Latest ordinance metadata:",
+    JSON.stringify({
+      id: ordinance.matched?.id,
+      title: ordinance.matched?.title,
+      jurisdiction: ordinance.matched?.jurisdiction,
+      promulgationDate: ordinance.matched?.promulgationDate,
+      effectiveDate: ordinance.matched?.effectiveDate,
+      referenceUrl: ordinance.matched?.referenceUrl
+    }, null, 2),
+    "",
+    "Latest ordinance clause excerpts:",
+    clauseContext,
+    "",
+    "Document text:",
+    documentText
+  ].join("\n");
+}
+
+function normalizeIssue(issue = {}, fallbackIndex = 0) {
+  return {
+    section: normalizeText(issue.section) || `검토 항목 ${fallbackIndex + 1}`,
+    severity: normalizeText(issue.severity) || "medium",
+    problem: normalizeText(issue.problem) || "최신 조례 반영 여부를 재검토해야 합니다.",
+    ordinanceBasis: normalizeText(issue.ordinanceBasis) || "조례 원문 확인 필요",
+    suggestion: normalizeText(issue.suggestion) || "최신 조례 기준에 맞게 문구를 수정하세요."
+  };
+}
+
+function buildHeuristicReview({ documentText, ordinance, detection }) {
+  const clauses = Array.isArray(ordinance.document?.clauses) ? ordinance.document.clauses.slice(0, 5) : [];
+  const issues = clauses.map((clause, index) => ({
+    section: clause.title || `조항 ${index + 1}`,
+    severity: index === 0 ? "high" : "medium",
+    problem: "입력 문서에서 이 조항 기준이 최신 조례와 일치하는지 확인이 필요합니다.",
+    ordinanceBasis: `${clause.title}: ${summarizeClause(clause, 180)}`,
+    suggestion: `${clause.title} 관련 설명과 기준값을 최신 조례 문구로 다시 정리하세요.`
+  }));
+
+  const checklist = unique([
+    `${ordinance.matched?.title ?? "최신 조례"} 적용 대상과 범위를 다시 확인하기`,
+    "신청 자격, 제출 서류, 처리 기한, 지원 금액 표현 점검하기",
+    "시민 안내문과 내부 업무 문서의 기준값을 동일하게 맞추기"
+  ]);
+
+  const revisedDraft = [
+    `${ordinance.matched?.title ?? "최신 조례"} 반영 수정 초안`,
+    "",
+    "아래 초안은 최신 조례 반영을 위한 검토용 문안입니다.",
+    "",
+    documentText,
+    "",
+    "검토 메모:",
+    ...issues.map((issue) => `- ${issue.section}: ${issue.suggestion}`)
+  ].join("\n");
+
+  return {
+    summary: `최신 조례인 ${ordinance.matched?.title ?? "관련 조례"}를 기준으로 문서를 재검토해야 합니다. 현재는 규칙 기반 fallback 결과입니다.`,
+    riskLevel: "medium",
+    issues,
+    checklist,
+    revisedDraft,
+    reasoning: detection.reasoning
+  };
+}
+
+async function detectApplicableOrdinance({
+  documentText,
+  requestedMunicipalities,
+  env,
+  fetchImpl
+}) {
+  const requestedMunicipalityNames = getMunicipalityNames(requestedMunicipalities);
+  const heuristic = buildHeuristicDetection(documentText, requestedMunicipalityNames);
+  const aiResult = await requestGeminiJson(
+    buildDetectionPrompt(documentText.slice(0, MAX_DOCUMENT_CHARS), requestedMunicipalityNames),
+    {
+      env,
+      fetchImpl,
+      temperature: 0.1
+    }
+  );
+
+  const merged = {
+    ...heuristic,
+    ...(aiResult.value && typeof aiResult.value === "object" ? aiResult.value : {})
+  };
+
+  const municipalityCodes = normalizeMunicipalityCodes([
+    ...requestedMunicipalities,
+    ...(Array.isArray(merged.municipalityHints) ? merged.municipalityHints : [])
+  ]);
+
+  return {
+    ordinanceTitleQuery: normalizeText(merged.ordinanceTitleQuery) || heuristic.ordinanceTitleQuery,
+    municipalityHints: getMunicipalityNames(municipalityCodes),
+    municipalityCodes,
+    keywords: unique(Array.isArray(merged.keywords) ? merged.keywords.map(normalizeText) : heuristic.keywords).slice(0, 8),
+    reasoning: normalizeText(merged.reasoning) || heuristic.reasoning,
+    confidence: normalizeText(merged.confidence) || heuristic.confidence,
+    documentType: normalizeText(merged.documentType) || heuristic.documentType,
+    ai: aiResult.meta
+  };
+}
+
+function findLatestMatchedResult(results = [], recommendation) {
+  if (recommendation?.after?.id) {
+    const recommended = results.find((result) => result.id === recommendation.after.id);
+    if (recommended) {
+      return recommended;
+    }
+  }
+
+  return results[0] ?? null;
+}
+
+async function resolveLatestOrdinance({
+  provider,
+  detection,
+  discoverLawSourceFn,
+  searchLawSourceFn,
+  readLawSourceDocumentFn,
+  recommendLawSourcePairFn
+}) {
+  const discovery = await discoverLawSourceFn({
+    provider,
+    query: detection.ordinanceTitleQuery,
+    limit: 8,
+    municipalities: detection.municipalityCodes
+  });
+
+  let candidates = Array.isArray(discovery.results) ? discovery.results : [];
+  let searchMeta = {
+    ...discovery.meta,
+    route: "discover"
+  };
+
+  if (candidates.length === 0) {
+    const search = await searchLawSourceFn({
+      provider,
+      query: detection.ordinanceTitleQuery,
+      limit: 8
+    });
+    candidates = Array.isArray(search.results) ? search.results : [];
+    searchMeta = {
+      ...search.meta,
+      route: "search"
+    };
+
+    const recommendation = recommendLawSourcePairFn(candidates, detection.ordinanceTitleQuery);
+    const matched = findLatestMatchedResult(candidates, recommendation);
+
+    if (!matched) {
+      throw buildInspectionResolutionError("적용 가능한 최신 조례를 찾지 못했습니다.");
+    }
+
+    const documentResult = await readLawSourceDocumentFn({
+      provider,
+      id: matched.id
+    });
+
+    return {
+      matched,
+      candidates,
+      recommendation,
+      searchMeta,
+      document: documentResult.document,
+      documentMeta: documentResult.meta
+    };
+  }
+
+  const matched = candidates[0];
+  const documentResult = await readLawSourceDocumentFn({
+    provider,
+    id: matched.id
+  });
+
+  return {
+    matched,
+    candidates,
+    recommendation: null,
+    searchMeta,
+    document: documentResult.document,
+    documentMeta: documentResult.meta
+  };
+}
+
+async function compareAgainstLatestOrdinance({
+  documentText,
+  ordinance,
+  detection,
+  env,
+  fetchImpl
+}) {
+  const fallback = buildHeuristicReview({
+    documentText,
+    ordinance,
+    detection
+  });
+  const clauseContext = buildClauseContext(documentText, ordinance.document?.clauses ?? []);
+  const aiResult = await requestGeminiJson(
+    buildComparisonPrompt({
+      documentText: documentText.slice(0, MAX_DOCUMENT_CHARS),
+      ordinance,
+      clauseContext,
+      detection
+    }),
+    {
+      env,
+      fetchImpl,
+      temperature: 0.2
+    }
+  );
+
+  const payload = aiResult.value && typeof aiResult.value === "object" ? aiResult.value : {};
+  const issues = Array.isArray(payload.issues)
+    ? payload.issues.map((issue, index) => normalizeIssue(issue, index))
+    : fallback.issues;
+  const checklist = Array.isArray(payload.checklist)
+    ? unique(payload.checklist.map(normalizeText)).filter(Boolean)
+    : fallback.checklist;
+
+  return {
+    summary: normalizeText(payload.summary) || fallback.summary,
+    riskLevel: normalizeText(payload.riskLevel) || fallback.riskLevel,
+    issues,
+    checklist,
+    revisedDraft: normalizeText(payload.revisedDraft) || fallback.revisedDraft,
+    ai: aiResult.meta
+  };
+}
+
+export async function inspectDocumentAgainstLatestOrdinance(
+  {
+    documentText,
+    fileName = "",
+    municipalities = [],
+    provider = DEFAULT_PROVIDER
+  },
+  {
+    env = process.env,
+    fetchImpl = globalThis.fetch,
+    discoverLawSourceFn = discoverLawSource,
+    searchLawSourceFn = searchLawSource,
+    readLawSourceDocumentFn = readLawSourceDocument,
+    recommendLawSourcePairFn = recommendLawSourcePair,
+    now = () => new Date().toISOString()
+  } = {}
+) {
+  const normalizedDocumentText = cleanDocumentText(documentText);
+  const normalizedMunicipalities = normalizeMunicipalityCodes(municipalities);
+
+  if (!normalizedDocumentText) {
+    throw buildInspectionInputError("documentText", "must be a non-empty string");
+  }
+
+  const detection = await detectApplicableOrdinance({
+    documentText: normalizedDocumentText,
+    requestedMunicipalities: normalizedMunicipalities,
+    env,
+    fetchImpl
+  });
+
+  const ordinance = await resolveLatestOrdinance({
+    provider,
+    detection,
+    discoverLawSourceFn,
+    searchLawSourceFn,
+    readLawSourceDocumentFn,
+    recommendLawSourcePairFn
+  });
+
+  const review = await compareAgainstLatestOrdinance({
+    documentText: normalizedDocumentText,
+    ordinance,
+    detection,
+    env,
+    fetchImpl
+  });
+
+  const suggestedFileName = `${sanitizeFileStem(
+    fileName || ordinance.matched?.title || detection.ordinanceTitleQuery || "document-review"
+  ) || "document-review"}-revision.md`;
+  const downloadContent = buildMarkdownDownload({
+    fileName,
+    ordinance,
+    detection,
+    review
+  });
+
+  return {
+    meta: {
+      generatedAt: now(),
+      provider,
+      fileName: normalizeText(fileName),
+      detectionAi: detection.ai,
+      reviewAi: review.ai,
+      search: ordinance.searchMeta
+    },
+    detection: {
+      ordinanceTitleQuery: detection.ordinanceTitleQuery,
+      municipalityCodes: detection.municipalityCodes,
+      municipalityNames: detection.municipalityHints,
+      keywords: detection.keywords,
+      reasoning: detection.reasoning,
+      confidence: detection.confidence,
+      documentType: detection.documentType
+    },
+    ordinance: {
+      matched: ordinance.matched,
+      recommendation: ordinance.recommendation,
+      candidates: ordinance.candidates,
+      document: {
+        title: ordinance.document?.title,
+        version: ordinance.document?.version,
+        clauseCount: Array.isArray(ordinance.document?.clauses) ? ordinance.document.clauses.length : 0,
+        sampleClauses: (ordinance.document?.clauses ?? []).slice(0, 3).map((clause) => ({
+          id: clause.id,
+          title: clause.title,
+          text: summarizeClause(clause, 180)
+        }))
+      },
+      documentMeta: ordinance.documentMeta
+    },
+    review: {
+      summary: review.summary,
+      riskLevel: review.riskLevel,
+      issues: review.issues,
+      checklist: review.checklist,
+      revisedDraft: review.revisedDraft
+    },
+    download: {
+      fileName: suggestedFileName,
+      contentType: "text/markdown; charset=utf-8",
+      content: downloadContent
+    }
+  };
+}

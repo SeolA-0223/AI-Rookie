@@ -3,6 +3,7 @@ import https from "node:https";
 import zlib from "node:zlib";
 import { buildSourceStatus, normalizeEnvValue, SourceResolutionError } from "../shared.js";
 import { listLocalFixtureCases } from "./localFixtureLawSource.js";
+import { getMunicipalityNames, normalizeMunicipalityCodes } from "./lawGoMunicipalities.js";
 
 const DEFAULT_BASE_URL = "https://www.law.go.kr";
 const DEFAULT_OC = "test";
@@ -61,6 +62,15 @@ function parseSearchLimit(value) {
   }
 
   return Math.min(Math.max(parsed, 1), 10);
+}
+
+function parseDiscoverLimit(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) {
+    return 12;
+  }
+
+  return Math.min(Math.max(parsed, 1), 24);
 }
 
 function resolveBaseUrl(baseUrl) {
@@ -448,6 +458,23 @@ function parsePublicHtmlSearchResults(searchHtml, baseUrl) {
   return results;
 }
 
+function mergeResultsById(resultGroups) {
+  const mergedResults = new Map();
+
+  for (const resultGroup of resultGroups) {
+    for (const result of resultGroup) {
+      if (!result?.id) {
+        continue;
+      }
+
+      const existingResult = mergedResults.get(result.id);
+      mergedResults.set(result.id, existingResult ? mergeCandidateResult(existingResult, result) : result);
+    }
+  }
+
+  return [...mergedResults.values()];
+}
+
 function parseSortableSearchDate(value) {
   const normalizedValue = normalizeDateValue(value);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
@@ -620,6 +647,32 @@ function rankSearchResults(resultGroups, query, limit) {
 
       if ((left.result.title ?? "").length !== (right.result.title ?? "").length) {
         return (left.result.title ?? "").length - (right.result.title ?? "").length;
+      }
+
+      return String(left.result.id).localeCompare(String(right.result.id));
+    })
+    .slice(0, limit)
+    .map((entry) => entry.result);
+}
+
+function sortDiscoveryResults(results = [], limit = 12) {
+  return mergeResultsById([results])
+    .map((result) => ({
+      result,
+      promulgationTs: parseSortableSearchDate(result.promulgationDate),
+      effectiveTs: parseSortableSearchDate(result.effectiveDate)
+    }))
+    .sort((left, right) => {
+      if (left.promulgationTs !== right.promulgationTs) {
+        return right.promulgationTs - left.promulgationTs;
+      }
+
+      if (left.effectiveTs !== right.effectiveTs) {
+        return right.effectiveTs - left.effectiveTs;
+      }
+
+      if (Number(right.result.current === true) !== Number(left.result.current === true)) {
+        return Number(right.result.current === true) - Number(left.result.current === true);
       }
 
       return String(left.result.id).localeCompare(String(right.result.id));
@@ -1153,6 +1206,79 @@ async function searchPublicHtmlOrdinances({ baseUrls, query, limit, queryVariant
   return [];
 }
 
+async function discoverLatestPublicOrdinances({
+  baseUrls,
+  query = "*",
+  limit,
+  municipalities = []
+}) {
+  const resolvedQuery = normalizeEnvValue(query) || "*";
+  const selectedMunicipalities = normalizeMunicipalityCodes(municipalities);
+  const requests = selectedMunicipalities.length > 0 ? selectedMunicipalities : [""];
+  const collectedResults = [];
+  const searchedRegions = [];
+  let lastError = null;
+
+  for (const municipalityCode of requests) {
+    const requestResults = [];
+    let sawResponse = false;
+
+    for (const baseUrl of baseUrls) {
+      try {
+        const searchUrl = buildAbsoluteUrl(baseUrl, "/LSW/ordinScListR.do", {
+          menuId: "3",
+          subMenuId: "27",
+          tabMenuId: "139",
+          q: resolvedQuery,
+          section: "ordinNm",
+          outmax: String(Math.max(limit, 10)),
+          pg: "1",
+          dtlYn: "N",
+          fsort: "21",
+          psort: "desc",
+          p7: municipalityCode
+        });
+
+        const searchHtml = await fetchText(
+          searchUrl,
+          {},
+          "Failed to fetch the latest municipal ordinance list from law.go.kr.",
+          "query"
+        );
+
+        const parsedResults = parsePublicHtmlSearchResults(searchHtml, baseUrl).map((result) => ({
+          ...result,
+          summary: result.summary?.startsWith("Public search")
+            ? result.summary.replace(/^Public search/, "Latest public list")
+            : result.summary || "Latest public list"
+        }));
+
+        sawResponse = true;
+        requestResults.push(...parsedResults);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (sawResponse) {
+      collectedResults.push(...requestResults);
+      if (municipalityCode) {
+        searchedRegions.push(municipalityCode);
+      }
+    }
+  }
+
+  if (collectedResults.length === 0 && lastError) {
+    throw lastError;
+  }
+
+  return {
+    results: sortDiscoveryResults(collectedResults, limit),
+    searchedRegions
+  };
+}
+
 async function fetchHistoryEntries({ baseUrls, ordinanceId, seedResult }) {
   let lastError = null;
 
@@ -1361,6 +1487,31 @@ export function createLawGoPublicSource({
     getSourceStatus() {
       return status;
     },
+    async readRegulationDocument(input = {}) {
+      const documentId = normalizeOrdinanceId(input.id);
+
+      if (!documentId) {
+        throw buildSourceInputError([{ path: "id", message: "is required" }]);
+      }
+
+      const document = await fetchRegulationDocument({
+        baseUrls: baseUrlCandidates,
+        ordinanceId: documentId,
+        label: "document"
+      });
+
+      return {
+        document,
+        meta: {
+          provider: "law-go-public",
+          mode: "adapter",
+          id: documentId,
+          ocMode,
+          baseUrl: resolvedBaseUrl.toString().replace(/\/$/, ""),
+          referenceUrl: buildReferenceUrl(resolvedBaseUrl, documentId)
+        }
+      };
+    },
     async searchRegulations(input = {}) {
       const query = normalizeEnvValue(input.query);
       const limit = parseSearchLimit(input.limit);
@@ -1468,6 +1619,33 @@ export function createLawGoPublicSource({
             curatedResults,
             historyExpanded
           })
+        }
+      };
+    },
+    async discoverRegulations(input = {}) {
+      const query = normalizeEnvValue(input.query) || "*";
+      const limit = parseDiscoverLimit(input.limit);
+      const municipalityCodes = normalizeMunicipalityCodes(input.municipalities);
+      const { results, searchedRegions } = await discoverLatestPublicOrdinances({
+        baseUrls: baseUrlCandidates,
+        query,
+        limit,
+        municipalities: municipalityCodes
+      });
+
+      return {
+        results,
+        meta: {
+          provider: "law-go-public",
+          mode: "discover",
+          baseUrl: resolvedBaseUrl.toString().replace(/\/$/, ""),
+          transport: "official-http",
+          officialPath: "/LSW/ordinScListR.do",
+          query: query === "*" ? "" : query,
+          sort: "promulgationDate:desc",
+          municipalityCodes: searchedRegions,
+          municipalityNames: getMunicipalityNames(searchedRegions),
+          nationwide: searchedRegions.length === 0
         }
       };
     },

@@ -251,6 +251,73 @@ export async function searchLawSource(options = {}) {
   });
 }
 
+export async function discoverLawSource(options = {}) {
+  const source = createLawSource(options);
+
+  if (typeof source.discoverRegulations !== "function") {
+    return {
+      results: [],
+      meta: {
+        provider: resolveLawSourceProvider({ provider: options.provider }),
+        mode: "discover",
+        supported: false
+      }
+    };
+  }
+
+  return source.discoverRegulations({
+    query: options.query,
+    limit: options.limit,
+    municipalities: options.municipalities,
+    sort: options.sort
+  });
+}
+
+export async function readLawSourceDocument(options = {}) {
+  const source = createLawSource(options);
+  const documentId = normalizeEnvValue(options.id);
+
+  if (!documentId) {
+    throw new SourceResolutionError({
+      code: "SOURCE_INPUT_INVALID",
+      message: "Source request is invalid.",
+      details: [
+        {
+          path: "id",
+          message: "is required"
+        }
+      ],
+      statusCode: 400
+    });
+  }
+
+  if (typeof source.readRegulationDocument === "function") {
+    return source.readRegulationDocument({
+      id: documentId
+    });
+  }
+
+  if (typeof source.resolveRegulationPair === "function") {
+    const pair = await source.resolveRegulationPair({
+      beforeId: documentId,
+      afterId: documentId
+    });
+
+    return {
+      document: pair.afterDoc,
+      meta: {
+        ...(pair.meta ?? {}),
+        id: documentId
+      }
+    };
+  }
+
+  throw new SourceResolutionError({
+    code: "SOURCE_PROVIDER_UNSUPPORTED",
+    message: "Requested source provider does not support single-document reads."
+  });
+}
+
 export async function probeLawSource(options = {}) {
   const source = createLawSource(options);
 

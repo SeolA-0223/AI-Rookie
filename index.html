@@ -3,222 +3,430 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI-Rookie 대시보드</title>
+    <title>AI-Rookie 조례 대응 대시보드</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./frontend/src/styles.css" />
   </head>
   <body>
-    <main class="layout">
-      <header class="hero">
-        <div class="hero-top">
-          <div class="hero-copy-block">
-            <p class="eyebrow" data-i18n="hero.eyebrow">지자체 개정 코파일럿</p>
-            <h1 data-i18n="hero.title">규정 변경 대응 대시보드</h1>
-            <p class="hero-copy" data-i18n="hero.copy">
-              조례 개정 흐름을 빠르게 점검하고, 어떤 문서가 함께 바뀌어야 하는지 찾은 뒤, 후속 공지 초안까지 바로 검토할 수 있도록 구성했습니다.
-            </p>
-          </div>
-          <div class="language-switch" role="group" aria-label="언어 전환">
-            <button id="lang-ko" class="language-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
-            <button id="lang-en" class="language-btn" type="button" data-locale="en" aria-pressed="false">English</button>
-          </div>
-        </div>
-        <div class="hero-actions">
-          <button id="analyze-btn" class="run-btn" type="button">샘플 케이스 분석하기</button>
-          <p id="status-msg" class="status" role="status" aria-live="polite">준비됨.</p>
-        </div>
+    <main class="binder-app">
+      <header class="binder-header">
+        <p class="binder-eyebrow" data-i18n="hero.eyebrow">Municipal Ordinance Copilot</p>
+        <h1 data-i18n="hero.title">지자체 조례 변경 대응 대시보드</h1>
+        <p class="binder-summary" data-i18n="hero.copy">
+          조례 검색, 최신 조례 열람, 내부 문서 검사와 수정 초안 생성을 한 화면에서 연결합니다.
+        </p>
       </header>
 
-      <section class="panel onboarding-panel" id="guide-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow" data-i18n="guide.eyebrow">빠른 시작</p>
-            <h2 data-i18n="guide.title">처음 쓰는 사용자를 위한 3단계</h2>
+      <section class="binder-stage" aria-label="AI-Rookie binder stage">
+        <div class="sheet-back sheet-back-one" aria-hidden="true"></div>
+        <div class="sheet-back sheet-back-two" aria-hidden="true"></div>
+
+        <section id="sheet-front" class="sheet-front" data-active-page="search">
+          <div class="tab-strip page-switch" role="tablist" aria-label="페이지 전환">
+            <button
+              id="page-search-btn"
+              class="page-btn is-active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-pressed="true"
+              data-i18n="pages.search"
+            >
+              조례 검색
+            </button>
+            <button
+              id="page-inspect-btn"
+              class="page-btn"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-pressed="false"
+              data-i18n="pages.inspect"
+            >
+              문서 검사
+            </button>
           </div>
-          <p class="subtle" data-i18n="guide.subtitle">
-            기본은 샘플 체험입니다. 실제 조례 조회는 아래에서 모드를 바꾸면 됩니다.
-          </p>
-        </div>
-        <div id="quickstart-steps" class="step-grid"></div>
-        <div class="panel-actions">
-          <button id="sample-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.sampleShortcut">
-            샘플 케이스로 바로 시작
-          </button>
-          <button id="live-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.liveShortcut">
-            실제 조례 조회로 전환
-          </button>
-        </div>
-      </section>
 
-      <section class="panel panel-source" id="source-panel">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow" data-i18n="source.eyebrow">입력 경로</p>
-            <h2 data-i18n="source.title">분석 설정</h2>
+          <div class="sheet-topline">
+            <p id="sheet-kicker" class="sheet-kicker" data-i18n="binder.kicker">AI-Rookie / Ordinance Binder</p>
+            <div class="sheet-meta">
+              <span id="page-current-label" data-i18n="pages.search">조례 검색</span>
+              <div class="language-switch" role="group" aria-label="언어 전환">
+                <button id="lang-ko" class="language-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
+                <button id="lang-en" class="language-btn" type="button" data-locale="en" aria-pressed="false">English</button>
+              </div>
+            </div>
           </div>
-          <p id="source-status" class="subtle">소스 상태를 불러오는 중...</p>
-        </div>
 
-        <div class="mode-toggle" role="tablist" aria-label="분석 모드">
-          <button id="mode-sample-btn" class="mode-btn is-active" type="button" aria-pressed="true" data-i18n="source.sampleTab">
-            샘플 체험
-          </button>
-          <button id="mode-live-btn" class="mode-btn" type="button" aria-pressed="false" data-i18n="source.liveTab">
-            실제 조례 조회
-          </button>
-        </div>
-
-        <p id="source-mode-summary" class="source-mode-summary" data-i18n="source.sampleSummary">
-          현재 샘플 체험 모드입니다. 케이스를 고르고 바로 분석하세요.
-        </p>
-
-        <div id="sample-mode-panel" class="mode-panel">
-          <article class="setup-card setup-card-emphasis">
-            <h3 data-i18n="source.sampleTitle">샘플 케이스로 바로 체험</h3>
-            <p data-i18n="source.sampleBody">번들 사례 팩을 선택하면 즉시 분석할 수 있습니다. ID 입력이 필요 없습니다.</p>
-            <label class="field">
-              <span class="field-label" data-i18n="source.caseLabel">케이스 팩</span>
-              <select id="source-case-id" class="field-input">
-                <option value="">번들 케이스를 불러오는 중...</option>
-              </select>
-            </label>
-          </article>
-        </div>
-
-        <div id="live-mode-panel" class="mode-panel" hidden>
-          <article class="setup-card">
-            <h3 data-i18n="source.liveTitle">실제 조례를 찾아 분석</h3>
-            <p data-i18n="source.liveBody">
-              조례명을 검색해 추천 pair를 적용하거나, 이미 아는 before/after 조례 ID를 직접 입력할 수 있습니다.
-            </p>
-            <div class="source-grid">
-              <label class="field">
-                <span class="field-label" data-i18n="source.providerLabel">조회 제공자</span>
-                <select id="source-provider" class="field-input"></select>
-              </label>
-              <label class="field">
-                <span class="field-label" data-i18n="source.searchLabel">조례명 검색</span>
-                <div class="field-inline">
-                  <input
-                    id="source-search-query"
-                    class="field-input"
-                    type="text"
-                    placeholder="예: 서울특별시 청년 기본 조례"
-                    data-i18n-placeholder="source.searchPlaceholder"
-                    autocomplete="off"
-                  />
-                  <button id="source-search-btn" class="secondary-btn" type="button">ID 찾기</button>
+          <div id="page-search" class="page-stack page-panel is-active">
+            <section class="panel onboarding-panel" id="guide-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow" data-i18n="guide.eyebrow">빠른 시작</p>
+                  <h2 data-i18n="guide.title">처음 쓰는 사용자를 위한 3단계</h2>
                 </div>
-              </label>
-            </div>
-            <p id="source-search-status" class="subtle" data-i18n="source.searchHint">
-              조례명을 검색하면 사용할 수 있는 ID 후보와 추천 조합을 보여줍니다.
-            </p>
-            <div id="source-search-recommendation" class="search-recommendation"></div>
-            <div id="source-search-results" class="search-results"></div>
-            <div class="source-grid source-id-grid">
-              <label class="field">
-                <span class="field-label" data-i18n="source.beforeLabel">이전 버전 ID</span>
-                <input
-                  id="source-before-id"
-                  class="field-input field-input-mono"
-                  type="text"
-                  data-i18n-placeholder="source.beforePlaceholder"
-                  placeholder="예: 1840746"
-                  autocomplete="off"
-                />
-              </label>
-              <label class="field">
-                <span class="field-label" data-i18n="source.afterLabel">개정 버전 ID</span>
-                <input
-                  id="source-after-id"
-                  class="field-input field-input-mono"
-                  type="text"
-                  data-i18n-placeholder="source.afterPlaceholder"
-                  placeholder="예: 1840747"
-                  autocomplete="off"
-                />
-              </label>
-            </div>
-          </article>
-        </div>
+                <p class="subtle" data-i18n="guide.subtitle">
+                  조례 검색 페이지에서 조례를 찾고, 문서 검사 페이지에서 최신 조례 기준으로 문서를 점검할 수 있습니다.
+                </p>
+              </div>
+              <div id="quickstart-steps" class="step-grid"></div>
+              <div class="panel-actions">
+                <button id="sample-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.sampleShortcut">
+                  샘플 케이스로 시작
+                </button>
+                <button id="live-shortcut-btn" class="secondary-btn" type="button" data-i18n="guide.liveShortcut">
+                  실제 조례 찾기
+                </button>
+              </div>
+            </section>
 
-        <p id="source-help" class="source-help subtle" data-i18n="source.localHint">
-          샘플 모드에서는 번들 케이스만 사용합니다. 가장 쉬운 데모 경로입니다.
-        </p>
+            <section class="panel panel-source" id="source-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow" data-i18n="source.eyebrow">조례 검색</p>
+                  <h2 data-i18n="source.title">조례 조회와 변경 비교</h2>
+                </div>
+                <p id="source-status" class="subtle">선택한 소스 상태를 확인하는 중...</p>
+              </div>
 
-        <details class="details-inline" id="advanced-details">
-          <summary data-i18n="source.advancedSummary">고급 설정과 출처 확인</summary>
-          <div class="details-body">
-            <p class="subtle" data-i18n="source.advancedBody">
-              provider 상태, live probe, 검색 provenance, 최근 분석 입력 정보를 확인할 수 있습니다.
-            </p>
-            <div id="provenance-cards" class="provenance-grid"></div>
+              <div class="mode-toggle" role="tablist" aria-label="비교 모드">
+                <button id="mode-sample-btn" class="mode-btn is-active" type="button" aria-pressed="true" data-i18n="source.sampleTab">
+                  샘플 체험
+                </button>
+                <button id="mode-live-btn" class="mode-btn" type="button" aria-pressed="false" data-i18n="source.liveTab">
+                  실제 조례 조회
+                </button>
+              </div>
+
+              <p id="source-mode-summary" class="source-mode-summary" data-i18n="source.sampleSummary">
+                샘플 케이스를 바로 실행해 변경 탐지, 영향 문서, 위험 우선순위 흐름을 확인할 수 있습니다.
+              </p>
+
+              <div id="sample-mode-panel" class="mode-panel">
+                <article class="setup-card setup-card-emphasis">
+                  <h3 data-i18n="source.sampleTitle">샘플 케이스 비교</h3>
+                  <p data-i18n="source.sampleBody">번들 케이스를 선택하면 별도 ID 없이 바로 조례 변경 분석을 실행합니다.</p>
+                  <label class="field">
+                    <span class="field-label" data-i18n="source.caseLabel">샘플 케이스</span>
+                    <select id="source-case-id" class="field-input">
+                      <option value="">샘플 케이스를 불러오는 중...</option>
+                    </select>
+                  </label>
+                </article>
+              </div>
+
+              <div id="live-mode-panel" class="mode-panel" hidden>
+                <article class="setup-card">
+                  <h3 data-i18n="source.liveTitle">실제 조례 조회와 pair 비교</h3>
+                  <p data-i18n="source.liveBody">
+                    조례명을 검색해 추천 pair를 적용하거나, 최신 조례 목록에서 현재 버전을 골라 비교 분석할 수 있습니다.
+                  </p>
+                  <div class="source-grid">
+                    <label class="field">
+                      <span class="field-label" data-i18n="source.providerLabel">조회 소스</span>
+                      <select id="source-provider" class="field-input"></select>
+                    </label>
+                    <label class="field">
+                      <span class="field-label" data-i18n="source.searchLabel">조례명 검색</span>
+                      <div class="field-inline">
+                        <input
+                          id="source-search-query"
+                          class="field-input"
+                          type="text"
+                          placeholder="예: 서울특별시 청년 기본 조례"
+                          data-i18n-placeholder="source.searchPlaceholder"
+                          autocomplete="off"
+                        />
+                        <button id="source-search-btn" class="secondary-btn" type="button" data-i18n="buttons.search">ID 찾기</button>
+                      </div>
+                    </label>
+                  </div>
+                  <p id="source-search-status" class="subtle" data-i18n="source.searchHint">
+                    조례명을 검색하면 후보 ID와 추천 before/after 조합을 보여줍니다.
+                  </p>
+                  <div id="source-search-recommendation" class="search-recommendation"></div>
+                  <div id="source-search-results" class="search-results"></div>
+
+                  <div class="latest-section">
+                    <div class="latest-toolbar">
+                      <div>
+                        <h4 data-i18n="source.municipalityTitle">지자체 선택</h4>
+                        <p class="subtle" data-i18n="source.latestHint">선택한 지자체 기준으로 최신 공포 조례를 날짜순으로 불러옵니다.</p>
+                      </div>
+                      <div class="panel-actions">
+                        <button id="municipality-select-all-btn" class="secondary-btn" type="button" data-i18n="buttons.selectAllMunicipalities">
+                          전체 선택
+                        </button>
+                        <button id="municipality-clear-btn" class="secondary-btn" type="button" data-i18n="buttons.clearMunicipalities">
+                          전체 해제
+                        </button>
+                        <button id="latest-refresh-btn" class="secondary-btn" type="button" data-i18n="buttons.refreshLatest">
+                          최신 조례 불러오기
+                        </button>
+                      </div>
+                    </div>
+                    <div id="municipality-filter-list" class="municipality-grid"></div>
+                    <p id="latest-status" class="subtle" data-i18n="messages.latestReadyDefault">전국 최신 조례 목록을 불러올 준비가 되었습니다.</p>
+                    <div id="latest-ordinance-list" class="latest-list"></div>
+                  </div>
+
+                  <div class="source-grid source-id-grid">
+                    <label class="field">
+                      <span class="field-label" data-i18n="source.beforeLabel">이전 버전 ID</span>
+                      <input
+                        id="source-before-id"
+                        class="field-input field-input-mono"
+                        type="text"
+                        data-i18n-placeholder="source.beforePlaceholder"
+                        placeholder="예: 1840746"
+                        autocomplete="off"
+                      />
+                    </label>
+                    <label class="field">
+                      <span class="field-label" data-i18n="source.afterLabel">개정 버전 ID</span>
+                      <input
+                        id="source-after-id"
+                        class="field-input field-input-mono"
+                        type="text"
+                        data-i18n-placeholder="source.afterPlaceholder"
+                        placeholder="예: 1840747"
+                        autocomplete="off"
+                      />
+                    </label>
+                  </div>
+                </article>
+              </div>
+
+              <p id="source-help" class="source-help subtle" data-i18n="source.localHint">
+                샘플 모드에서는 번들 케이스만 사용합니다.
+              </p>
+
+              <div class="panel-actions action-row">
+                <button id="analyze-btn" class="run-btn" type="button" data-i18n="buttons.runSample">샘플 조례 비교 실행</button>
+                <p id="status-msg" class="status" role="status" aria-live="polite">준비됨.</p>
+              </div>
+
+              <details class="details-inline" id="advanced-details">
+                <summary data-i18n="source.advancedSummary">고급 설정과 출처 추적</summary>
+                <div class="details-body">
+                  <p class="subtle" data-i18n="source.advancedBody">
+                    provider 상태, live probe, 검색 provenance, 최근 분석 입력을 확인합니다.
+                  </p>
+                  <div id="provenance-cards" class="provenance-grid"></div>
+                </div>
+              </details>
+            </section>
+
+            <section class="panel" id="summary-panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="sections.summaryTitle">변경 요약</h2>
+                  <p class="subtle" data-i18n="sections.summaryNote">무엇이 달라졌는지 조항 단위로 정리합니다.</p>
+                </div>
+              </div>
+              <div id="summary-cards" class="cards"></div>
+            </section>
+
+            <section class="panel" id="impact-panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="sections.impactTitle">영향 문서</h2>
+                  <p class="subtle" data-i18n="sections.impactNote">같이 수정해야 할 내부 문서를 우선순위와 함께 보여줍니다.</p>
+                </div>
+              </div>
+              <ul id="impact-list"></ul>
+            </section>
+
+            <section class="panel" id="risk-panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="sections.riskTitle">위험 우선순위</h2>
+                  <p class="subtle" data-i18n="sections.riskNote">대민 안내 오류 가능성이 높은 항목부터 확인합니다.</p>
+                </div>
+              </div>
+              <ul id="risk-list"></ul>
+            </section>
+
+            <section class="panel" id="draft-panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="sections.draftTitle">비교 결과 초안</h2>
+                  <p class="subtle" data-i18n="sections.draftNote">내부 공지, 시민 안내문, FAQ, 비교표 초안을 같이 검토합니다.</p>
+                </div>
+              </div>
+              <p class="subtle panel-footnote" data-i18n="sections.draftLanguageNote">
+                조례 비교 초안은 현재 분석 입력과 생성 결과를 기준으로 표시됩니다.
+              </p>
+              <pre id="draft-view"></pre>
+            </section>
+
+            <details class="panel details-panel" id="history-panel">
+              <summary data-i18n="history.detailsSummary">최근 실행 이력 보기</summary>
+              <div class="details-body">
+                <div class="panel-heading compact-heading">
+                  <div>
+                    <h2 data-i18n="history.title">최근 조례 비교 이력</h2>
+                    <p class="subtle" data-i18n="history.subtitle">저장된 조례 비교 결과를 다시 불러올 수 있습니다.</p>
+                  </div>
+                  <p id="history-status" class="subtle">비교 이력 불러오는 중...</p>
+                </div>
+                <div id="history-list" class="history-list"></div>
+              </div>
+            </details>
           </div>
-        </details>
+
+          <div id="page-inspect" class="page-stack page-panel" hidden>
+            <section class="panel panel-source">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow" data-i18n="documentInspect.eyebrow">문서 검사</p>
+                  <h2 data-i18n="documentInspect.title">AI 문서 검사와 수정 초안</h2>
+                </div>
+                <p id="document-status" class="subtle" data-i18n="messages.ready">준비됨.</p>
+              </div>
+              <p class="subtle" data-i18n="documentInspect.subtitle">
+                문서를 붙여넣거나 업로드하면 Gemini가 적용 조례를 판단하고 최신 조례 기준으로 수정 초안을 제안합니다.
+              </p>
+
+              <article class="setup-card">
+                <h3 data-i18n="documentInspect.inputTitle">검사할 문서 입력</h3>
+                <p data-i18n="documentInspect.inputBody">텍스트 붙여넣기 또는 텍스트 기반 파일 업로드를 지원합니다.</p>
+
+                <div class="source-grid">
+                  <label class="field">
+                    <span class="field-label" data-i18n="documentInspect.fileLabel">문서 파일</span>
+                    <input
+                      id="document-file-input"
+                      class="field-input field-input-file"
+                      type="file"
+                      accept=".txt,.md,.json,.html,.csv,text/plain,text/markdown,application/json,text/html,text/csv"
+                    />
+                    <span id="document-file-name" class="subtle" data-i18n="documentInspect.fileHint">
+                      `.txt`, `.md`, `.json`, `.html` 같은 텍스트 파일을 읽을 수 있습니다.
+                    </span>
+                  </label>
+                </div>
+
+                <label class="field field-block">
+                  <span class="field-label" data-i18n="documentInspect.textLabel">문서 본문</span>
+                  <textarea
+                    id="document-text"
+                    class="field-input field-textarea"
+                    rows="14"
+                    data-i18n-placeholder="documentInspect.textPlaceholder"
+                    placeholder="예: 시민 안내문, 신청 안내, 내부 업무 매뉴얼 내용을 붙여넣으세요."
+                  ></textarea>
+                </label>
+
+                <div class="latest-section">
+                  <div class="latest-toolbar">
+                    <div>
+                      <h4 data-i18n="documentInspect.scopeTitle">지자체 범위 힌트</h4>
+                      <p class="subtle" data-i18n="documentInspect.scopeHint">선택한 지자체 범위를 문서 검사에도 같이 사용합니다.</p>
+                    </div>
+                    <div class="panel-actions">
+                      <button
+                        id="document-municipality-select-all-btn"
+                        class="secondary-btn"
+                        type="button"
+                        data-i18n="buttons.selectAllMunicipalities"
+                      >
+                        전체 선택
+                      </button>
+                      <button
+                        id="document-municipality-clear-btn"
+                        class="secondary-btn"
+                        type="button"
+                        data-i18n="buttons.clearMunicipalities"
+                      >
+                        전체 해제
+                      </button>
+                    </div>
+                  </div>
+                  <div id="document-municipality-filter-list" class="municipality-grid"></div>
+                </div>
+
+                <div class="panel-actions action-row">
+                  <button id="document-inspect-btn" class="run-btn" type="button" data-i18n="buttons.inspectDocument">문서 검사 실행</button>
+                  <button id="document-clear-btn" class="secondary-btn" type="button" data-i18n="buttons.clearDocument">문서 비우기</button>
+                </div>
+              </article>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="documentInspect.matchedTitle">판정된 최신 조례</h2>
+                  <p class="subtle" data-i18n="documentInspect.aiNote">Gemini가 추정한 적용 조례 검색어와 판정 근거입니다.</p>
+                </div>
+              </div>
+              <div id="document-match-card"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="documentInspect.summaryTitle">검사 요약</h2>
+                  <p class="subtle" data-i18n="documentInspect.summaryNote">문서가 최신 조례와 어떻게 어긋나는지 요약합니다.</p>
+                </div>
+              </div>
+              <div class="cards">
+                <article class="card">
+                  <h3 data-i18n="documentInspect.summaryTitle">검사 요약</h3>
+                  <p id="document-summary" class="card-body">아직 문서 검사 결과가 없습니다.</p>
+                </article>
+                <article class="card">
+                  <h3 data-i18n="documentInspect.aiTitle">AI 판정 메모</h3>
+                  <p id="document-ai-summary" class="card-body">아직 문서 검사 결과가 없습니다.</p>
+                </article>
+              </div>
+              <div id="document-review-meta" class="document-meta-grid"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="documentInspect.issuesTitle">수정 필요 항목</h2>
+                  <p class="subtle" data-i18n="documentInspect.issuesNote">문서에서 잘못됐거나 오래된 부분을 최신 조례 기준으로 정리합니다.</p>
+                </div>
+              </div>
+              <ul id="document-issues-list" class="document-issues-list"></ul>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="documentInspect.checklistTitle">검토 체크리스트</h2>
+                </div>
+              </div>
+              <ul id="document-checklist-list"></ul>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading compact-heading">
+                <div>
+                  <h2 data-i18n="documentInspect.draftTitle">수정본 초안</h2>
+                  <p class="subtle" data-i18n="documentInspect.draftNote">최신 조례를 반영한 수정 초안입니다. 검토 후 실제 문서에 반영하세요.</p>
+                </div>
+                <button id="document-download-btn" class="secondary-btn" type="button" data-i18n="buttons.downloadDraft" disabled>
+                  수정본 초안 다운로드
+                </button>
+              </div>
+              <pre id="document-draft-view"></pre>
+            </section>
+          </div>
+
+          <footer class="sheet-footer">
+            <span id="sheet-footer-copy" data-i18n="binder.footerSearch">탭을 눌러 페이지를 전환하고 조례 검색 또는 문서 검사를 진행하세요.</span>
+            <span class="page-counter"><strong id="page-current">01</strong> / 02</span>
+          </footer>
+        </section>
       </section>
-
-      <section class="panel" id="summary-panel">
-        <div class="panel-heading compact-heading">
-          <div>
-            <h2 data-i18n="sections.summaryTitle">변경 요약</h2>
-            <p class="subtle" data-i18n="sections.summaryNote">무엇이 바뀌었는지 조항 단위로 정리합니다.</p>
-          </div>
-        </div>
-        <div id="summary-cards" class="cards"></div>
-      </section>
-
-      <section class="panel" id="impact-panel">
-        <div class="panel-heading compact-heading">
-          <div>
-            <h2 data-i18n="sections.impactTitle">영향 문서</h2>
-            <p class="subtle" data-i18n="sections.impactNote">함께 갱신해야 할 내부 문서를 우선순위와 함께 보여줍니다.</p>
-          </div>
-        </div>
-        <ul id="impact-list"></ul>
-      </section>
-
-      <section class="panel" id="risk-panel">
-        <div class="panel-heading compact-heading">
-          <div>
-            <h2 data-i18n="sections.riskTitle">위험 우선순위</h2>
-            <p class="subtle" data-i18n="sections.riskNote">대민 안내 오류 가능성이 큰 항목부터 먼저 확인하세요.</p>
-          </div>
-        </div>
-        <ul id="risk-list"></ul>
-      </section>
-
-      <section class="panel" id="draft-panel">
-        <div class="panel-heading compact-heading">
-          <div>
-            <h2 data-i18n="sections.draftTitle">초안 미리보기</h2>
-            <p class="subtle" data-i18n="sections.draftNote">내부 공지, 시민 안내문, FAQ, 비교표를 한 번에 검토할 수 있습니다.</p>
-          </div>
-        </div>
-        <p class="subtle panel-footnote" data-i18n="sections.draftLanguageNote">
-          분석 결과 본문은 현재 소스 문구 언어를 그대로 유지합니다.
-        </p>
-        <pre id="draft-view"></pre>
-      </section>
-
-      <details class="panel details-panel" id="history-panel">
-        <summary data-i18n="history.detailsSummary">최근 실행 이력 보기</summary>
-        <div class="details-body">
-          <div class="panel-heading compact-heading">
-            <div>
-              <h2 data-i18n="history.title">최근 실행 이력</h2>
-              <p class="subtle" data-i18n="history.subtitle">저장된 분석 결과를 다시 열어볼 수 있습니다.</p>
-            </div>
-            <p id="history-status" class="subtle">분석 이력을 불러오는 중...</p>
-          </div>
-          <div id="history-list" class="history-list"></div>
-        </div>
-      </details>
     </main>
     <script type="module" src="./frontend/src/app.js"></script>
   </body>

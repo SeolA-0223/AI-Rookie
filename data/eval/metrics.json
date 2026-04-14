@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-04-13T13:44:04.107Z",
+  "evaluatedAt": "2026-04-14T01:04:15.893Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
@@ -78,7 +78,7 @@
           "after": "data/cases/bucheon_youth_rent_support/after.json",
           "internalDocs": "data/cases/bucheon_youth_rent_support/internal_docs.json"
         },
-        "runtimeMs": 0,
+        "runtimeMs": 1,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,

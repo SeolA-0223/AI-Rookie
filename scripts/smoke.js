@@ -77,6 +77,12 @@ async function main() {
   assert(Object.prototype.hasOwnProperty.call(sourceSearch, "recommendation"), "Missing recommendation in /source-search response.");
   console.log(`Source search endpoint check passed. Loaded ${sourceSearch.results.length} candidate(s).`);
 
+  const sourceDiscover = await fetchJson("/source-discover?provider=local-fixture&limit=3");
+  assert(sourceDiscover.requestedProvider === "local-fixture", "Unexpected requestedProvider in /source-discover response.");
+  assert(Array.isArray(sourceDiscover.results), "Missing results[] in /source-discover response.");
+  assert(sourceDiscover.meta?.mode === "discover", "Unexpected mode in /source-discover response.");
+  console.log(`Source discover endpoint check passed. Loaded ${sourceDiscover.results.length} discovery result(s).`);
+
   const analyze = await fetchJson("/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

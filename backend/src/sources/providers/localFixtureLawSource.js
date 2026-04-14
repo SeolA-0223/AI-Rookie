@@ -104,6 +104,16 @@ export function createLocalFixtureLawSource({
         }
       };
     },
+    async discoverRegulations() {
+      return {
+        results: [],
+        meta: {
+          provider: "local-fixture",
+          mode: "discover",
+          supported: false
+        }
+      };
+    },
     async resolveRegulationPair(input = {}) {
       const caseId = normalizeEnvValue(input.caseId);
 

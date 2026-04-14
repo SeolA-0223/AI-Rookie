@@ -4,9 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { generateDraftsWithConfiguredAI, getDraftGenerationStatus } from "../generation/generateDrafts.js";
+import { inspectDocumentAgainstLatestOrdinance } from "../inspection/inspectDocumentAgainstLatestOrdinance.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
 import {
   createLawSource,
+  discoverLawSource,
   getLawSourceStatus,
   probeLawSource,
   recommendLawSourcePair,
@@ -29,6 +31,7 @@ try {
 
 const MAX_BODY_BYTES = 1024 * 1024;
 const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs", "source"]);
+const ALLOWED_DOCUMENT_INSPECT_FIELDS = new Set(["documentText", "fileName", "municipalities", "provider"]);
 const analysisStore = createAnalysisStore();
 const defaultLawSource = createLawSource();
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
@@ -42,8 +45,10 @@ const ROUTES = {
   history: new Set(["/history", "/api/history"]),
   caseCatalog: new Set(["/case-catalog", "/api/case-catalog"]),
   sourceSearch: new Set(["/source-search", "/api/source-search"]),
+  sourceDiscover: new Set(["/source-discover", "/api/source-discover"]),
   sourceStatus: new Set(["/source-status", "/api/source-status"]),
-  analyze: new Set(["/analyze", "/api/analyze"])
+  analyze: new Set(["/analyze", "/api/analyze"]),
+  documentInspect: new Set(["/document-inspect", "/api/document-inspect"])
 };
 
 function isPlainObject(value) {
@@ -215,6 +220,46 @@ function validateAnalyzeRequest(payload) {
   return details;
 }
 
+function validateDocumentInspectRequest(payload) {
+  const details = [];
+
+  if (!isPlainObject(payload)) {
+    return [{ path: "body", message: "must be a JSON object" }];
+  }
+
+  for (const key of Object.keys(payload)) {
+    if (!ALLOWED_DOCUMENT_INSPECT_FIELDS.has(key)) {
+      details.push({ path: `body.${key}`, message: "is not allowed" });
+    }
+  }
+
+  if (typeof payload.documentText !== "string" || payload.documentText.trim() === "") {
+    details.push({ path: "body.documentText", message: "must be a non-empty string" });
+  }
+
+  if ("fileName" in payload && typeof payload.fileName !== "string") {
+    details.push({ path: "body.fileName", message: "must be a string" });
+  }
+
+  if ("provider" in payload && typeof payload.provider !== "string") {
+    details.push({ path: "body.provider", message: "must be a string" });
+  }
+
+  if ("municipalities" in payload) {
+    if (!Array.isArray(payload.municipalities)) {
+      details.push({ path: "body.municipalities", message: "must be an array" });
+    } else {
+      payload.municipalities.forEach((value, index) => {
+        if (typeof value !== "string") {
+          details.push({ path: `body.municipalities[${index}]`, message: "must be a string" });
+        }
+      });
+    }
+  }
+
+  return details;
+}
+
 function parseSourceSearchLimit(value) {
   const parsed = Number.parseInt(value ?? "", 10);
   if (!Number.isFinite(parsed)) {
@@ -222,6 +267,26 @@ function parseSourceSearchLimit(value) {
   }
 
   return Math.min(Math.max(parsed, 1), 10);
+}
+
+function parseSourceDiscoverLimit(value) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed)) {
+    return 12;
+  }
+
+  return Math.min(Math.max(parsed, 1), 24);
+}
+
+function parseMunicipalityList(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 export async function buildAnalyzeInput(payload) {
@@ -331,6 +396,28 @@ export async function buildSourceSearchPayload({ provider, query, limit } = {}) 
   };
 }
 
+export async function buildSourceDiscoverPayload({ provider, query, limit, municipalities } = {}) {
+  const requestedProvider = resolveLawSourceProvider({ provider });
+  const normalizedQuery = typeof query === "string" ? query.trim() : "";
+  const discoverResult = await discoverLawSource({
+    provider: requestedProvider,
+    query: normalizedQuery,
+    limit,
+    municipalities
+  });
+
+  return {
+    requestedProvider,
+    query: normalizedQuery,
+    municipalities: Array.isArray(municipalities) ? municipalities : [],
+    results: Array.isArray(discoverResult.results) ? discoverResult.results : [],
+    meta: discoverResult.meta ?? {
+      provider: requestedProvider,
+      mode: "discover"
+    }
+  };
+}
+
 export async function handleHealth(req, res) {
   sendJson(res, 200, {
     status: "ok",
@@ -372,6 +459,26 @@ export async function handleSourceSearch(req, res) {
       provider: requestUrl.searchParams.get("provider"),
       query,
       limit: parseSourceSearchLimit(requestUrl.searchParams.get("limit"))
+    });
+    sendJson(res, 200, payload);
+  } catch (error) {
+    if (error instanceof SourceResolutionError) {
+      sendError(res, error.statusCode, error.code, error.message, error.details);
+      return;
+    }
+
+    sendError(res, 500, "INTERNAL_ERROR", "Unexpected server error.");
+  }
+}
+
+export async function handleSourceDiscover(req, res) {
+  try {
+    const requestUrl = getRequestUrl(req);
+    const payload = await buildSourceDiscoverPayload({
+      provider: requestUrl.searchParams.get("provider"),
+      query: requestUrl.searchParams.get("query"),
+      limit: parseSourceDiscoverLimit(requestUrl.searchParams.get("limit")),
+      municipalities: parseMunicipalityList(requestUrl.searchParams.get("municipalities"))
     });
     sendJson(res, 200, payload);
   } catch (error) {
@@ -453,6 +560,41 @@ export async function handleAnalyze(req, res) {
   }
 }
 
+export async function handleDocumentInspect(req, res) {
+  try {
+    const payload = await collectJson(req);
+    const requestErrors = validateDocumentInspectRequest(payload);
+    if (requestErrors.length > 0) {
+      sendError(res, 400, "INVALID_REQUEST", "Document inspect request is invalid.", requestErrors);
+      return;
+    }
+
+    const result = await inspectDocumentAgainstLatestOrdinance({
+      documentText: payload.documentText,
+      fileName: payload.fileName,
+      municipalities: payload.municipalities,
+      provider: payload.provider
+    });
+
+    sendJson(res, 200, result);
+  } catch (error) {
+    if (error?.code === "INVALID_JSON") {
+      sendError(res, 400, "INVALID_JSON", error.message);
+      return;
+    }
+    if (error?.code === "REQUEST_TOO_LARGE") {
+      sendError(res, 413, "REQUEST_TOO_LARGE", error.message);
+      return;
+    }
+    if (error instanceof SourceResolutionError) {
+      sendError(res, error.statusCode, error.code, error.message, error.details);
+      return;
+    }
+
+    sendError(res, 500, "INTERNAL_ERROR", error instanceof Error ? error.message : "Unexpected server error.");
+  }
+}
+ 
 export async function routeRequest(req, res) {
   if (await serveStaticIfMatched(req, res)) {
     return;
@@ -480,6 +622,11 @@ export async function routeRequest(req, res) {
     return;
   }
 
+  if (req.method === "GET" && ROUTES.sourceDiscover.has(pathname)) {
+    await handleSourceDiscover(req, res);
+    return;
+  }
+
   if (req.method === "GET" && ROUTES.sourceStatus.has(pathname)) {
     await handleSourceStatus(req, res);
     return;
@@ -490,5 +637,10 @@ export async function routeRequest(req, res) {
     return;
   }
 
+  if (req.method === "POST" && ROUTES.documentInspect.has(pathname)) {
+    await handleDocumentInspect(req, res);
+    return;
+  }
+ 
   sendError(res, 404, "NOT_FOUND", "Route not found.");
 }

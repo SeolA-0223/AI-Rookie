@@ -8,6 +8,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import * as z from "zod/v4";
 import {
   createLawSource,
+  discoverLawSource,
   probeLawSource,
   recommendLawSourcePair,
   resolveLawSourceProvider,
@@ -216,7 +217,8 @@ async function startMockLawGoPublicServer({
   searchResultsByQuery = {},
   documentsById = {},
   historyEntriesById = {},
-  htmlSearchResultsByQuery = {}
+  htmlSearchResultsByQuery = {},
+  latestResultsByRegion = {}
 }) {
   const server = createServer(async (req, res) => {
     const requestUrl = new URL(req.url, "http://127.0.0.1");
@@ -261,7 +263,12 @@ async function startMockLawGoPublicServer({
 
     if (requestUrl.pathname === "/LSW/ordinScListR.do") {
       const query = requestUrl.searchParams.get("q") ?? "";
-      const results = htmlSearchResultsByQuery[query] ?? [];
+      const regionCode = requestUrl.searchParams.get("p7") ?? "*";
+      const sortCode = requestUrl.searchParams.get("fsort") ?? "";
+      const results =
+        sortCode === "21"
+          ? latestResultsByRegion[regionCode] ?? latestResultsByRegion["*"] ?? []
+          : htmlSearchResultsByQuery[query] ?? [];
 
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(`
@@ -755,6 +762,67 @@ test("searchLawSource merges DRF and public HTML results and re-ranks the best m
     );
     assert.equal(result.results[0].title, "Seoul Youth Basic Ordinance");
     assert.equal(result.results[1].title, "Gangnam Youth Basic Ordinance");
+  } finally {
+    await server.close();
+  }
+});
+
+test("discoverLawSource returns the latest law-go-public ordinances filtered by municipality and sorted by promulgation date", async () => {
+  const server = await startMockLawGoPublicServer({
+    latestResultsByRegion: {
+      "6110000": [
+        {
+          id: "2121805",
+          title: "서울특별시 종로구 빈집 안전관리에 관한 조례",
+          effectiveDateLabel: "2026. 4. 10.",
+          announcementLabel: "서울특별시종로구조례 제1805호",
+          promulgationDateLabel: "2026. 4. 10.",
+          amendmentType: "제정",
+          current: true
+        },
+        {
+          id: "2121804",
+          title: "서울특별시 종로구 이상동기 범죄 예방 지원 조례",
+          effectiveDateLabel: "2026. 4. 8.",
+          announcementLabel: "서울특별시종로구조례 제1804호",
+          promulgationDateLabel: "2026. 4. 8.",
+          amendmentType: "제정",
+          current: true
+        }
+      ],
+      "6300000": [
+        {
+          id: "2126618",
+          title: "대전광역시 화학물질 안전관리조례",
+          effectiveDateLabel: "2026. 4. 9.",
+          announcementLabel: "대전광역시조례 제6618호",
+          promulgationDateLabel: "2026. 4. 9.",
+          amendmentType: "일부개정",
+          current: true
+        }
+      ]
+    }
+  });
+
+  try {
+    const result = await discoverLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      municipalities: ["6110000", "6300000"],
+      limit: 5
+    });
+
+    assert.equal(result.meta.provider, "law-go-public");
+    assert.equal(result.meta.mode, "discover");
+    assert.equal(result.meta.sort, "promulgationDate:desc");
+    assert.deepEqual(result.meta.municipalityCodes, ["6110000", "6300000"]);
+    assert.deepEqual(result.meta.municipalityNames, ["서울특별시", "대전광역시"]);
+    assert.deepEqual(
+      result.results.map((item) => item.id),
+      ["2121805", "2126618", "2121804"]
+    );
+    assert.match(result.results[0].summary, /Latest public list/);
+    assert.equal(result.results[0].promulgationDate, "2026-04-10");
   } finally {
     await server.close();
   }
