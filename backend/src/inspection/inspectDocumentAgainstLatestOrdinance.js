@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   discoverLawSource,
   readLawSourceDocument,
@@ -13,6 +15,21 @@ const DEFAULT_PROVIDER = "law-go-public";
 const MAX_DOCUMENT_CHARS = 20000;
 const MAX_ORDINANCE_CONTEXT_CHARS = 12000;
 const MAX_ORDINANCE_CLAUSES = 12;
+const DAEJEON_DONGGU_REFERENCE_FILE = fileURLToPath(
+  new URL("../../../data/reference-documents/daejeon_donggu_youth_basic_ordinance_latest.json", import.meta.url)
+);
+const BUNDLED_ORDINANCE_FALLBACKS = [
+  {
+    fallbackId: "daejeon_donggu_youth_basic_ordinance",
+    title: "대전광역시 동구 청년 기본 조례",
+    aliases: [
+      "대전광역시 동구 청년 기본 조례",
+      "대전 동구 청년 기본 조례",
+      "동구 청년 기본 조례"
+    ],
+    filePath: DAEJEON_DONGGU_REFERENCE_FILE
+  }
+];
 
 function normalizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -54,8 +71,25 @@ function tokenize(value) {
     .filter((token) => token.length >= 2);
 }
 
+function normalizeLookupText(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+    .replace(/[\s_-]+/g, " ")
+    .trim();
+}
+
 function unique(values = []) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function cleanOrdinanceTitleHint(value) {
+  return normalizeText(value)
+    .replace(/^#+\s*/, "")
+    .replace(/\((?:테스트용|초안|예시)\)\s*$/u, "")
+    .replace(/\b(?:안내문|안내서|가이드|테스트용|초안)\b.*$/u, "")
+    .trim();
 }
 
 function summarizeClause(clause = {}, maxLength = 220) {
@@ -122,7 +156,7 @@ function buildMarkdownDownload({ fileName, ordinance, detection, review }) {
 function buildHeuristicDetection(documentText, requestedMunicipalities = []) {
   const lines = documentText
     .split(/\n+/)
-    .map((line) => line.trim())
+    .map((line) => cleanOrdinanceTitleHint(line))
     .filter(Boolean);
 
   const ordinanceLineCandidates = lines.filter((line) => /(조례|규칙|ordinance|rule)/i.test(line));
@@ -476,20 +510,67 @@ function findLatestMatchedResult(results = [], recommendation) {
   return results[0] ?? null;
 }
 
+function findBundledOrdinanceFallback({ ordinanceTitleQuery, documentText }) {
+  const candidates = [ordinanceTitleQuery, documentText]
+    .map((value) => normalizeLookupText(value))
+    .filter(Boolean);
+
+  return BUNDLED_ORDINANCE_FALLBACKS.find((entry) =>
+    entry.aliases.some((alias) => {
+      const normalizedAlias = normalizeLookupText(alias);
+      return candidates.some((candidate) => candidate.includes(normalizedAlias));
+    })
+  ) ?? null;
+}
+
+function readBundledOrdinanceFallback(entry) {
+  const payload = JSON.parse(fs.readFileSync(entry.filePath, "utf8").replace(/^\uFEFF/, ""));
+  return {
+    matched: payload.matched,
+    candidates: [payload.matched],
+    recommendation: null,
+    searchMeta: {
+      provider: DEFAULT_PROVIDER,
+      mode: "bundled-fallback",
+      route: "bundled-fallback",
+      fallbackId: entry.fallbackId
+    },
+    document: payload.document,
+    documentMeta: {
+      provider: DEFAULT_PROVIDER,
+      mode: "bundled-fallback",
+      id: payload.matched?.id ?? "",
+      referenceUrl: payload.matched?.referenceUrl ?? ""
+    }
+  };
+}
+
 async function resolveLatestOrdinance({
   provider,
   detection,
+  documentText,
   discoverLawSourceFn,
   searchLawSourceFn,
   readLawSourceDocumentFn,
   recommendLawSourcePairFn
 }) {
-  const discovery = await discoverLawSourceFn({
-    provider,
-    query: detection.ordinanceTitleQuery,
-    limit: 8,
-    municipalities: detection.municipalityCodes
+  const bundledFallback = findBundledOrdinanceFallback({
+    ordinanceTitleQuery: detection.ordinanceTitleQuery,
+    documentText
   });
+  let discovery = { results: [], meta: { route: "discover" } };
+  let discoveryError = null;
+
+  try {
+    discovery = await discoverLawSourceFn({
+      provider,
+      query: detection.ordinanceTitleQuery,
+      limit: 8,
+      municipalities: detection.municipalityCodes
+    });
+  } catch (error) {
+    discoveryError = error;
+  }
 
   let candidates = Array.isArray(discovery.results) ? discovery.results : [];
   let searchMeta = {
@@ -498,24 +579,63 @@ async function resolveLatestOrdinance({
   };
 
   if (candidates.length === 0) {
-    const search = await searchLawSourceFn({
-      provider,
-      query: detection.ordinanceTitleQuery,
-      limit: 8
-    });
-    candidates = Array.isArray(search.results) ? search.results : [];
-    searchMeta = {
-      ...search.meta,
-      route: "search"
-    };
+    let search = { results: [], meta: { route: "search" } };
+    let searchError = null;
+
+    try {
+      search = await searchLawSourceFn({
+        provider,
+        query: detection.ordinanceTitleQuery,
+        limit: 8
+      });
+      candidates = Array.isArray(search.results) ? search.results : [];
+      searchMeta = {
+        ...search.meta,
+        route: "search"
+      };
+    } catch (error) {
+      searchError = error;
+    }
 
     const recommendation = recommendLawSourcePairFn(candidates, detection.ordinanceTitleQuery);
     const matched = findLatestMatchedResult(candidates, recommendation);
 
     if (!matched) {
+      if (bundledFallback) {
+        return readBundledOrdinanceFallback(bundledFallback);
+      }
+
+      if (searchError || discoveryError) {
+        throw searchError ?? discoveryError;
+      }
+
       throw buildInspectionResolutionError("적용 가능한 최신 조례를 찾지 못했습니다.");
     }
 
+    try {
+      const documentResult = await readLawSourceDocumentFn({
+        provider,
+        id: matched.id
+      });
+
+      return {
+        matched,
+        candidates,
+        recommendation,
+        searchMeta,
+        document: documentResult.document,
+        documentMeta: documentResult.meta
+      };
+    } catch (error) {
+      if (bundledFallback) {
+        return readBundledOrdinanceFallback(bundledFallback);
+      }
+      throw error;
+    }
+  }
+
+  const matched = candidates[0];
+  try {
     const documentResult = await readLawSourceDocumentFn({
       provider,
       id: matched.id
@@ -524,27 +644,17 @@ async function resolveLatestOrdinance({
     return {
       matched,
       candidates,
-      recommendation,
+      recommendation: null,
       searchMeta,
       document: documentResult.document,
       documentMeta: documentResult.meta
     };
+  } catch (error) {
+    if (bundledFallback) {
+      return readBundledOrdinanceFallback(bundledFallback);
+    }
+    throw error;
   }
-
-  const matched = candidates[0];
-  const documentResult = await readLawSourceDocumentFn({
-    provider,
-    id: matched.id
-  });
-
-  return {
-    matched,
-    candidates,
-    recommendation: null,
-    searchMeta,
-    document: documentResult.document,
-    documentMeta: documentResult.meta
-  };
 }
 
 async function compareAgainstLatestOrdinance({
@@ -626,6 +736,7 @@ export async function inspectDocumentAgainstLatestOrdinance(
   const ordinance = await resolveLatestOrdinance({
     provider,
     detection,
+    documentText: normalizedDocumentText,
     discoverLawSourceFn,
     searchLawSourceFn,
     readLawSourceDocumentFn,

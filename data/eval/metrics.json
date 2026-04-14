@@ -1,12 +1,12 @@
 {
-  "evaluatedAt": "2026-04-14T05:44:56.630Z",
+  "evaluatedAt": "2026-04-14T10:17:53.926Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
     "internalDocs": "data/samples/internal_docs.json"
   },
   "artifact": "data/eval/metrics.json",
-  "runtimeMs": 1,
+  "runtimeMs": 2,
   "metrics": {
     "changeDetection": {
       "expectedChangedClauses": 4,
@@ -52,7 +52,7 @@
     "summary": {
       "evaluatedCaseCount": 4,
       "passedCaseCount": 4,
-      "suiteRuntimeMs": 18,
+      "suiteRuntimeMs": 2,
       "averageF1": 1,
       "averageMappingCoverage": 1,
       "averageTraceCompleteness": 1,
@@ -78,7 +78,7 @@
           "after": "data/cases/bucheon_youth_rent_support/after.json",
           "internalDocs": "data/cases/bucheon_youth_rent_support/internal_docs.json"
         },
-        "runtimeMs": 1,
+        "runtimeMs": 0,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,
@@ -137,7 +137,7 @@
           "after": "data/cases/daejeon_youth_basic_ordinance/after.json",
           "internalDocs": "data/cases/daejeon_youth_basic_ordinance/internal_docs.json"
         },
-        "runtimeMs": 16,
+        "runtimeMs": 1,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,
@@ -255,7 +255,7 @@
           "after": "data/cases/ulsan_youth_job_support/after.json",
           "internalDocs": "data/cases/ulsan_youth_job_support/internal_docs.json"
         },
-        "runtimeMs": 0,
+        "runtimeMs": 1,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,

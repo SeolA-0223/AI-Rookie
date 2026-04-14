@@ -13,6 +13,24 @@ const MAX_REDIRECTS = 5;
 const DEFAULT_GUBUN = "ELIS";
 const DEFAULT_CHR_CLS_CD = "010202";
 const DEFAULT_DETAIL_GUBUN = "KLAW";
+const EXTRA_CURATED_SEARCH_RESULTS = [
+  {
+    id: "2118913",
+    title: "대전광역시 동구 청년 기본 조례",
+    jurisdiction: "대전광역시 동구",
+    effectiveDate: "2026-04-03",
+    promulgationDate: "2026-04-03",
+    referenceUrl: "https://www.law.go.kr/LSW/ordinInfoP.do?urlMode=ordinScJoRltInfoR&viewCls=ordinInfoP&ordinSeq=2118913&chrClsCd=010202&gubun=ELIS",
+    summary: "Curated live fallback / daejeon_donggu_youth_basic_ordinance",
+    current: true,
+    curatedCaseId: "daejeon_donggu_youth_basic_ordinance",
+    aliases: [
+      "대전광역시 동구 청년 기본 조례",
+      "대전 동구 청년 기본 조례",
+      "동구 청년 기본 조례"
+    ]
+  }
+];
 const JURISDICTION_SUFFIXES = [
   "\uD2B9\uBCC4\uC790\uCE58\uB3C4",
   "\uD2B9\uBCC4\uC790\uCE58\uC2DC",
@@ -711,7 +729,7 @@ function buildCuratedFallbackResults(query, baseUrl) {
     return [];
   }
 
-  return listLocalFixtureCases()
+  const casePackResults = listLocalFixtureCases()
     .map((entry) => {
       const aliases = [
         entry.officialKoreanTitle,
@@ -747,6 +765,24 @@ function buildCuratedFallbackResults(query, baseUrl) {
       };
     })
     .filter(Boolean);
+
+  const extraResults = EXTRA_CURATED_SEARCH_RESULTS
+    .filter((entry) =>
+      Array.isArray(entry.aliases) && entry.aliases.some((alias) => normalizeSearchText(alias) === normalizedQuery)
+    )
+    .map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      jurisdiction: entry.jurisdiction,
+      effectiveDate: normalizeDateValue(entry.effectiveDate),
+      promulgationDate: normalizeDateValue(entry.promulgationDate),
+      referenceUrl: normalizeEnvValue(entry.referenceUrl) || buildReferenceUrl(baseUrl, entry.id),
+      summary: entry.summary,
+      current: Boolean(entry.current),
+      curatedCaseId: entry.curatedCaseId
+    }));
+
+  return [...casePackResults, ...extraResults];
 }
 
 function buildSearchDiagnostics({
@@ -1552,6 +1588,32 @@ export function createLawGoPublicSource({
         } catch (error) {
           htmlError = error;
         }
+      }
+
+      const earlyCuratedResults = buildCuratedFallbackResults(query, resolvedBaseUrl);
+
+      if (drfResults.length === 0 && htmlResults.length === 0 && earlyCuratedResults.length > 0) {
+        return {
+          results: earlyCuratedResults,
+          meta: {
+            provider: "law-go-public",
+            mode: "adapter",
+            baseUrl: resolvedBaseUrl.toString().replace(/\/$/, ""),
+            ocMode,
+            searchBackend: "curated-fallback",
+            historyExpanded: false,
+            historySeedId: null,
+            diagnostics: buildSearchDiagnostics({
+              query,
+              queryVariants,
+              results: earlyCuratedResults,
+              drfResults,
+              htmlResults,
+              curatedResults: earlyCuratedResults,
+              historyExpanded: false
+            })
+          }
+        };
       }
 
       if (drfResults.length === 0 && htmlResults.length === 0) {
