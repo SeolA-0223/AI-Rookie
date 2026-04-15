@@ -1,35 +1,35 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-16 01:10:43 KST
+Auto-updated: 2026-04-16 01:34:33 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: d1a0eb3 (HEAD -> main, origin/main, origin/HEAD) fix: prefer explicit ordinance titles in document review
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24403077667)
+- Latest commit at update time: 6dffd89 (HEAD -> main, origin/main, origin/HEAD) fix: extend gemini request timeout on vercel
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24465200804)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  .gitignore
-- M  backend/src/ai/geminiJson.js
-- M  backend/src/generation/generateDrafts.js
+- M  backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
+- M  data/eval/metrics.json
+- A  tests/document-inspection-ranking.test.js
 
 3) Recent Commits (max 8)
-- d1a0eb3 (HEAD -> main, origin/main, origin/HEAD) fix: prefer explicit ordinance titles in document review
+- 6dffd89 (HEAD -> main, origin/main, origin/HEAD) fix: extend gemini request timeout on vercel
+- d1a0eb3 fix: prefer explicit ordinance titles in document review
 - 24c1a80 fix: guard ordinance title detection against drift
 - 334372d fix: tighten municipality filters and document review reasoning
 - e4f19f0 feat: localize dynamic review flows
 - b1eae03 fix: add resilient page tab fallback
 - 003f694 fix: add fallback for dong-gu document review
 - 8824986 fix: split pages and add document inspect api routes
-- c160791 feat: redesign dashboard and add document inspection
 
 4) Staged Files
-- .gitignore
-- backend/src/ai/geminiJson.js
-- backend/src/generation/generateDrafts.js
+- backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
+- data/eval/metrics.json
+- tests/document-inspection-ranking.test.js
 
 5) Unstaged Files
 - (none)

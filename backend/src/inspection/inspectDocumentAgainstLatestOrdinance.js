@@ -92,6 +92,22 @@ function cleanOrdinanceTitleHint(value) {
     .trim();
 }
 
+function cleanDetectedOrdinanceTitleHint(value) {
+  return normalizeText(value)
+    .replace(/^#+\s*/, "")
+    .replace(/\((?:테스트용|초안|예시)\)\s*$/u, "")
+    .replace(/\b(?:안내문|안내서|가이드|공지|테스트용|초안)\b.*$/u, "")
+    .trim();
+}
+
+function looksLikeExplicitOrdinanceLine(value) {
+  return /(?:조례|규칙|ordinance|rule)/iu.test(normalizeText(value));
+}
+
+function looksLikeOrdinanceContextLine(value) {
+  return /(?:청년|지원|신청|자격|운영|안내|혜택|기준)/u.test(normalizeText(value));
+}
+
 function summarizeClause(clause = {}, maxLength = 220) {
   const text = normalizeText(clause.text).replace(/\s+/g, " ");
   if (text.length <= maxLength) {
@@ -178,6 +194,40 @@ function buildHeuristicDetection(documentText, requestedMunicipalities = []) {
     reasoning: "문서 본문에서 조례명 후보와 지자체명을 단순 추출한 규칙 기반 판정입니다.",
     confidence: municipalityHints.length > 0 && ordinanceLineCandidates.length > 0 ? "medium" : "low",
     documentType: /안내|공지/.test(documentText) ? "guide" : "document"
+  };
+}
+
+function buildHeuristicDetectionV2(documentText, requestedMunicipalities = []) {
+  const rawLines = documentText
+    .split(/\n+/)
+    .map((line) => normalizeText(line))
+    .filter(Boolean);
+  const lines = rawLines.map((line) => cleanDetectedOrdinanceTitleHint(line)).filter(Boolean);
+
+  const rawOrdinanceLineCandidates = rawLines.filter((line) => looksLikeExplicitOrdinanceLine(line));
+  const rawTitleCandidate =
+    rawOrdinanceLineCandidates.sort((left, right) => right.length - left.length)[0] ||
+    rawLines.find((line) => looksLikeOrdinanceContextLine(line)) ||
+    rawLines[0] ||
+    "지자체 조례";
+  const titleCandidate = cleanDetectedOrdinanceTitleHint(rawTitleCandidate);
+  const municipalityHints = unique([
+    ...requestedMunicipalities,
+    ...LAW_GO_MUNICIPALITIES.filter((item) => documentText.includes(item.name)).map((item) => item.name)
+  ]);
+  const keywords = unique([
+    ...getMeaningfulTitleTokens(titleCandidate, municipalityHints),
+    ...tokenize(titleCandidate)
+  ]).slice(0, 8);
+
+  return {
+    ordinanceTitleQuery: rawTitleCandidate,
+    hasExplicitOrdinanceLine: rawOrdinanceLineCandidates.length > 0,
+    municipalityHints,
+    keywords,
+    reasoning: "문서 본문에서 조례명 후보와 지자체명을 우선 추출한 규칙 기반 판정입니다.",
+    confidence: municipalityHints.length > 0 && rawOrdinanceLineCandidates.length > 0 ? "medium" : "low",
+    documentType: /(?:안내|공지|가이드)/u.test(documentText) ? "guide" : "document"
   };
 }
 
@@ -491,6 +541,166 @@ function shouldPreferHeuristicTitle({ heuristicTitle, detectedTitle, municipalit
   return heuristicTokens.length > 0 && detectedTokenSet.size > 0 && overlap === 0;
 }
 
+function parseInspectionResultTimestamp(result = {}) {
+  const effectiveTimestamp = Date.parse(normalizeText(result?.effectiveDate));
+  const promulgationTimestamp = Date.parse(normalizeText(result?.promulgationDate));
+  return Math.max(
+    Number.isFinite(effectiveTimestamp) ? effectiveTimestamp : 0,
+    Number.isFinite(promulgationTimestamp) ? promulgationTimestamp : 0
+  );
+}
+
+function resultMatchesMunicipalityHints(result, municipalityNames = []) {
+  if (!Array.isArray(municipalityNames) || municipalityNames.length === 0) {
+    return false;
+  }
+
+  const jurisdiction = normalizeLookupText(result?.jurisdiction);
+  const title = normalizeLookupText(result?.title);
+
+  return municipalityNames.some((name) => {
+    const normalizedName = normalizeLookupText(name);
+    return normalizedName && (jurisdiction.includes(normalizedName) || title.includes(normalizedName));
+  });
+}
+
+function scoreInspectionTitleMatch(result, detection) {
+  const cleanedDetectionTitle = cleanDetectedOrdinanceTitleHint(detection?.ordinanceTitleQuery);
+  const normalizedQuery = normalizeLookupText(cleanedDetectionTitle);
+  const normalizedTitle = normalizeLookupText(result?.title);
+  const municipalityNames = detection?.municipalityHints ?? [];
+  const queryTokens = getMeaningfulTitleTokens(cleanedDetectionTitle, municipalityNames);
+  const resultTokenSet = new Set(getMeaningfulTitleTokens(result?.title, municipalityNames));
+  const overlap = queryTokens.filter((token) => resultTokenSet.has(token)).length;
+  let score = 0;
+
+  if (normalizedQuery && normalizedTitle === normalizedQuery) {
+    score += 240;
+  } else if (
+    normalizedQuery &&
+    normalizedTitle &&
+    (normalizedTitle.includes(normalizedQuery) || normalizedQuery.includes(normalizedTitle))
+  ) {
+    score += 160;
+  }
+
+  if (overlap > 0) {
+    score += overlap * 40;
+  } else if (queryTokens.length > 0) {
+    score -= 160;
+  }
+
+  if (queryTokens.length > overlap) {
+    score -= (queryTokens.length - overlap) * 8;
+  }
+
+  return {
+    score,
+    overlap,
+    queryTokenCount: queryTokens.length
+  };
+}
+
+function mergeInspectionCandidates(candidateGroups = []) {
+  const mergedById = new Map();
+
+  for (const group of candidateGroups) {
+    const route = normalizeText(group?.route) || "unknown";
+    for (const candidate of Array.isArray(group?.results) ? group.results : []) {
+      const candidateId = normalizeText(candidate?.id);
+      if (!candidateId) {
+        continue;
+      }
+
+      const existing = mergedById.get(candidateId);
+      mergedById.set(candidateId, {
+        ...(existing ?? {}),
+        ...candidate,
+        _inspectionRoutes: unique([...(existing?._inspectionRoutes ?? []), route])
+      });
+    }
+  }
+
+  return [...mergedById.values()];
+}
+
+function rankInspectionCandidates({ candidates = [], detection, recommendation }) {
+  const recommendedAfterId = normalizeText(recommendation?.after?.id);
+
+  return candidates
+    .map((candidate, index) => {
+      const titleMatch = scoreInspectionTitleMatch(candidate, detection);
+      const routes = Array.isArray(candidate?._inspectionRoutes) ? candidate._inspectionRoutes : [];
+      const municipalityMatch = resultMatchesMunicipalityHints(candidate, detection?.municipalityHints);
+      const timestamp = parseInspectionResultTimestamp(candidate);
+      let score = titleMatch.score;
+
+      if (municipalityMatch) {
+        score += 40;
+      }
+      if (normalizeText(candidate?.id) === recommendedAfterId) {
+        score += 50;
+      }
+      if (candidate?.current === true) {
+        score += 12;
+      }
+      if (detection?.hasExplicitOrdinanceLine && routes.includes("search")) {
+        score += 18;
+      }
+      if (!detection?.hasExplicitOrdinanceLine && routes.includes("discover")) {
+        score += 10;
+      }
+      if (timestamp > 0) {
+        score += 2;
+      }
+
+      return {
+        candidate,
+        index,
+        score,
+        timestamp,
+        overlap: titleMatch.overlap
+      };
+    })
+    .sort((left, right) => {
+      if (left.score !== right.score) {
+        return right.score - left.score;
+      }
+      if (left.overlap !== right.overlap) {
+        return right.overlap - left.overlap;
+      }
+      if (left.timestamp !== right.timestamp) {
+        return right.timestamp - left.timestamp;
+      }
+      if (Number(right.candidate?.current === true) !== Number(left.candidate?.current === true)) {
+        return Number(right.candidate?.current === true) - Number(left.candidate?.current === true);
+      }
+      return left.index - right.index;
+    })
+    .map((entry) => entry.candidate);
+}
+
+function stripInspectionCandidateInternalFields(candidate) {
+  if (!candidate || typeof candidate !== "object") {
+    return candidate;
+  }
+
+  const { _inspectionRoutes, ...rest } = candidate;
+  return rest;
+}
+
+function getSelectedInspectionRoute(candidate, detection) {
+  const routes = Array.isArray(candidate?._inspectionRoutes) ? candidate._inspectionRoutes : [];
+
+  if (detection?.hasExplicitOrdinanceLine && routes.includes("search")) {
+    return "search";
+  }
+  if (routes.includes("discover")) {
+    return "discover";
+  }
+  return routes[0] ?? "discover";
+}
+
 async function detectApplicableOrdinance({
   documentText,
   requestedMunicipalities,
@@ -498,7 +708,7 @@ async function detectApplicableOrdinance({
   fetchImpl
 }) {
   const requestedMunicipalityNames = getMunicipalityNames(requestedMunicipalities);
-  const heuristic = buildHeuristicDetection(documentText, requestedMunicipalityNames);
+  const heuristic = buildHeuristicDetectionV2(documentText, requestedMunicipalityNames);
   const aiResult = await requestGeminiJson(
     buildDetectionPrompt(documentText.slice(0, MAX_DOCUMENT_CHARS), requestedMunicipalityNames),
     {
@@ -701,6 +911,112 @@ async function resolveLatestOrdinance({
   }
 }
 
+async function resolveLatestOrdinanceV2({
+  provider,
+  detection,
+  documentText,
+  discoverLawSourceFn,
+  searchLawSourceFn,
+  readLawSourceDocumentFn,
+  recommendLawSourcePairFn
+}) {
+  const bundledFallback = findBundledOrdinanceFallback({
+    ordinanceTitleQuery: detection.ordinanceTitleQuery,
+    documentText
+  });
+  let discovery = { results: [], meta: { route: "discover" } };
+  let discoveryError = null;
+  let search = { results: [], meta: { route: "search" } };
+  let searchError = null;
+
+  try {
+    discovery = await discoverLawSourceFn({
+      provider,
+      query: detection.ordinanceTitleQuery,
+      limit: 8,
+      municipalities: detection.municipalityCodes
+    });
+  } catch (error) {
+    discoveryError = error;
+  }
+
+  try {
+    search = await searchLawSourceFn({
+      provider,
+      query: detection.ordinanceTitleQuery,
+      limit: 8,
+      municipalities: detection.municipalityCodes
+    });
+  } catch (error) {
+    searchError = error;
+  }
+
+  const discoveryCandidates = Array.isArray(discovery.results) ? discovery.results : [];
+  const searchCandidates = Array.isArray(search.results) ? search.results : [];
+  const mergedCandidates = mergeInspectionCandidates([
+    {
+      route: "search",
+      results: searchCandidates
+    },
+    {
+      route: "discover",
+      results: discoveryCandidates
+    }
+  ]);
+  const recommendationSeed = searchCandidates.length > 0 ? searchCandidates : mergedCandidates;
+  const recommendation = recommendLawSourcePairFn(recommendationSeed, detection.ordinanceTitleQuery);
+  const rankedCandidates = rankInspectionCandidates({
+    candidates: mergedCandidates,
+    detection,
+    recommendation
+  });
+  const matchedCandidate = findLatestMatchedResult(rankedCandidates, recommendation);
+
+  if (!matchedCandidate) {
+    if (bundledFallback) {
+      return readBundledOrdinanceFallback(bundledFallback);
+    }
+    if (searchError || discoveryError) {
+      throw searchError ?? discoveryError;
+    }
+    throw buildInspectionResolutionError("적용 가능한 최신 조례를 찾지 못했습니다.");
+  }
+
+  const selectedRoute = getSelectedInspectionRoute(matchedCandidate, detection);
+  const matched = stripInspectionCandidateInternalFields(matchedCandidate);
+  const candidates = rankedCandidates.map((candidate) => stripInspectionCandidateInternalFields(candidate));
+  const searchMeta = {
+    ...(selectedRoute === "search" ? search.meta : discovery.meta),
+    route: selectedRoute,
+    selectionMode: "ranked",
+    consideredRoutes: unique([
+      ...(searchCandidates.length > 0 ? ["search"] : []),
+      ...(discoveryCandidates.length > 0 ? ["discover"] : [])
+    ])
+  };
+
+  try {
+    const documentResult = await readLawSourceDocumentFn({
+      provider,
+      id: matched.id
+    });
+
+    return {
+      matched,
+      candidates,
+      recommendation,
+      searchMeta,
+      document: documentResult.document,
+      documentMeta: documentResult.meta
+    };
+  } catch (error) {
+    if (bundledFallback) {
+      return readBundledOrdinanceFallback(bundledFallback);
+    }
+    throw error;
+  }
+}
+
 async function compareAgainstLatestOrdinance({
   documentText,
   ordinance,
@@ -778,7 +1094,7 @@ export async function inspectDocumentAgainstLatestOrdinance(
     fetchImpl
   });
 
-  const ordinance = await resolveLatestOrdinance({
+  const ordinance = await resolveLatestOrdinanceV2({
     provider,
     detection,
     documentText: normalizedDocumentText,
