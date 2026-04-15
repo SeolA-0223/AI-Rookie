@@ -15,7 +15,7 @@ function startMockServer({ rawQuery, cleanedQuery, result }) {
 
     if (requestUrl.pathname === "/LSW/ordinScListR.do") {
       const query = requestUrl.searchParams.get("q") ?? "";
-      const results = query === cleanedQuery ? [result] : query === rawQuery ? [] : [];
+      const results = result && query === cleanedQuery ? [result] : query === rawQuery ? [] : [];
 
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(`
@@ -99,6 +99,34 @@ test("searchLawSource strips guidance suffix variants for law.go.kr search", asy
     assert.equal(result.results[0].title, expectedTitle);
     assert.equal(result.meta.diagnostics.queryVariants[0], rawQuery);
     assert.ok(result.meta.diagnostics.queryVariants.includes(cleanedQuery));
+  } finally {
+    await server.close();
+  }
+});
+
+test("searchLawSource applies curated fallback for guidance-suffixed bundled ordinance queries", async () => {
+  const rawQuery = "서울특별시 청년 기본 조례 안내문";
+  const cleanedQuery = "서울특별시 청년 기본 조례";
+  const server = await startMockServer({
+    rawQuery,
+    cleanedQuery,
+    result: null
+  });
+
+  try {
+    const result = await searchLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl,
+      query: rawQuery,
+      municipalities: ["6110000"],
+      limit: 5
+    });
+
+    assert.equal(result.meta.searchBackend, "curated-fallback");
+    assert.equal(result.results[0].id, "1840747");
+    assert.equal(result.results[0].title, "서울특별시 청년 기본 조례");
+    assert.ok(result.meta.diagnostics.queryVariants.includes(cleanedQuery));
+    assert.equal(result.meta.diagnostics.curatedFallbackUsed, true);
   } finally {
     await server.close();
   }

@@ -1,12 +1,12 @@
 {
-  "evaluatedAt": "2026-04-15T16:41:28.567Z",
+  "evaluatedAt": "2026-04-15T16:45:12.064Z",
   "sampleData": {
     "before": "data/samples/regulation_before.json",
     "after": "data/samples/regulation_after.json",
     "internalDocs": "data/samples/internal_docs.json"
   },
   "artifact": "data/eval/metrics.json",
-  "runtimeMs": 1,
+  "runtimeMs": 2,
   "metrics": {
     "changeDetection": {
       "expectedChangedClauses": 4,
@@ -137,7 +137,7 @@
           "after": "data/cases/daejeon_youth_basic_ordinance/after.json",
           "internalDocs": "data/cases/daejeon_youth_basic_ordinance/internal_docs.json"
         },
-        "runtimeMs": 1,
+        "runtimeMs": 0,
         "metrics": {
           "changeDetection": {
             "expectedChangedClauses": 4,

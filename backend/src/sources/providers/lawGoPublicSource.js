@@ -794,6 +794,23 @@ function buildCuratedFallbackResults(query, baseUrl) {
   return [...casePackResults, ...extraResults];
 }
 
+function buildCuratedFallbackResultsForQueries(queries = [], baseUrl) {
+  const mergedById = new Map();
+
+  for (const query of queries) {
+    for (const result of buildCuratedFallbackResults(query, baseUrl)) {
+      if (!result?.id) {
+        continue;
+      }
+
+      const existing = mergedById.get(result.id);
+      mergedById.set(result.id, mergeCandidateResult(existing ?? {}, result));
+    }
+  }
+
+  return [...mergedById.values()];
+}
+
 function buildSearchDiagnostics({
   query,
   queryVariants,
@@ -1627,7 +1644,7 @@ export function createLawGoPublicSource({
       }
 
       const earlyCuratedResults = filterSearchResultsByMunicipality(
-        buildCuratedFallbackResults(query, resolvedBaseUrl),
+        buildCuratedFallbackResultsForQueries([query, ...queryVariants], resolvedBaseUrl),
         municipalityCodes
       );
 
@@ -1682,7 +1699,10 @@ export function createLawGoPublicSource({
         historyExpanded: false
       });
       const curatedResults = initialDiagnostics.exactTitleMatchCount === 0
-        ? filterSearchResultsByMunicipality(buildCuratedFallbackResults(query, resolvedBaseUrl), municipalityCodes)
+        ? filterSearchResultsByMunicipality(
+            buildCuratedFallbackResultsForQueries([query, ...queryVariants], resolvedBaseUrl),
+            municipalityCodes
+          )
         : [];
       const results = filterSearchResultsByMunicipality(
         rankSearchResults([curatedResults, drfResults, htmlResults], query, effectiveLimit),
