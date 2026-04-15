@@ -703,6 +703,11 @@ function buildQueryVariants(query) {
   const rawQuery = normalizeEnvValue(query);
   const inferredQueryParts = splitJurisdictionAndBodyTitle(rawQuery);
   const variants = new Set([rawQuery]);
+  const withoutGuidanceSuffix = rawQuery
+    .replace(/\((?:테스트용|초안|예시)\)\s*$/u, "")
+    .replace(/\s*(?:안내문|안내서|가이드|공지)\s*$/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
   const withoutWideRegionSuffix = rawQuery
     .replace(/\uD2B9\uBCC4\uC790\uCE58\uB3C4/g, "")
     .replace(/\uD2B9\uBCC4\uC790\uCE58\uC2DC/g, "")
@@ -710,6 +715,10 @@ function buildQueryVariants(query) {
     .replace(/\uAD11\uC5ED\uC2DC/g, "")
     .replace(/\s+/g, " ")
     .trim();
+
+  if (withoutGuidanceSuffix) {
+    variants.add(withoutGuidanceSuffix);
+  }
 
   if (withoutWideRegionSuffix) {
     variants.add(withoutWideRegionSuffix);

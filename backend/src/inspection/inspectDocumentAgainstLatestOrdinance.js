@@ -96,7 +96,7 @@ function cleanDetectedOrdinanceTitleHint(value) {
   return normalizeText(value)
     .replace(/^#+\s*/, "")
     .replace(/\((?:테스트용|초안|예시)\)\s*$/u, "")
-    .replace(/\b(?:안내문|안내서|가이드|공지|테스트용|초안)\b.*$/u, "")
+    .replace(/\s*(?:안내문|안내서|가이드|공지|테스트용|초안)\s*$/u, "")
     .trim();
 }
 
