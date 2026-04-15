@@ -93,7 +93,7 @@ export async function requestGeminiJson(prompt, {
           temperature
         }
       }),
-      signal: AbortSignal.timeout(20000)
+      signal: AbortSignal.timeout(status.timeoutMs)
     });
 
     const payload = await response.json();

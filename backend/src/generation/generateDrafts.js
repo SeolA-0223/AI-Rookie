@@ -2,6 +2,7 @@ import { localizeClauseTitle } from "../shared/localizeDemoText.js";
 
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 const DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_GEMINI_TIMEOUT_MS = 45000;
 const REQUIRED_DRAFT_KEYS = ["internalNoticeDraft", "citizenGuideDraft", "faqDraft", "comparisonTable"];
 
 function lineForChange(change) {
@@ -81,12 +82,14 @@ export function getDraftGenerationStatus({ env = process.env } = {}) {
   const { apiKey, apiKeyEnvName } = resolveGeminiApiKey(env);
   const model = normalizeEnvValue(env.GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
   const baseUrl = normalizeEnvValue(env.GEMINI_BASE_URL) || DEFAULT_GEMINI_BASE_URL;
+  const timeoutMs = Number.parseInt(normalizeEnvValue(env.GEMINI_TIMEOUT_MS), 10) || DEFAULT_GEMINI_TIMEOUT_MS;
 
   return {
     provider: apiKey ? "gemini" : "template",
     enabled: Boolean(apiKey),
     model,
     baseUrl,
+    timeoutMs,
     apiKeyEnvName,
     missingEnv: apiKey ? [] : ["GEMINI_API_KEI"]
   };
@@ -205,7 +208,7 @@ export async function generateDraftsWithConfiguredAI(
         "x-goog-api-key": apiKey
       },
       body: JSON.stringify(createGeminiRequestBody(changes, riskRows)),
-      signal: AbortSignal.timeout(20000)
+      signal: AbortSignal.timeout(status.timeoutMs)
     });
 
     const payload = await response.json();
