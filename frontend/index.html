@@ -121,7 +121,7 @@
                 <article class="setup-card">
                   <h3 data-i18n="source.liveTitle">실제 조례 조회와 pair 비교</h3>
                   <p data-i18n="source.liveBody">
-                    조례명을 검색해 추천 pair를 적용하거나, 최신 조례 목록에서 현재 버전을 골라 비교 분석할 수 있습니다.
+                    조례명 일부 키워드를 입력하면 자동으로 후보를 찾고, 지자체 선택과 최신 조례 목록을 함께 써서 범위를 좁힐 수 있습니다.
                   </p>
                   <div class="source-grid">
                     <label class="field">
@@ -139,12 +139,12 @@
                           data-i18n-placeholder="source.searchPlaceholder"
                           autocomplete="off"
                         />
-                        <button id="source-search-btn" class="secondary-btn" type="button" data-i18n="buttons.search">ID 찾기</button>
+                        <button id="source-search-btn" class="secondary-btn" type="button" data-i18n="buttons.search">검색</button>
                       </div>
                     </label>
                   </div>
                   <p id="source-search-status" class="subtle" data-i18n="source.searchHint">
-                    조례명을 검색하면 후보 ID와 추천 before/after 조합을 보여줍니다.
+                    조례명 일부 키워드를 2글자 이상 입력하면 자동으로 후보를 찾고, 아래 지자체 선택과 함께 범위를 좁힙니다.
                   </p>
                   <div id="source-search-recommendation" class="search-recommendation"></div>
                   <div id="source-search-results" class="search-results"></div>
@@ -153,7 +153,7 @@
                     <div class="latest-toolbar">
                       <div>
                         <h4 data-i18n="source.municipalityTitle">지자체 선택</h4>
-                        <p class="subtle" data-i18n="source.latestHint">선택한 지자체 기준으로 최신 공포 조례를 날짜순으로 불러옵니다.</p>
+                        <p class="subtle" data-i18n="source.latestHint">지자체 체크박스는 조례명 검색과 최신 공포 조례 리스트에 함께 적용됩니다.</p>
                       </div>
                       <div class="panel-actions">
                         <button id="municipality-select-all-btn" class="secondary-btn" type="button" data-i18n="buttons.selectAllMunicipalities">

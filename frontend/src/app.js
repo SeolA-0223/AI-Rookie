@@ -28,6 +28,8 @@ const ENDPOINTS = {
   history: "/api/history?limit=6"
 };
 const LOCALE_STORAGE_KEY = "ai-rookie-locale";
+const AUTO_SOURCE_SEARCH_MIN_CHARS = 2;
+const AUTO_SOURCE_SEARCH_DEBOUNCE_MS = 320;
 const REMOTE_PROVIDERS = ["law-go-public", "korea-law-mcp"];
 const MUNICIPALITIES = [
   ["6110000", "서울특별시"],
@@ -159,6 +161,8 @@ const state = {
   documentTextTranslationPending: false,
   documentTextTranslationError: ""
 };
+let sourceSearchDebounceHandle = null;
+let sourceSearchRequestSequence = 0;
 
 function loadStoredLocale() {
   try {
@@ -355,6 +359,99 @@ function formatMunicipalityScope(codes = state.selectedMunicipalities) {
   return names.length <= 2 ? names.join(", ") : copy().messages.latestMunicipalityCount(names.length);
 }
 
+function getSourceSearchQuery() {
+  return refs.sourceSearchQueryField?.value.trim() ?? "";
+}
+
+function clearScheduledSourceSearch() {
+  if (sourceSearchDebounceHandle !== null) {
+    window.clearTimeout(sourceSearchDebounceHandle);
+    sourceSearchDebounceHandle = null;
+  }
+}
+
+function invalidateSourceSearchRequests() {
+  sourceSearchRequestSequence += 1;
+}
+
+function clearSourceSearchResultState() {
+  if (!state.latestSourceSearchResult) {
+    return;
+  }
+
+  state.latestSourceSearchResult = null;
+  renderSourceSearchFromState();
+  renderProvenance();
+}
+
+function syncSourceSearchStatus() {
+  if (state.mode !== "live") {
+    setSourceSearchStatus(copy().messages.sourceSearchUnavailable, "neutral");
+    return;
+  }
+
+  const query = getSourceSearchQuery();
+  const scope = formatMunicipalityScope(state.latestSourceSearchResult?.meta?.municipalityCodes ?? state.selectedMunicipalities);
+
+  if (!query) {
+    setSourceSearchStatus(copy().messages.sourceSearchReady(scope), "neutral");
+    return;
+  }
+
+  if (query.length < AUTO_SOURCE_SEARCH_MIN_CHARS) {
+    setSourceSearchStatus(copy().messages.sourceSearchNeedMoreQuery(scope, AUTO_SOURCE_SEARCH_MIN_CHARS), "neutral");
+    return;
+  }
+
+  if (state.latestSourceSearchResult) {
+    setSourceSearchStatus(
+      copy().messages.sourceSearchLoaded(
+        state.latestSourceSearchResult.results?.length ?? 0,
+        Boolean(state.latestSourceSearchResult.recommendation),
+        scope
+      ),
+      "success"
+    );
+    return;
+  }
+
+  setSourceSearchStatus(copy().messages.sourceSearchAutoQueued(scope), "neutral");
+}
+
+function scheduleAutoSourceSearch({ immediate = false } = {}) {
+  clearScheduledSourceSearch();
+
+  if (state.mode !== "live") {
+    return;
+  }
+
+  const query = getSourceSearchQuery();
+  if (!query) {
+    invalidateSourceSearchRequests();
+    clearSourceSearchResultState();
+    syncSourceSearchStatus();
+    return;
+  }
+
+  if (query.length < AUTO_SOURCE_SEARCH_MIN_CHARS) {
+    invalidateSourceSearchRequests();
+    clearSourceSearchResultState();
+    syncSourceSearchStatus();
+    return;
+  }
+
+  setSourceSearchStatus(copy().messages.sourceSearchAutoQueued(formatMunicipalityScope()), "neutral");
+  if (immediate) {
+    void runSourceSearch({ auto: true });
+    return;
+  }
+
+  sourceSearchDebounceHandle = window.setTimeout(() => {
+    sourceSearchDebounceHandle = null;
+    void runSourceSearch({ auto: true });
+  }, AUTO_SOURCE_SEARCH_DEBOUNCE_MS);
+}
+
 function normalizeAnalyzeResponse(result = {}) {
   const analysis = result.analysis ?? {};
   return {
@@ -542,10 +639,11 @@ function updateModePanels() {
 function updateSourceControls() {
   updateModePanels();
   if (state.mode === "sample") {
+    clearScheduledSourceSearch();
     const selectedCase = getSelectedCase();
     setSourceStatus(copy().messages.sampleReady, "success");
     setSourceHelp(copy().messages.sampleHelp(selectedCase?.officialKoreanTitle || selectedCase?.title, selectedCase?.municipality), "neutral");
-    setSourceSearchStatus(copy().messages.sourceSearchUnavailable, "neutral");
+    syncSourceSearchStatus();
     setLatestStatus(copy().messages.latestSampleMode, "neutral");
     return;
   }
@@ -557,13 +655,14 @@ function updateSourceControls() {
   if (!sourceStatus) {
     setSourceStatus(copy().messages.sourceStatusLoading, "neutral");
     setSourceHelp(copy().source.liveUnavailable, "neutral");
-    setSourceSearchStatus(copy().messages.sourceSearchReady, "neutral");
+    syncSourceSearchStatus();
     setLatestStatus(copy().messages.latestReady(formatMunicipalityScope()), "neutral");
     return;
   }
   if (sourceStatus.enabled) {
     setSourceStatus(copy().messages.sourceConfigured(providerLabel), "success");
     setSourceHelp(currentProvider() === "korea-law-mcp" ? copy().messages.liveMcpHelp : copy().messages.liveLawHelp, "neutral");
+    syncSourceSearchStatus();
     return;
   }
   const missingEnv = Array.isArray(sourceStatus.missingEnv) && sourceStatus.missingEnv.length ? sourceStatus.missingEnv.join(", ") : "";
@@ -661,17 +760,15 @@ async function refreshMunicipalityScopedViews() {
     await loadLatestDiscovery();
   }
 
-  const query = refs.sourceSearchQueryField?.value.trim() ?? "";
-  if (query) {
-    await runSourceSearch();
+  const query = getSourceSearchQuery();
+  if (query.length >= AUTO_SOURCE_SEARCH_MIN_CHARS) {
+    await runSourceSearch({ auto: true });
     return;
   }
 
-  if (state.latestSourceSearchResult) {
-    state.latestSourceSearchResult = null;
-    renderSourceSearchFromState();
-    renderProvenance();
-  }
+  invalidateSourceSearchRequests();
+  clearSourceSearchResultState();
+  syncSourceSearchStatus();
 }
 
 function renderSourceSearchFromState() {
@@ -1053,38 +1150,58 @@ async function loadLatestDiscovery() {
   }
 }
 
-async function runSourceSearch() {
+async function runSourceSearch({ auto = false } = {}) {
   if (state.mode !== "live") {
     setSourceSearchStatus(copy().messages.sourceSearchUnavailable, "neutral");
     return;
   }
-  const query = refs.sourceSearchQueryField?.value.trim() ?? "";
+  clearScheduledSourceSearch();
+  const query = getSourceSearchQuery();
   if (!query) {
     setSourceSearchStatus(copy().messages.sourceSearchNeedQuery, "error");
     return;
   }
-  if (refs.sourceSearchButton) {
+  if (auto && query.length < AUTO_SOURCE_SEARCH_MIN_CHARS) {
+    syncSourceSearchStatus();
+    return;
+  }
+
+  const requestSequence = ++sourceSearchRequestSequence;
+  const scope = formatMunicipalityScope();
+
+  if (refs.sourceSearchButton && !auto) {
     refs.sourceSearchButton.disabled = true;
     refs.sourceSearchButton.textContent = copy().buttons.searching;
   }
-  setSourceSearchStatus(copy().messages.sourceSearchLoading, "neutral");
+  setSourceSearchStatus(copy().messages.sourceSearchLoading(scope), "neutral");
   try {
     const municipalities = encodeURIComponent(state.selectedMunicipalities.join(","));
-    state.latestSourceSearchResult = await fetchJson(
+    const payload = await fetchJson(
       `${ENDPOINTS.sourceSearch}?provider=${encodeURIComponent(currentProvider())}&query=${encodeURIComponent(query)}&limit=6&municipalities=${municipalities}`
     );
+    if (requestSequence !== sourceSearchRequestSequence) {
+      return;
+    }
+    state.latestSourceSearchResult = payload;
     renderSourceSearchFromState();
     renderProvenance();
     setSourceSearchStatus(
-      copy().messages.sourceSearchLoaded(state.latestSourceSearchResult.results?.length ?? 0, Boolean(state.latestSourceSearchResult.recommendation)),
+      copy().messages.sourceSearchLoaded(
+        state.latestSourceSearchResult.results?.length ?? 0,
+        Boolean(state.latestSourceSearchResult.recommendation),
+        formatMunicipalityScope(state.latestSourceSearchResult.meta?.municipalityCodes ?? state.selectedMunicipalities)
+      ),
       "success"
     );
   } catch (error) {
+    if (requestSequence !== sourceSearchRequestSequence) {
+      return;
+    }
     state.latestSourceSearchResult = null;
     renderSourceSearchFromState();
     setSourceSearchStatus(copy().messages.sourceSearchFailure(error.message), "error");
   } finally {
-    if (refs.sourceSearchButton) {
+    if (refs.sourceSearchButton && !auto) {
       refs.sourceSearchButton.disabled = false;
       refs.sourceSearchButton.textContent = copy().buttons.search;
     }
@@ -1251,6 +1368,8 @@ function downloadDocumentDraft() {
 }
 
 function setMode(mode, options = {}) {
+  clearScheduledSourceSearch();
+  invalidateSourceSearchRequests();
   state.mode = mode === "live" ? "live" : "sample";
   if (state.mode === "sample") {
     state.latestSourceSearchResult = null;
@@ -1288,6 +1407,7 @@ function setLanguage(locale) {
   renderDocumentInspectResult();
   renderProvenance();
   updateSourceControls();
+  syncSourceSearchStatus();
   if (state.latestAnalysisResult) {
     const normalized = renderCurrentResult();
     setStatus(copy().messages.analysisSuccess(normalized.changes.length), "success");
@@ -1323,10 +1443,13 @@ function attachEventListeners() {
   refs.modeSampleButton?.addEventListener("click", () => setMode("sample", { focus: true }));
   refs.modeLiveButton?.addEventListener("click", () => setMode("live", { focus: true }));
   refs.sourceProviderField?.addEventListener("change", () => {
+    clearScheduledSourceSearch();
+    invalidateSourceSearchRequests();
     state.latestSourceSearchResult = null;
     state.latestDiscoveryResult = null;
     renderSourceSearchFromState();
     renderLatestDiscoveryFromState();
+    syncSourceSearchStatus();
     void loadSelectedSourceStatus();
     void loadLatestDiscovery();
   });
@@ -1335,6 +1458,12 @@ function attachEventListeners() {
     renderProvenance();
   });
   refs.sourceSearchButton?.addEventListener("click", () => void runSourceSearch());
+  refs.sourceSearchQueryField?.addEventListener("input", () => {
+    if (state.mode !== "live") {
+      return;
+    }
+    scheduleAutoSourceSearch();
+  });
   refs.sourceSearchQueryField?.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -1389,7 +1518,7 @@ async function init() {
   setStatus(copy().messages.ready, "neutral");
   setSourceStatus(copy().messages.sourceStatusLoading, "neutral");
   setSourceHelp(copy().source.localHint, "neutral");
-  setSourceSearchStatus(copy().messages.sourceSearchUnavailable, "neutral");
+  syncSourceSearchStatus();
   setLatestStatus(copy().messages.latestSampleMode, "neutral");
   setHistoryStatus(copy().messages.historyLoading, "neutral");
   setDocumentStatus(copy().messages.ready, "neutral");
