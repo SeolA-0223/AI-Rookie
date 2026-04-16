@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../persistence/analysisStore.js";
 import { generateDraftsWithConfiguredAI, getDraftGenerationStatus } from "../generation/generateDrafts.js";
 import { localizeDocumentInspection, localizeDocumentText } from "../inspection/documentLocalization.js";
+import { SUPPORTED_DOCUMENT_MEDIA_MIME_TYPES } from "../inspection/documentMediaExtraction.js";
 import { inspectDocumentAgainstLatestOrdinance } from "../inspection/inspectDocumentAgainstLatestOrdinance.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
 import {
@@ -30,9 +31,10 @@ try {
   // Allow CI and fresh clones to run without a local .env file.
 }
 
-const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_BODY_BYTES = 8 * 1024 * 1024;
+const MAX_DOCUMENT_MEDIA_BYTES = 5 * 1024 * 1024;
 const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs", "source"]);
-const ALLOWED_DOCUMENT_INSPECT_FIELDS = new Set(["documentText", "fileName", "municipalities", "provider"]);
+const ALLOWED_DOCUMENT_INSPECT_FIELDS = new Set(["documentText", "documentMedia", "fileName", "municipalities", "provider"]);
 const ALLOWED_DOCUMENT_LOCALIZE_FIELDS = new Set(["mode", "documentText", "inspectionResult", "targetLocale"]);
 const analysisStore = createAnalysisStore();
 const defaultLawSource = createLawSource();
@@ -56,6 +58,16 @@ const ROUTES = {
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function estimateBase64Bytes(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return 0;
+  }
+
+  const normalized = value.trim().replace(/\s+/g, "");
+  const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
 }
 
 function readSample(filePath) {
@@ -152,7 +164,7 @@ async function collectJson(req) {
     req.on("data", (chunk) => {
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
-        const error = new Error("Request body must be 1MB or smaller.");
+        const error = new Error(`Request body must be ${Math.round(MAX_BODY_BYTES / (1024 * 1024))}MB or smaller.`);
         error.code = "REQUEST_TOO_LARGE";
         reject(error);
         req.destroy();
@@ -236,8 +248,50 @@ function validateDocumentInspectRequest(payload) {
     }
   }
 
-  if (typeof payload.documentText !== "string" || payload.documentText.trim() === "") {
-    details.push({ path: "body.documentText", message: "must be a non-empty string" });
+  const hasDocumentText = typeof payload.documentText === "string" && payload.documentText.trim() !== "";
+  if ("documentText" in payload && typeof payload.documentText !== "string") {
+    details.push({ path: "body.documentText", message: "must be a string" });
+  }
+
+  let hasDocumentMedia = false;
+  if ("documentMedia" in payload) {
+    if (!isPlainObject(payload.documentMedia)) {
+      details.push({ path: "body.documentMedia", message: "must be an object" });
+    } else {
+      const mimeType = typeof payload.documentMedia.mimeType === "string" ? payload.documentMedia.mimeType.trim().toLowerCase() : "";
+      const data = typeof payload.documentMedia.data === "string" ? payload.documentMedia.data.trim() : "";
+
+      if (!mimeType) {
+        details.push({ path: "body.documentMedia.mimeType", message: "must be a non-empty string" });
+      } else if (!SUPPORTED_DOCUMENT_MEDIA_MIME_TYPES.has(mimeType)) {
+        details.push({
+          path: "body.documentMedia.mimeType",
+          message: `must be one of: ${[...SUPPORTED_DOCUMENT_MEDIA_MIME_TYPES].join(", ")}`
+        });
+      }
+
+      if (!data) {
+        details.push({ path: "body.documentMedia.data", message: "must be a non-empty base64 string" });
+      } else if (estimateBase64Bytes(data) > MAX_DOCUMENT_MEDIA_BYTES) {
+        details.push({
+          path: "body.documentMedia.data",
+          message: `must decode to ${MAX_DOCUMENT_MEDIA_BYTES} bytes or less`
+        });
+      } else {
+        hasDocumentMedia = true;
+      }
+
+      if ("originalFileName" in payload.documentMedia && typeof payload.documentMedia.originalFileName !== "string") {
+        details.push({ path: "body.documentMedia.originalFileName", message: "must be a string" });
+      }
+    }
+  }
+
+  if (!hasDocumentText && !hasDocumentMedia) {
+    details.push({
+      path: "body.documentText",
+      message: "must be a non-empty string when documentMedia is not provided"
+    });
   }
 
   if ("fileName" in payload && typeof payload.fileName !== "string") {
@@ -608,6 +662,7 @@ export async function handleDocumentInspect(req, res) {
 
     const result = await inspectDocumentAgainstLatestOrdinance({
       documentText: payload.documentText,
+      documentMedia: payload.documentMedia,
       fileName: payload.fileName,
       municipalities: payload.municipalities,
       provider: payload.provider

@@ -9,6 +9,7 @@ import {
 } from "../sources/lawSource.js";
 import { LAW_GO_MUNICIPALITIES, getMunicipalityNames, normalizeMunicipalityCodes } from "../sources/providers/lawGoMunicipalities.js";
 import { requestGeminiJson } from "../ai/geminiJson.js";
+import { extractDocumentTextFromMedia } from "./documentMediaExtraction.js";
 
 const DEFAULT_PROVIDER = "law-go-public";
 const MAX_DOCUMENT_CHARS = 20000;
@@ -59,6 +60,41 @@ function buildInspectionResolutionError(message) {
     message,
     statusCode: 502
   });
+}
+
+async function resolveInspectionDocumentInput({
+  documentText,
+  documentMedia,
+  fileName,
+  municipalities,
+  env,
+  fetchImpl
+}) {
+  const normalizedDocumentText = cleanDocumentText(documentText);
+  const mediaExtraction = await extractDocumentTextFromMedia(
+    {
+      documentMedia,
+      fileName,
+      municipalities
+    },
+    {
+      env,
+      fetchImpl
+    }
+  );
+  const mergedDocumentText = cleanDocumentText(
+    [mediaExtraction?.documentText ?? "", normalizedDocumentText].filter(Boolean).join("\n\n")
+  );
+
+  if (!mergedDocumentText) {
+    throw buildInspectionInputError("documentText", "must be a non-empty string when documentMedia is not provided");
+  }
+
+  return {
+    documentText: mergedDocumentText,
+    inputKind: mediaExtraction?.kind ?? "text",
+    mediaExtraction
+  };
 }
 
 function tokenize(value) {
@@ -1066,6 +1102,7 @@ async function compareAgainstLatestOrdinance({
 export async function inspectDocumentAgainstLatestOrdinance(
   {
     documentText,
+    documentMedia = null,
     fileName = "",
     municipalities = [],
     provider = DEFAULT_PROVIDER
@@ -1080,12 +1117,16 @@ export async function inspectDocumentAgainstLatestOrdinance(
     now = () => new Date().toISOString()
   } = {}
 ) {
-  const normalizedDocumentText = cleanDocumentText(documentText);
   const normalizedMunicipalities = normalizeMunicipalityCodes(municipalities);
-
-  if (!normalizedDocumentText) {
-    throw buildInspectionInputError("documentText", "must be a non-empty string");
-  }
+  const resolvedInput = await resolveInspectionDocumentInput({
+    documentText,
+    documentMedia,
+    fileName,
+    municipalities: normalizedMunicipalities,
+    env,
+    fetchImpl
+  });
+  const normalizedDocumentText = resolvedInput.documentText;
 
   const detection = await detectApplicableOrdinance({
     documentText: normalizedDocumentText,
@@ -1130,9 +1171,20 @@ export async function inspectDocumentAgainstLatestOrdinance(
       generatedAt: now(),
       provider,
       fileName: normalizeText(fileName),
+      inputKind: resolvedInput.inputKind,
+      mediaExtractionAi: resolvedInput.mediaExtraction?.ai ?? null,
       detectionAi: detection.ai,
       reviewAi: review.ai,
       search: ordinance.searchMeta
+    },
+    input: {
+      kind: resolvedInput.inputKind,
+      fileName: normalizeText(fileName),
+      mimeType: resolvedInput.mediaExtraction?.mimeType ?? "text/plain",
+      documentText: normalizedDocumentText,
+      extractedSummary: resolvedInput.mediaExtraction?.cleanedSummary ?? "",
+      extractedTitle: resolvedInput.mediaExtraction?.apparentTitle ?? "",
+      extractedReasoning: resolvedInput.mediaExtraction?.reasoning ?? ""
     },
     detection: {
       ordinanceTitleQuery: detection.ordinanceTitleQuery,

@@ -30,6 +30,14 @@ const ENDPOINTS = {
 const LOCALE_STORAGE_KEY = "ai-rookie-locale";
 const AUTO_SOURCE_SEARCH_MIN_CHARS = 2;
 const AUTO_SOURCE_SEARCH_DEBOUNCE_MS = 320;
+const MAX_DOCUMENT_UPLOAD_BYTES = 5 * 1024 * 1024;
+const TEXT_DOCUMENT_EXTENSIONS = new Set([".txt", ".md", ".json", ".html", ".csv"]);
+const MEDIA_DOCUMENT_EXTENSIONS = new Map([
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+  [".png", "image/png"],
+  [".pdf", "application/pdf"]
+]);
 const REMOTE_PROVIDERS = ["law-go-public", "korea-law-mcp"];
 const MUNICIPALITIES = [
   ["6110000", "서울특별시"],
@@ -157,6 +165,7 @@ const state = {
   localizedDocumentInspection: {},
   selectedMunicipalities: [],
   currentDocumentFileName: "",
+  currentDocumentMedia: null,
   documentTextTranslations: {},
   documentTextTranslationPending: false,
   documentTextTranslationError: ""
@@ -359,6 +368,91 @@ function formatMunicipalityScope(codes = state.selectedMunicipalities) {
   return names.length <= 2 ? names.join(", ") : copy().messages.latestMunicipalityCount(names.length);
 }
 
+function getFileExtension(fileName = "") {
+  const match = `${fileName}`.toLowerCase().match(/\.[^.]+$/);
+  return match ? match[0] : "";
+}
+
+function inferDocumentMediaMimeType(file) {
+  const mimeType = typeof file?.type === "string" ? file.type.trim().toLowerCase() : "";
+  if (MEDIA_DOCUMENT_EXTENSIONS.has(getFileExtension(file?.name ?? ""))) {
+    return MEDIA_DOCUMENT_EXTENSIONS.get(getFileExtension(file?.name ?? ""));
+  }
+  return mimeType;
+}
+
+function isTextDocumentFile(file) {
+  const mimeType = typeof file?.type === "string" ? file.type.trim().toLowerCase() : "";
+  const extension = getFileExtension(file?.name ?? "");
+  return (
+    TEXT_DOCUMENT_EXTENSIONS.has(extension) ||
+    mimeType.startsWith("text/") ||
+    mimeType === "application/json"
+  );
+}
+
+function isMediaDocumentFile(file) {
+  return Boolean(inferDocumentMediaMimeType(file)) && MEDIA_DOCUMENT_EXTENSIONS.has(getFileExtension(file?.name ?? ""));
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read the selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getDocumentMediaKindLabel(mimeType) {
+  if (mimeType === "application/pdf") {
+    return state.locale === "en" ? "PDF" : "PDF";
+  }
+  return state.locale === "en" ? "image" : "이미지";
+}
+
+function getDocumentFileHintText() {
+  return state.locale === "en"
+    ? "Text files such as `.txt`, `.md`, `.json`, `.html`, and `.csv` are read directly. `.jpg`, `.png`, and `.pdf` files are read by Gemini during inspection."
+    : "`.txt`, `.md`, `.json`, `.html`, `.csv`는 바로 읽고, `.jpg`, `.png`, `.pdf`는 검사 실행 시 Gemini가 내용을 읽습니다.";
+}
+
+function getDocumentNeedInputMessage() {
+  return state.locale === "en"
+    ? "Enter document text or upload a supported file to review."
+    : "검사할 문서를 입력하거나 지원되는 파일을 업로드하세요.";
+}
+
+function getDocumentFileTooLargeMessage(maxMb) {
+  return state.locale === "en"
+    ? `Only files up to ${maxMb}MB can be uploaded.`
+    : `${maxMb}MB 이하 파일만 업로드할 수 있습니다.`;
+}
+
+function getDocumentFileUnsupportedMessage() {
+  return state.locale === "en"
+    ? "Supported files are `.txt`, `.md`, `.json`, `.html`, `.csv`, `.jpg`, `.jpeg`, `.png`, and `.pdf`."
+    : "지원 파일 형식은 `.txt`, `.md`, `.json`, `.html`, `.csv`, `.jpg`, `.jpeg`, `.png`, `.pdf`입니다.";
+}
+
+function getDocumentMediaLoadedMessage(fileName, kindLabel) {
+  return state.locale === "en"
+    ? `Loaded ${fileName} (${kindLabel}). Gemini will read it during inspection.`
+    : `${fileName} (${kindLabel}) 파일을 불러왔습니다. 검사 실행 시 Gemini가 내용을 읽습니다.`;
+}
+
+function getDocumentInspectSubtitleText() {
+  return state.locale === "en"
+    ? "Paste text or upload an image/PDF and let Gemini infer the governing ordinance, compare it to the latest law, and draft a revision."
+    : "문서를 붙여넣거나 이미지/PDF를 업로드하면 Gemini가 적용 조례를 추정하고 최신 조례와 비교해 수정 초안을 제안합니다.";
+}
+
+function getDocumentInspectInputBodyText() {
+  return state.locale === "en"
+    ? "Paste text directly, load `.txt/.md/.json/.html/.csv` files, or upload `.jpg/.png/.pdf` files for Gemini-based reading."
+    : "텍스트를 붙여넣거나 `.txt/.md/.json/.html/.csv` 파일을 바로 읽고, `.jpg/.png/.pdf` 파일은 Gemini가 검사 시 해석합니다.";
+}
+
 function getSourceSearchQuery() {
   return refs.sourceSearchQueryField?.value.trim() ?? "";
 }
@@ -495,7 +589,7 @@ function renderDocumentTranslationPreview() {
 
 function renderDocumentFileName() {
   if (refs.documentFileNameView) {
-    refs.documentFileNameView.textContent = state.currentDocumentFileName || copy().documentInspect.fileHint;
+    refs.documentFileNameView.textContent = state.currentDocumentFileName || getDocumentFileHintText();
   }
 }
 
@@ -566,6 +660,14 @@ function applyStaticCopy() {
   renderQuickStart(refs.quickStartView, copy().guide.steps);
   if (refs.documentFileTriggerButton) {
     refs.documentFileTriggerButton.textContent = documentTranslationCopy().triggerLabel;
+  }
+  const documentSubtitle = document.querySelector('[data-i18n="documentInspect.subtitle"]');
+  if (documentSubtitle) {
+    documentSubtitle.textContent = getDocumentInspectSubtitleText();
+  }
+  const documentInputBody = document.querySelector('[data-i18n="documentInspect.inputBody"]');
+  if (documentInputBody) {
+    documentInputBody.textContent = getDocumentInspectInputBodyText();
   }
   if (refs.documentTranslationTitleView) {
     refs.documentTranslationTitleView.textContent = documentTranslationCopy().title;
@@ -1254,15 +1356,37 @@ async function runAnalyze() {
 
 function buildDocumentInspectPayload() {
   const documentText = refs.documentTextField?.value.trim() ?? "";
-  if (!documentText) {
-    throw new Error(copy().messages.documentNeedText);
+  const documentMedia = state.currentDocumentMedia;
+  if (!documentText && !documentMedia) {
+    throw new Error(getDocumentNeedInputMessage());
   }
-  return {
+  const payload = {
     documentText,
     fileName: state.currentDocumentFileName,
     municipalities: state.selectedMunicipalities,
     provider: "law-go-public"
   };
+  if (documentMedia?.mimeType && documentMedia?.data) {
+    payload.documentMedia = {
+      mimeType: documentMedia.mimeType,
+      data: documentMedia.data,
+      originalFileName: documentMedia.originalFileName || state.currentDocumentFileName
+    };
+  }
+  return payload;
+}
+
+function syncDocumentTextFromInspectionResult(result, usedMediaInput) {
+  const extractedDocumentText = result?.input?.documentText?.trim() ?? "";
+  if (!usedMediaInput || !extractedDocumentText || !refs.documentTextField) {
+    return false;
+  }
+
+  refs.documentTextField.value = extractedDocumentText;
+  state.currentDocumentMedia = null;
+  resetDocumentTextTranslations();
+  renderDocumentFileName();
+  return true;
 }
 
 async function runDocumentInspect() {
@@ -1276,13 +1400,19 @@ async function runDocumentInspect() {
   setDocumentStatus(copy().messages.documentInspecting, "loading");
   try {
     resetDocumentLocalizations();
+    const payload = buildDocumentInspectPayload();
+    const usedMediaInput = Boolean(payload.documentMedia);
     state.latestDocumentInspection = await fetchJson(ENDPOINTS.documentInspect, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildDocumentInspectPayload())
+      body: JSON.stringify(payload)
     });
+    syncDocumentTextFromInspectionResult(state.latestDocumentInspection, usedMediaInput);
     renderDocumentInspectResult();
     if (state.locale === "en") {
+      if (usedMediaInput) {
+        await localizeDocumentTextIfNeeded({ force: true });
+      }
       await localizeDocumentInspectionIfNeeded({ force: true });
     }
     const viewModel = getDocumentInspectionViewModel();
@@ -1310,32 +1440,66 @@ async function handleDocumentFileChange(event) {
   }
   setDocumentStatus(copy().messages.documentLoadingFile, "loading");
   try {
-    const text = await file.text();
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      throw new Error(getDocumentFileTooLargeMessage(Math.round(MAX_DOCUMENT_UPLOAD_BYTES / (1024 * 1024))));
+    }
+
     state.currentDocumentFileName = file.name;
     state.latestDocumentInspection = null;
     resetDocumentLocalizations();
     resetDocumentTextTranslations();
-    if (refs.documentTextField) {
-      refs.documentTextField.value = text;
+
+    if (isTextDocumentFile(file)) {
+      const text = await file.text();
+      state.currentDocumentMedia = null;
+      if (refs.documentTextField) {
+        refs.documentTextField.value = text;
+      }
+      renderDocumentFileName();
+      renderDocumentInspectResult();
+      setDocumentStatus(copy().messages.documentFileLoaded(file.name), "success");
+      if (state.locale === "en") {
+        await localizeDocumentTextIfNeeded({ force: true });
+      }
+      return;
     }
-    renderDocumentFileName();
-    renderDocumentInspectResult();
-    setDocumentStatus(copy().messages.documentFileLoaded(file.name), "success");
-    if (state.locale === "en") {
-      await localizeDocumentTextIfNeeded({ force: true });
+
+    if (isMediaDocumentFile(file)) {
+      const mimeType = inferDocumentMediaMimeType(file);
+      const dataUrl = await readFileAsDataUrl(file);
+      const delimiterIndex = dataUrl.indexOf(",");
+      const base64Data = delimiterIndex >= 0 ? dataUrl.slice(delimiterIndex + 1).trim() : "";
+
+      if (!mimeType || !base64Data) {
+        throw new Error(getDocumentFileUnsupportedMessage());
+      }
+
+      state.currentDocumentMedia = {
+        mimeType,
+        data: base64Data,
+        originalFileName: file.name
+      };
+      if (refs.documentTextField) {
+        refs.documentTextField.value = "";
+      }
+      renderDocumentFileName();
+      renderDocumentInspectResult();
+      setDocumentStatus(getDocumentMediaLoadedMessage(file.name, getDocumentMediaKindLabel(mimeType)), "success");
+      return;
     }
+
+    throw new Error(getDocumentFileUnsupportedMessage());
   } catch (error) {
-    state.currentDocumentFileName = "";
-    resetDocumentLocalizations();
-    resetDocumentTextTranslations();
-    renderDocumentFileName();
-    renderDocumentInspectResult();
+    if (refs.documentFileInput) {
+      refs.documentFileInput.value = "";
+    }
     setDocumentStatus(copy().messages.documentInspectFailure(error.message), "error");
   }
 }
 
 function clearDocumentInput() {
   state.currentDocumentFileName = "";
+  state.currentDocumentMedia = null;
   state.latestDocumentInspection = null;
   resetDocumentLocalizations();
   resetDocumentTextTranslations();

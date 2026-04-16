@@ -51,10 +51,30 @@ export async function requestGeminiJson(prompt, {
   fetchImpl = globalThis.fetch,
   temperature = 0.2
 } = {}) {
+  return requestGeminiJsonWithParts(
+    [
+      {
+        text: prompt
+      }
+    ],
+    {
+      env,
+      fetchImpl,
+      temperature
+    }
+  );
+}
+
+export async function requestGeminiJsonWithParts(parts, {
+  env = process.env,
+  fetchImpl = globalThis.fetch,
+  temperature = 0.2
+} = {}) {
   const status = getDraftGenerationStatus({ env });
   const { apiKey, apiKeyEnvName } = resolveGeminiApiKey(env);
+  const normalizedParts = Array.isArray(parts) ? parts.filter((part) => part && typeof part === "object") : [];
 
-  if (!status.enabled || typeof fetchImpl !== "function") {
+  if (!status.enabled || typeof fetchImpl !== "function" || normalizedParts.length === 0) {
     return {
       ok: false,
       value: null,
@@ -64,7 +84,7 @@ export async function requestGeminiJson(prompt, {
         usedAI: false,
         model: status.model,
         apiKeyEnvName,
-        reason: status.enabled ? "fetch_unavailable" : "missing_api_key"
+        reason: !status.enabled ? "missing_api_key" : typeof fetchImpl !== "function" ? "fetch_unavailable" : "missing_parts"
       }
     };
   }
@@ -82,11 +102,7 @@ export async function requestGeminiJson(prompt, {
         contents: [
           {
             role: "user",
-            parts: [
-              {
-                text: prompt
-              }
-            ]
+            parts: normalizedParts
           }
         ],
         generationConfig: {
