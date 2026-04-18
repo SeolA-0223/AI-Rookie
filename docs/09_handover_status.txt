@@ -1,47 +1,31 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-16 22:13:08 KST
+Auto-updated: 2026-04-18 15:56:28 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 34cd2de (HEAD -> main, origin/main, origin/HEAD) feat: add auto ordinance search with municipality scope
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24493139419)
+- Latest commit at update time: 4b3a8cb (HEAD -> main, origin/main, origin/HEAD) feat: inspect image and pdf documents with gemini
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24512236551)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  backend/src/ai/geminiJson.js
-- M  backend/src/http/app.js
-- A  backend/src/inspection/documentMediaExtraction.js
-- M  backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
-- M  data/eval/metrics.json
-- M  frontend/index.html
-- M  frontend/src/app.js
-- M  index.html
-- A  tests/document-media-inspection.test.js
+- M  frontend/src/styles.css
 
 3) Recent Commits (max 8)
-- 34cd2de (HEAD -> main, origin/main, origin/HEAD) feat: add auto ordinance search with municipality scope
+- 4b3a8cb (HEAD -> main, origin/main, origin/HEAD) feat: inspect image and pdf documents with gemini
+- 34cd2de feat: add auto ordinance search with municipality scope
 - 0a56b19 fix: broaden curated fallback query variants
 - be53522 fix: strip guidance suffixes from ordinance queries
 - 6a726a4 fix: improve ordinance matching for document inspection
 - 6dffd89 fix: extend gemini request timeout on vercel
 - d1a0eb3 fix: prefer explicit ordinance titles in document review
 - 24c1a80 fix: guard ordinance title detection against drift
-- 334372d fix: tighten municipality filters and document review reasoning
 
 4) Staged Files
-- backend/src/ai/geminiJson.js
-- backend/src/http/app.js
-- backend/src/inspection/documentMediaExtraction.js
-- backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
-- data/eval/metrics.json
-- frontend/index.html
-- frontend/src/app.js
-- index.html
-- tests/document-media-inspection.test.js
+- frontend/src/styles.css
 
 5) Unstaged Files
 - (none)
