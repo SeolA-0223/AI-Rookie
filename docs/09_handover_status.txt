@@ -1,31 +1,37 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-18 15:56:28 KST
+Auto-updated: 2026-04-25 14:59:00 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 4b3a8cb (HEAD -> main, origin/main, origin/HEAD) feat: inspect image and pdf documents with gemini
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24512236551)
+- Latest commit at update time: 70e47e5 (HEAD -> main, origin/main, origin/HEAD) refactor: polish dashboard typography and spacing
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24599309516)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
+- M  frontend/index.html
+- M  frontend/src/i18n.js
 - M  frontend/src/styles.css
+- M  index.html
 
 3) Recent Commits (max 8)
-- 4b3a8cb (HEAD -> main, origin/main, origin/HEAD) feat: inspect image and pdf documents with gemini
+- 70e47e5 (HEAD -> main, origin/main, origin/HEAD) refactor: polish dashboard typography and spacing
+- 4b3a8cb feat: inspect image and pdf documents with gemini
 - 34cd2de feat: add auto ordinance search with municipality scope
 - 0a56b19 fix: broaden curated fallback query variants
 - be53522 fix: strip guidance suffixes from ordinance queries
 - 6a726a4 fix: improve ordinance matching for document inspection
 - 6dffd89 fix: extend gemini request timeout on vercel
 - d1a0eb3 fix: prefer explicit ordinance titles in document review
-- 24c1a80 fix: guard ordinance title detection against drift
 
 4) Staged Files
+- frontend/index.html
+- frontend/src/i18n.js
 - frontend/src/styles.css
+- index.html
 
 5) Unstaged Files
 - (none)

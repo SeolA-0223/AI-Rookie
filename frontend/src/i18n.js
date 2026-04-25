@@ -13,7 +13,7 @@ const KO_COPY = {
   },
   hero: {
     eyebrow: "Municipal Ordinance Copilot",
-    title: "지자체 조례 변경 대응 대시보드",
+    title: "AI를 활용한\n지자체 조례 변경 대응 도우미",
     copy: "조례 검색, 최신 조례 열람, 내부 문서 검사와 수정 초안 생성을 한 화면에서 연결합니다."
   },
   pages: {
@@ -338,7 +338,7 @@ const EN_COPY = {
   },
   hero: {
     eyebrow: "Municipal Ordinance Copilot",
-    title: "Municipal Ordinance Response Dashboard",
+    title: "AI-Assisted\nMunicipal Ordinance Change Helper",
     copy: "Search ordinances, browse the latest local laws, and inspect working documents against the latest ordinance."
   },
   pages: {
