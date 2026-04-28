@@ -1,37 +1,47 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-28 13:11:20 KST
+Auto-updated: 2026-04-28 15:51:21 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: b1f8c29 (HEAD -> main, origin/main, origin/HEAD) feat: add sticky sidebar navigation
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25033335068)
+- Latest commit at update time: e596efb (HEAD -> main, origin/main, origin/HEAD) refactor: scope sidebar to active page
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25033453523)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
+- M  backend/src/http/app.js
+- A  backend/src/localization/sourceLocalization.js
+- M  data/eval/metrics.json
 - M  frontend/index.html
 - M  frontend/src/app.js
-- M  frontend/src/styles.css
+- M  frontend/src/i18n.js
 - M  index.html
+- A  tests/source-localization.test.js
+- M  vercel.json
 
 3) Recent Commits (max 8)
-- b1f8c29 (HEAD -> main, origin/main, origin/HEAD) feat: add sticky sidebar navigation
+- e596efb (HEAD -> main, origin/main, origin/HEAD) refactor: scope sidebar to active page
+- b1f8c29 feat: add sticky sidebar navigation
 - e340ab9 refactor: remove hero intro block
 - a0d9a50 refactor: simplify hero title and typography
 - 122654e feat: add gemini-guided law search and version selection
 - e339a66 feat: refine hero header copy and layout
 - 70e47e5 refactor: polish dashboard typography and spacing
 - 4b3a8cb feat: inspect image and pdf documents with gemini
-- 34cd2de feat: add auto ordinance search with municipality scope
 
 4) Staged Files
+- backend/src/http/app.js
+- backend/src/localization/sourceLocalization.js
+- data/eval/metrics.json
 - frontend/index.html
 - frontend/src/app.js
-- frontend/src/styles.css
+- frontend/src/i18n.js
 - index.html
+- tests/source-localization.test.js
+- vercel.json
 
 5) Unstaged Files
 - (none)

@@ -26,7 +26,7 @@ const KO_COPY = {
     footerInspect: "문서를 넣고 Gemini 검사 결과와 최신 조례 반영 수정본을 검토하세요."
   },
   guide: {
-    eyebrow: "빠른 시작",
+    eyebrow: "가이드",
     title: "처음 쓰는 사용자를 위한 3단계",
     subtitle: "조례 검색 페이지에서 조례를 찾고, 문서 검사 페이지에서 최신 조례 기준으로 문서를 점검할 수 있습니다.",
     sampleShortcut: "샘플 케이스로 시작",
@@ -50,7 +50,7 @@ const KO_COPY = {
     title: "빠른 이동",
     search: {
       title: "조례검색",
-      guide: "빠른 시작",
+      guide: "가이드",
       source: "조례 검색",
       summary: "변경 요약",
       impact: "영향 문서",
@@ -60,7 +60,7 @@ const KO_COPY = {
     },
     inspect: {
       title: "문서 작성",
-      guide: "빠른 시작",
+      guide: "가이드",
       input: "문서 검사",
       match: "판정된 최신 조례",
       summary: "검사 요약",
@@ -375,7 +375,7 @@ const EN_COPY = {
     footerInspect: "Review Gemini findings and the latest-law revision draft for the uploaded document."
   },
   guide: {
-    eyebrow: "Quick Start",
+    eyebrow: "Guide",
     title: "Three steps for new users",
     subtitle: "Use Ordinance Search to find the current law, then use Document Review to check a real document against the latest ordinance.",
     sampleShortcut: "Start with sample cases",
@@ -399,7 +399,7 @@ const EN_COPY = {
     title: "Quick Links",
     search: {
       title: "Ordinance Search",
-      guide: "Quick Start",
+      guide: "Guide",
       source: "Ordinance Search",
       summary: "Change Summary",
       impact: "Impacted Docs",
@@ -409,7 +409,7 @@ const EN_COPY = {
     },
     inspect: {
       title: "Document Writing",
-      guide: "Quick Start",
+      guide: "Guide",
       input: "Document Review",
       match: "Matched Latest Ordinance",
       summary: "Review Summary",

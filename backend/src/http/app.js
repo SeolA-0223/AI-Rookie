@@ -6,6 +6,7 @@ import { createAnalysisStore, detectRunSource, parseHistoryLimit } from "../pers
 import { generateDraftsWithConfiguredAI, getDraftGenerationStatus } from "../generation/generateDrafts.js";
 import { localizeDocumentInspection, localizeDocumentText } from "../inspection/documentLocalization.js";
 import { SUPPORTED_DOCUMENT_MEDIA_MIME_TYPES } from "../inspection/documentMediaExtraction.js";
+import { localizeSourcePayload } from "../localization/sourceLocalization.js";
 import { inspectDocumentAgainstLatestOrdinance } from "../inspection/inspectDocumentAgainstLatestOrdinance.js";
 import { enhancePipelineResultWithConfiguredAI } from "../pipeline/enhancePipelineWithGemini.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
@@ -38,6 +39,7 @@ const MAX_DOCUMENT_MEDIA_BYTES = 5 * 1024 * 1024;
 const ALLOWED_ANALYZE_FIELDS = new Set(["before", "after", "internalDocs", "source"]);
 const ALLOWED_DOCUMENT_INSPECT_FIELDS = new Set(["documentText", "documentMedia", "fileName", "municipalities", "provider"]);
 const ALLOWED_DOCUMENT_LOCALIZE_FIELDS = new Set(["mode", "documentText", "inspectionResult", "targetLocale"]);
+const ALLOWED_SOURCE_LOCALIZE_FIELDS = new Set(["mode", "results", "recommendation", "targetLocale"]);
 const analysisStore = createAnalysisStore();
 const defaultLawSource = createLawSource();
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
@@ -55,7 +57,8 @@ const ROUTES = {
   sourceStatus: new Set(["/source-status", "/api/source-status"]),
   analyze: new Set(["/analyze", "/api/analyze"]),
   documentInspect: new Set(["/document-inspect", "/api/document-inspect"]),
-  documentLocalize: new Set(["/document-localize", "/api/document-localize"])
+  documentLocalize: new Set(["/document-localize", "/api/document-localize"]),
+  sourceLocalize: new Set(["/source-localize", "/api/source-localize"])
 };
 
 function isPlainObject(value) {
@@ -352,6 +355,38 @@ function validateDocumentLocalizeRequest(payload) {
 
   if (payload.mode === "document-review" && !isPlainObject(payload.inspectionResult)) {
     details.push({ path: "body.inspectionResult", message: "must be an object when mode is document-review" });
+  }
+
+  return details;
+}
+
+function validateSourceLocalizeRequest(payload) {
+  const details = [];
+
+  if (!isPlainObject(payload)) {
+    return [{ path: "body", message: "must be a JSON object" }];
+  }
+
+  for (const key of Object.keys(payload)) {
+    if (!ALLOWED_SOURCE_LOCALIZE_FIELDS.has(key)) {
+      details.push({ path: `body.${key}`, message: "is not allowed" });
+    }
+  }
+
+  if (payload.mode !== "search-results" && payload.mode !== "discover-results") {
+    details.push({ path: "body.mode", message: "must be one of: search-results, discover-results" });
+  }
+
+  if (!Array.isArray(payload.results)) {
+    details.push({ path: "body.results", message: "must be an array" });
+  }
+
+  if ("recommendation" in payload && payload.recommendation !== null && !isPlainObject(payload.recommendation)) {
+    details.push({ path: "body.recommendation", message: "must be an object or null" });
+  }
+
+  if ("targetLocale" in payload && typeof payload.targetLocale !== "string") {
+    details.push({ path: "body.targetLocale", message: "must be a string" });
   }
 
   return details;
@@ -855,6 +890,37 @@ export async function handleDocumentLocalize(req, res) {
     sendError(res, 500, "INTERNAL_ERROR", error instanceof Error ? error.message : "Unexpected server error.");
   }
 }
+
+export async function handleSourceLocalize(req, res) {
+  try {
+    const payload = await collectJson(req);
+    const requestErrors = validateSourceLocalizeRequest(payload);
+    if (requestErrors.length > 0) {
+      sendError(res, 400, "INVALID_REQUEST", "Source localization request is invalid.", requestErrors);
+      return;
+    }
+
+    const result = await localizeSourcePayload({
+      mode: payload.mode,
+      results: payload.results,
+      recommendation: payload.recommendation,
+      targetLocale: payload.targetLocale
+    });
+
+    sendJson(res, 200, result);
+  } catch (error) {
+    if (error?.code === "INVALID_JSON") {
+      sendError(res, 400, "INVALID_JSON", error.message);
+      return;
+    }
+    if (error?.code === "REQUEST_TOO_LARGE") {
+      sendError(res, 413, "REQUEST_TOO_LARGE", error.message);
+      return;
+    }
+
+    sendError(res, 500, "INTERNAL_ERROR", error instanceof Error ? error.message : "Unexpected server error.");
+  }
+}
  
 export async function routeRequest(req, res) {
   if (await serveStaticIfMatched(req, res)) {
@@ -905,6 +971,11 @@ export async function routeRequest(req, res) {
 
   if (req.method === "POST" && ROUTES.documentLocalize.has(pathname)) {
     await handleDocumentLocalize(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && ROUTES.sourceLocalize.has(pathname)) {
+    await handleSourceLocalize(req, res);
     return;
   }
  

@@ -25,6 +25,10 @@
       "destination": "/api/source-discover"
     },
     {
+      "source": "/source-localize",
+      "destination": "/api/source-localize"
+    },
+    {
       "source": "/document-inspect",
       "destination": "/api/document-inspect"
     },

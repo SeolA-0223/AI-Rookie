@@ -25,6 +25,7 @@ const ENDPOINTS = {
   analyze: "/api/analyze",
   documentInspect: "/api/document-inspect",
   documentLocalize: "/api/document-localize",
+  sourceLocalize: "/api/source-localize",
   history: "/api/history?limit=6"
 };
 const LOCALE_STORAGE_KEY = "ai-rookie-locale";
@@ -158,10 +159,15 @@ const state = {
   mode: "sample",
   latestRequestedSourceStatus: null,
   latestSourceSearchResult: null,
+  localizedSourceSearchResult: {},
+  localizedSourceSearchPending: false,
   latestDiscoveryResult: null,
+  localizedDiscoveryResult: {},
+  localizedDiscoveryPending: false,
   latestCaseCatalog: null,
   latestAnalysisMeta: null,
   latestAnalysisResult: null,
+  localizedAnalysisResult: {},
   latestHistoryPayload: null,
   latestDocumentInspection: null,
   localizedDocumentInspection: {},
@@ -179,6 +185,18 @@ const state = {
 };
 let sourceSearchDebounceHandle = null;
 let sourceSearchRequestSequence = 0;
+
+function cloneJsonValue(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof globalThis.structuredClone === "function") {
+    return globalThis.structuredClone(value);
+  }
+
+  return JSON.parse(JSON.stringify(value));
+}
 
 function loadStoredLocale() {
   try {
@@ -240,12 +258,24 @@ function getDocumentInspectionViewModel() {
   const result = state.latestDocumentInspection;
   const localized = getLocalizedDocumentInspection();
 
-  if (!result || !localized) {
+  if (!result) {
     return result;
   }
 
-  return {
+  const baseResult = {
     ...result,
+    ordinance: {
+      ...(result.ordinance ?? {}),
+      matched: getDisplaySourceResult(result.ordinance?.matched ?? {}) ?? result.ordinance?.matched
+    }
+  };
+
+  if (!localized) {
+    return baseResult;
+  }
+
+  return {
+    ...baseResult,
     detection: {
       ...(result.detection ?? {}),
       ...(localized.detection ?? {})
@@ -295,15 +325,64 @@ function formatTimelineLabel(result = {}) {
   return parts.join(" / ") || copy().labels.noTimeline;
 }
 
+function normalizeSourceResultText(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildSourceResultIdentity(result = {}) {
+  return [
+    normalizeSourceResultText(result.id),
+    normalizeSourceResultText(result.effectiveDate),
+    normalizeSourceResultText(result.promulgationDate),
+    normalizeSourceResultText(result.referenceUrl),
+    result.current === true ? "Y" : result.current === false ? "N" : ""
+  ].join("|");
+}
+
+function findMatchingSourceResult(results = [], candidate = {}) {
+  if (!candidate || typeof candidate !== "object") {
+    return null;
+  }
+
+  const targetIdentity = buildSourceResultIdentity(candidate);
+  const matchedByIdentity = results.find((result) => buildSourceResultIdentity(result) === targetIdentity);
+  if (matchedByIdentity) {
+    return matchedByIdentity;
+  }
+
+  const targetId = normalizeSourceResultText(candidate.id);
+  if (!targetId) {
+    return null;
+  }
+
+  return results.find((result) => normalizeSourceResultText(result.id) === targetId) ?? null;
+}
+
+function getLocalizedSearchResultsPool() {
+  return [
+    ...(Array.isArray(state.localizedSourceSearchResult.en?.results) ? state.localizedSourceSearchResult.en.results : []),
+    ...(Array.isArray(state.localizedDiscoveryResult.en?.results) ? state.localizedDiscoveryResult.en.results : [])
+  ];
+}
+
+function getDisplaySourceResult(result = {}) {
+  if (state.locale !== "en" || !result || typeof result !== "object") {
+    return result;
+  }
+
+  return findMatchingSourceResult(getLocalizedSearchResultsPool(), result) ?? result;
+}
+
 function formatSourceVersionInputValue(result = {}) {
   if (!result || typeof result !== "object") {
     return "";
   }
 
+  const displayResult = getDisplaySourceResult(result);
   const timeline = formatTimelineLabel(result);
   const versionId = result.id ?? copy().labels.unknown;
-  const title = result.title ?? "";
-  const jurisdiction = result.jurisdiction ?? "";
+  const title = displayResult.title ?? result.title ?? "";
+  const jurisdiction = displayResult.jurisdiction ?? result.jurisdiction ?? "";
   return [title, jurisdiction, timeline, `ID ${versionId}`].filter(Boolean).join(" / ");
 }
 
@@ -312,7 +391,8 @@ function formatSourceVersionStatusLabel(result = {}) {
     return copy().labels.unknown;
   }
 
-  const title = result.title ?? result.id ?? copy().labels.unknown;
+  const displayResult = getDisplaySourceResult(result);
+  const title = displayResult.title ?? result.title ?? result.id ?? copy().labels.unknown;
   const timeline = formatTimelineLabel(result);
   return timeline && timeline !== copy().labels.noTimeline ? `${title} (${timeline})` : title;
 }
@@ -581,6 +661,7 @@ function clearSourceSearchResultState() {
   }
 
   state.latestSourceSearchResult = null;
+  resetSourceSearchLocalization();
   clearSelectedSourcePair();
   renderSourceSearchFromState();
   renderProvenance();
@@ -662,6 +743,158 @@ function normalizeAnalyzeResponse(result = {}) {
     risks: analysis.risks ?? result.risks ?? [],
     drafts: result.drafts ?? {}
   };
+}
+
+function resetAnalysisLocalization() {
+  state.localizedAnalysisResult = {};
+}
+
+function resetSourceSearchLocalization() {
+  state.localizedSourceSearchResult = {};
+  state.localizedSourceSearchPending = false;
+}
+
+function resetDiscoveryLocalization() {
+  state.localizedDiscoveryResult = {};
+  state.localizedDiscoveryPending = false;
+}
+
+function getAnalysisViewModel() {
+  if (state.locale !== "en" || !state.latestAnalysisResult) {
+    return state.latestAnalysisResult ?? {};
+  }
+
+  if (!state.localizedAnalysisResult.en) {
+    state.localizedAnalysisResult.en = localizeAnalysisForUi(cloneJsonValue(state.latestAnalysisResult), "en");
+  }
+
+  return state.localizedAnalysisResult.en;
+}
+
+function getSourceSearchViewModel() {
+  if (state.locale !== "en") {
+    return state.latestSourceSearchResult;
+  }
+
+  return state.localizedSourceSearchResult.en ?? state.latestSourceSearchResult;
+}
+
+function getLatestDiscoveryViewModel() {
+  if (state.locale !== "en") {
+    return state.latestDiscoveryResult;
+  }
+
+  return state.localizedDiscoveryResult.en ?? state.latestDiscoveryResult;
+}
+
+function resolveSourceRecommendationToRaw(recommendation) {
+  if (!recommendation || typeof recommendation !== "object") {
+    return recommendation;
+  }
+
+  const rawRecommendation = state.latestSourceSearchResult?.recommendation;
+  const rawResults = Array.isArray(state.latestSourceSearchResult?.results) ? state.latestSourceSearchResult.results : [];
+  const before = findMatchingSourceResult(rawResults, recommendation.before) ?? rawRecommendation?.before ?? recommendation.before;
+  const after = findMatchingSourceResult(rawResults, recommendation.after) ?? rawRecommendation?.after ?? recommendation.after;
+
+  return {
+    ...recommendation,
+    before,
+    after
+  };
+}
+
+async function localizeSourceSearchIfNeeded({ force = false } = {}) {
+  const sourcePayload = state.latestSourceSearchResult;
+  const results = Array.isArray(sourcePayload?.results) ? sourcePayload.results : [];
+
+  if (state.locale !== "en" || !results.length) {
+    return null;
+  }
+
+  if (!force && state.localizedSourceSearchResult.en) {
+    return state.localizedSourceSearchResult.en;
+  }
+
+  if (state.localizedSourceSearchPending) {
+    return null;
+  }
+
+  state.localizedSourceSearchPending = true;
+
+  try {
+    const payload = await fetchJson(ENDPOINTS.sourceLocalize, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "search-results",
+        targetLocale: "en",
+        results,
+        recommendation: sourcePayload.recommendation ?? null
+      })
+    });
+
+    if (state.latestSourceSearchResult !== sourcePayload) {
+      return null;
+    }
+
+    state.localizedSourceSearchResult.en = payload;
+    renderSourceSearchFromState();
+    syncSelectedSourcePairInputs();
+    return payload;
+  } catch {
+    return null;
+  } finally {
+    if (state.latestSourceSearchResult === sourcePayload) {
+      state.localizedSourceSearchPending = false;
+    }
+  }
+}
+
+async function localizeLatestDiscoveryIfNeeded({ force = false } = {}) {
+  const discoveryPayload = state.latestDiscoveryResult;
+  const results = Array.isArray(discoveryPayload?.results) ? discoveryPayload.results : [];
+
+  if (state.locale !== "en" || !results.length) {
+    return null;
+  }
+
+  if (!force && state.localizedDiscoveryResult.en) {
+    return state.localizedDiscoveryResult.en;
+  }
+
+  if (state.localizedDiscoveryPending) {
+    return null;
+  }
+
+  state.localizedDiscoveryPending = true;
+
+  try {
+    const payload = await fetchJson(ENDPOINTS.sourceLocalize, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "discover-results",
+        targetLocale: "en",
+        results
+      })
+    });
+
+    if (state.latestDiscoveryResult !== discoveryPayload) {
+      return null;
+    }
+
+    state.localizedDiscoveryResult.en = payload;
+    renderLatestDiscoveryFromState();
+    syncSelectedSourcePairInputs();
+    return payload;
+  } catch {
+    return null;
+  } finally {
+    if (state.latestDiscoveryResult === discoveryPayload) {
+      state.localizedDiscoveryPending = false;
+    }
+  }
 }
 
 function renderDocumentTranslationPreview() {
@@ -1046,12 +1279,13 @@ async function refreshMunicipalityScopedViews() {
 }
 
 function renderSourceSearchFromState() {
-  const recommendation = state.mode === "live" ? state.latestSourceSearchResult?.recommendation : null;
-  const results = state.mode === "live" ? state.latestSourceSearchResult?.results ?? [] : [];
+  const viewModel = state.mode === "live" ? getSourceSearchViewModel() : null;
+  const recommendation = viewModel?.recommendation ?? null;
+  const results = viewModel?.results ?? [];
   renderSourceSearchRecommendation(refs.sourceSearchRecommendationView, recommendation, {
     copy: copy(),
     formatTimelineLabel,
-    onApplyRecommendation: applyRecommendedPair
+    onApplyRecommendation: (value) => applyRecommendedPair(resolveSourceRecommendationToRaw(value))
   });
   if (state.mode !== "live") {
     if (refs.sourceSearchResultsView) {
@@ -1062,8 +1296,8 @@ function renderSourceSearchFromState() {
   renderSourceSearchResults(refs.sourceSearchResultsView, results, {
     copy: copy(),
     formatTimelineLabel,
-    onUseBefore: useResultAsBefore,
-    onUseAfter: useResultAsAfter
+    onUseBefore: (result) => useResultAsBefore(findMatchingSourceResult(state.latestSourceSearchResult?.results ?? [], result) ?? result),
+    onUseAfter: (result) => useResultAsAfter(findMatchingSourceResult(state.latestSourceSearchResult?.results ?? [], result) ?? result)
   });
 }
 
@@ -1074,17 +1308,17 @@ function renderLatestDiscoveryFromState() {
     }
     return;
   }
-  renderLatestOrdinanceList(refs.latestOrdinanceListView, state.latestDiscoveryResult?.results ?? [], {
+  const viewModel = getLatestDiscoveryViewModel();
+  renderLatestOrdinanceList(refs.latestOrdinanceListView, viewModel?.results ?? [], {
     copy: copy(),
     formatTimelineLabel,
-    onSearchPair: searchLatestPair,
-    onUseAsAfter: useLatestAsAfter
+    onSearchPair: (result) => searchLatestPair(findMatchingSourceResult(state.latestDiscoveryResult?.results ?? [], result) ?? result),
+    onUseAsAfter: (result) => useLatestAsAfter(findMatchingSourceResult(state.latestDiscoveryResult?.results ?? [], result) ?? result)
   });
 }
 
 function renderCurrentResult() {
-  const localizedResult = localizeAnalysisForUi(state.latestAnalysisResult ?? {}, state.locale);
-  const normalized = normalizeAnalyzeResponse(localizedResult);
+  const normalized = normalizeAnalyzeResponse(getAnalysisViewModel());
   const changesById = new Map(normalized.changes.map((change) => [change.id, change]));
   renderSummaryCards(refs.summaryContainer, normalized.changes, { copy: copy(), translateChangeType });
   renderImpactList(refs.impactListView, normalized.mapped, { copy: copy(), changesById });
@@ -1204,6 +1438,7 @@ function renderHistoryFromState() {
     onSelectRun: (run) => {
       state.latestAnalysisResult = run.result ?? null;
       state.latestAnalysisMeta = run.result?.meta ?? null;
+      resetAnalysisLocalization();
       const normalized = renderCurrentResult();
       renderProvenance();
       setStatus(copy().messages.analysisSuccess(normalized.changes.length), "success");
@@ -1385,6 +1620,7 @@ async function loadHistory() {
 async function loadLatestDiscovery() {
   if (!latestDiscoverySupported()) {
     state.latestDiscoveryResult = null;
+    resetDiscoveryLocalization();
     renderLatestDiscoveryFromState();
     renderProvenance();
     setLatestStatus(copy().messages.latestLawOnly, "neutral");
@@ -1400,6 +1636,7 @@ async function loadLatestDiscovery() {
     state.latestDiscoveryResult = await fetchJson(
       `${ENDPOINTS.sourceDiscover}?provider=${encodeURIComponent(currentProvider())}&limit=12&municipalities=${municipalities}`
     );
+    resetDiscoveryLocalization();
     renderLatestDiscoveryFromState();
     renderProvenance();
     setLatestStatus(
@@ -1409,8 +1646,12 @@ async function loadLatestDiscovery() {
       ),
       "success"
     );
+    if (state.locale === "en") {
+      void localizeLatestDiscoveryIfNeeded({ force: true });
+    }
   } catch (error) {
     state.latestDiscoveryResult = null;
+    resetDiscoveryLocalization();
     renderLatestDiscoveryFromState();
     setLatestStatus(copy().messages.latestLoadFailure(error.message), "error");
   } finally {
@@ -1468,6 +1709,7 @@ async function runSourceSearch({ auto = false } = {}) {
       return;
     }
     state.latestSourceSearchResult = payload;
+    resetSourceSearchLocalization();
     await syncMunicipalitiesFromSourceSearch(payload);
     if (payload.recommendation?.before?.id && payload.recommendation?.after?.id) {
       setSelectedSourcePair({
@@ -1485,11 +1727,15 @@ async function runSourceSearch({ auto = false } = {}) {
       ),
       "success"
     );
+    if (state.locale === "en") {
+      void localizeSourceSearchIfNeeded({ force: true });
+    }
   } catch (error) {
     if (requestSequence !== sourceSearchRequestSequence) {
       return;
     }
     state.latestSourceSearchResult = null;
+    resetSourceSearchLocalization();
     renderSourceSearchFromState();
     setSourceSearchStatus(copy().messages.sourceSearchFailure(error.message), "error");
   } finally {
@@ -1535,6 +1781,7 @@ async function runAnalyze() {
       body: JSON.stringify(buildAnalyzePayload())
     });
     state.latestAnalysisMeta = state.latestAnalysisResult.meta ?? null;
+    resetAnalysisLocalization();
     const normalized = renderCurrentResult();
     renderProvenance();
     setStatus(copy().messages.analysisSuccess(normalized.changes.length), "success");
@@ -1542,6 +1789,7 @@ async function runAnalyze() {
   } catch (error) {
     state.latestAnalysisResult = null;
     state.latestAnalysisMeta = null;
+    resetAnalysisLocalization();
     renderCurrentResult();
     renderProvenance();
     setStatus(copy().messages.analysisFailure(error.message), "error");
@@ -1738,6 +1986,8 @@ function setMode(mode, options = {}) {
   if (state.mode === "sample") {
     state.latestSourceSearchResult = null;
     state.latestDiscoveryResult = null;
+    resetSourceSearchLocalization();
+    resetDiscoveryLocalization();
   }
   updateSourceControls();
   renderSourceSearchFromState();
@@ -1762,6 +2012,7 @@ function setLanguage(locale) {
   saveLocale(state.locale);
   applyStaticCopy();
   setPage(state.page);
+  syncSelectedSourcePairInputs();
   updateModePanels();
   renderMunicipalityFiltersFromState();
   renderSourceSearchFromState();
@@ -1785,6 +2036,8 @@ function setLanguage(locale) {
     setDocumentStatus(copy().messages.ready, "neutral");
   }
   if (state.locale === "en") {
+    void localizeSourceSearchIfNeeded();
+    void localizeLatestDiscoveryIfNeeded();
     void localizeDocumentTextIfNeeded();
     void localizeDocumentInspectionIfNeeded();
   } else {
@@ -1817,6 +2070,8 @@ function attachEventListeners() {
     clearSelectedSourcePair();
     state.latestSourceSearchResult = null;
     state.latestDiscoveryResult = null;
+    resetSourceSearchLocalization();
+    resetDiscoveryLocalization();
     renderSourceSearchFromState();
     renderLatestDiscoveryFromState();
     syncSourceSearchStatus();
