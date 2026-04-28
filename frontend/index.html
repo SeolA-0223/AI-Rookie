@@ -14,6 +14,37 @@
   </head>
   <body>
     <main class="binder-app">
+      <div class="workspace-shell">
+        <aside class="quick-sidebar" aria-label="빠른 이동">
+          <div class="quick-sidebar-inner">
+            <p class="quick-sidebar-title" data-i18n="sidebar.title">빠른 이동</p>
+            <section class="quick-sidebar-group" data-sidebar-page="search">
+              <p class="quick-sidebar-label" data-i18n="sidebar.search.title">조례검색</p>
+              <div class="quick-sidebar-nav">
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="guide-panel" data-i18n="sidebar.search.guide">빠른 시작</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="source-panel" data-i18n="sidebar.search.source">조례 검색</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="summary-panel" data-i18n="sidebar.search.summary">변경 요약</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="impact-panel" data-i18n="sidebar.search.impact">영향 문서</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="risk-panel" data-i18n="sidebar.search.risk">위험 우선 순위</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="draft-panel" data-i18n="sidebar.search.draft">비교 결과 초안</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="sheet-front" data-i18n="sidebar.search.top">맨 위로</button>
+              </div>
+            </section>
+            <section class="quick-sidebar-group" data-sidebar-page="inspect">
+              <p class="quick-sidebar-label" data-i18n="sidebar.inspect.title">문서 작성</p>
+              <div class="quick-sidebar-nav">
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="guide-panel" data-i18n="sidebar.inspect.guide">빠른 시작</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-input-panel" data-i18n="sidebar.inspect.input">문서 검사</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-match-panel" data-i18n="sidebar.inspect.match">판정된 최신 조례</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-review-panel" data-i18n="sidebar.inspect.summary">검사 요약</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-issues-panel" data-i18n="sidebar.inspect.issues">수정 필요 항목</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-checklist-panel" data-i18n="sidebar.inspect.checklist">검토 체크리스트</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-draft-panel" data-i18n="sidebar.inspect.draft">수정본 초안</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="sheet-front" data-i18n="sidebar.inspect.top">맨 위로</button>
+              </div>
+            </section>
+          </div>
+        </aside>
       <section class="binder-stage" aria-label="AI-Rookie binder stage">
         <div class="sheet-back sheet-back-one" aria-hidden="true"></div>
         <div class="sheet-back sheet-back-two" aria-hidden="true"></div>
@@ -272,7 +303,7 @@
           </div>
 
           <div id="page-inspect" class="page-stack page-panel" aria-hidden="true" hidden>
-            <section class="panel panel-source">
+            <section class="panel panel-source" id="document-input-panel">
               <div class="panel-heading">
                 <div>
                   <p class="eyebrow" data-i18n="documentInspect.eyebrow">문서 검사</p>
@@ -364,7 +395,7 @@
               </article>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="document-match-panel">
               <div class="panel-heading compact-heading">
                 <div>
                   <h2 data-i18n="documentInspect.matchedTitle">판정된 최신 조례</h2>
@@ -374,7 +405,7 @@
               <div id="document-match-card"></div>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="document-review-panel">
               <div class="panel-heading compact-heading">
                 <div>
                   <h2 data-i18n="documentInspect.summaryTitle">검사 요약</h2>
@@ -394,7 +425,7 @@
               <div id="document-review-meta" class="document-meta-grid"></div>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="document-issues-panel">
               <div class="panel-heading compact-heading">
                 <div>
                   <h2 data-i18n="documentInspect.issuesTitle">수정 필요 항목</h2>
@@ -404,7 +435,7 @@
               <ul id="document-issues-list" class="document-issues-list"></ul>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="document-checklist-panel">
               <div class="panel-heading compact-heading">
                 <div>
                   <h2 data-i18n="documentInspect.checklistTitle">검토 체크리스트</h2>
@@ -413,7 +444,7 @@
               <ul id="document-checklist-list"></ul>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="document-draft-panel">
               <div class="panel-heading compact-heading">
                 <div>
                   <h2 data-i18n="documentInspect.draftTitle">수정본 초안</h2>
@@ -433,6 +464,7 @@
           </footer>
         </section>
       </section>
+      </div>
     </main>
     <script>
       (() => {

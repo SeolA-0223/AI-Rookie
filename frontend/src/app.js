@@ -89,6 +89,8 @@ const refs = {
   sheetFooterCopyView: $("sheet-footer-copy"),
   pageSearchButton: $("page-search-btn"),
   pageInspectButton: $("page-inspect-btn"),
+  sidebarLinks: Array.from(document.querySelectorAll(".quick-sidebar-link")),
+  sidebarGroups: Array.from(document.querySelectorAll("[data-sidebar-page]")),
   searchPageView: $("page-search"),
   inspectPageView: $("page-inspect"),
   languageButtons: Array.from(document.querySelectorAll("[data-locale]")),
@@ -164,6 +166,10 @@ const state = {
   latestDocumentInspection: null,
   localizedDocumentInspection: {},
   selectedSourcePair: null,
+  activeSidebarTargetByPage: {
+    search: "guide-panel",
+    inspect: "guide-panel"
+  },
   selectedMunicipalities: [],
   currentDocumentFileName: "",
   currentDocumentMedia: null,
@@ -815,6 +821,58 @@ function setPage(page) {
     button.setAttribute("aria-pressed", String(active));
     button.setAttribute("aria-selected", String(active));
   }
+  renderSidebarState();
+}
+
+function renderSidebarState() {
+  for (const group of refs.sidebarGroups) {
+    const active = group.dataset.sidebarPage === state.page;
+    group.classList.toggle("is-current", active);
+  }
+
+  for (const link of refs.sidebarLinks) {
+    const pageTarget = link.dataset.pageTarget === "inspect" ? "inspect" : "search";
+    const targetId = link.dataset.targetId ?? "";
+    const activeTarget = state.activeSidebarTargetByPage[pageTarget] ?? "";
+    const active = pageTarget === state.page && targetId === activeTarget;
+    link.classList.toggle("is-active", active);
+    link.setAttribute("aria-current", active ? "location" : "false");
+  }
+}
+
+function revealSectionTarget(target) {
+  if (target instanceof HTMLDetailsElement) {
+    target.open = true;
+  }
+}
+
+function scrollToPageSection(page, targetId) {
+  const normalizedPage = page === "inspect" ? "inspect" : "search";
+  if (!targetId) {
+    return;
+  }
+
+  state.activeSidebarTargetByPage[normalizedPage] = targetId;
+  const scroll = () => {
+    const target = document.getElementById(targetId);
+    if (!target) {
+      renderSidebarState();
+      return;
+    }
+    revealSectionTarget(target);
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    renderSidebarState();
+  };
+
+  if (state.page !== normalizedPage) {
+    setPage(normalizedPage);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(scroll);
+    });
+    return;
+  }
+
+  scroll();
 }
 
 function updateModePanels() {
@@ -1736,6 +1794,11 @@ function setLanguage(locale) {
 function attachEventListeners() {
   refs.pageSearchButton?.addEventListener("click", () => setPage("search"));
   refs.pageInspectButton?.addEventListener("click", () => setPage("inspect"));
+  for (const link of refs.sidebarLinks) {
+    link.addEventListener("click", () => {
+      scrollToPageSection(link.dataset.pageTarget, link.dataset.targetId);
+    });
+  }
   refs.runButton?.addEventListener("click", () => void runAnalyze());
   refs.sampleShortcutButton?.addEventListener("click", () => {
     setPage("search");

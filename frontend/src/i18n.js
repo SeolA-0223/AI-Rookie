@@ -46,6 +46,30 @@ const KO_COPY = {
       }
     ]
   },
+  sidebar: {
+    title: "빠른 이동",
+    search: {
+      title: "조례검색",
+      guide: "빠른 시작",
+      source: "조례 검색",
+      summary: "변경 요약",
+      impact: "영향 문서",
+      risk: "위험 우선 순위",
+      draft: "비교 결과 초안",
+      top: "맨 위로"
+    },
+    inspect: {
+      title: "문서 작성",
+      guide: "빠른 시작",
+      input: "문서 검사",
+      match: "판정된 최신 조례",
+      summary: "검사 요약",
+      issues: "수정 필요 항목",
+      checklist: "검토 체크리스트",
+      draft: "수정본 초안",
+      top: "맨 위로"
+    }
+  },
   source: {
     eyebrow: "조례 검색",
     title: "조례 조회와 변경 비교",
@@ -370,6 +394,30 @@ const EN_COPY = {
         body: "Paste or upload a document and let Gemini identify the likely ordinance, compare it to the latest text, and draft a revision."
       }
     ]
+  },
+  sidebar: {
+    title: "Quick Links",
+    search: {
+      title: "Ordinance Search",
+      guide: "Quick Start",
+      source: "Ordinance Search",
+      summary: "Change Summary",
+      impact: "Impacted Docs",
+      risk: "Risk Priority",
+      draft: "Draft Output",
+      top: "Back To Top"
+    },
+    inspect: {
+      title: "Document Writing",
+      guide: "Quick Start",
+      input: "Document Review",
+      match: "Matched Latest Ordinance",
+      summary: "Review Summary",
+      issues: "Revision Issues",
+      checklist: "Review Checklist",
+      draft: "Revised Draft",
+      top: "Back To Top"
+    }
   },
   source: {
     eyebrow: "Ordinance Search",
