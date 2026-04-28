@@ -1,11 +1,11 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-28 16:16:21 KST
+Auto-updated: 2026-04-28 16:30:23 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 3806fe3 (HEAD -> main, origin/main, origin/HEAD) style: add spacing before source provenance details
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25039165197)
+- Latest commit at update time: 71a2deb (HEAD -> main, origin/main, origin/HEAD) style: space ordinance draft note from preview
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25039337348)
 - PR link: (not applicable on main)
 
 2) Working Tree
@@ -15,14 +15,14 @@ Auto-updated: 2026-04-28 16:16:21 KST
 - M  frontend/src/styles.css
 
 3) Recent Commits (max 8)
-- 3806fe3 (HEAD -> main, origin/main, origin/HEAD) style: add spacing before source provenance details
+- 71a2deb (HEAD -> main, origin/main, origin/HEAD) style: space ordinance draft note from preview
+- 3806fe3 style: add spacing before source provenance details
 - b241750 style: align sidebar with binder sheet
 - 8a86208 refactor: simplify sidebar navigation controls
 - 2cf9fbf fix: add source-localize vercel entrypoint
 - b5cacde feat: localize ordinance search and restore korean views
 - e596efb refactor: scope sidebar to active page
 - b1f8c29 feat: add sticky sidebar navigation
-- e340ab9 refactor: remove hero intro block
 
 4) Staged Files
 - frontend/src/styles.css

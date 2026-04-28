@@ -191,6 +191,12 @@ a {
   display: block;
 }
 
+.quick-sidebar-title + .quick-sidebar-group {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(47, 34, 25, 0.12);
+}
+
 .quick-sidebar-group + .quick-sidebar-group {
   margin-top: 18px;
   padding-top: 18px;
