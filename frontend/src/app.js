@@ -163,6 +163,7 @@ const state = {
   latestHistoryPayload: null,
   latestDocumentInspection: null,
   localizedDocumentInspection: {},
+  selectedSourcePair: null,
   selectedMunicipalities: [],
   currentDocumentFileName: "",
   currentDocumentMedia: null,
@@ -288,6 +289,85 @@ function formatTimelineLabel(result = {}) {
   return parts.join(" / ") || copy().labels.noTimeline;
 }
 
+function formatSourceVersionInputValue(result = {}) {
+  if (!result || typeof result !== "object") {
+    return "";
+  }
+
+  const timeline = formatTimelineLabel(result);
+  const versionId = result.id ?? copy().labels.unknown;
+  const title = result.title ?? "";
+  const jurisdiction = result.jurisdiction ?? "";
+  return [title, jurisdiction, timeline, `ID ${versionId}`].filter(Boolean).join(" / ");
+}
+
+function formatSourceVersionStatusLabel(result = {}) {
+  if (!result || typeof result !== "object") {
+    return copy().labels.unknown;
+  }
+
+  const title = result.title ?? result.id ?? copy().labels.unknown;
+  const timeline = formatTimelineLabel(result);
+  return timeline && timeline !== copy().labels.noTimeline ? `${title} (${timeline})` : title;
+}
+
+function clearSelectedSourcePair() {
+  state.selectedSourcePair = null;
+  if (refs.sourceBeforeIdField) {
+    refs.sourceBeforeIdField.value = "";
+  }
+  if (refs.sourceAfterIdField) {
+    refs.sourceAfterIdField.value = "";
+  }
+}
+
+function syncSelectedSourcePairInputs() {
+  if (refs.sourceBeforeIdField) {
+    refs.sourceBeforeIdField.value = state.selectedSourcePair?.before ? formatSourceVersionInputValue(state.selectedSourcePair.before) : "";
+  }
+  if (refs.sourceAfterIdField) {
+    refs.sourceAfterIdField.value = state.selectedSourcePair?.after ? formatSourceVersionInputValue(state.selectedSourcePair.after) : "";
+  }
+}
+
+function setSelectedSourcePair(pair = {}, { clearMissing = false } = {}) {
+  const before = pair.before ?? (clearMissing ? null : state.selectedSourcePair?.before ?? null);
+  const after = pair.after ?? (clearMissing ? null : state.selectedSourcePair?.after ?? null);
+
+  state.selectedSourcePair = before || after ? { before, after } : null;
+  syncSelectedSourcePairInputs();
+  renderProvenance();
+}
+
+function getResolvedSourcePair() {
+  if (state.selectedSourcePair?.before?.id && state.selectedSourcePair?.after?.id) {
+    return state.selectedSourcePair;
+  }
+
+  const recommendation = state.latestSourceSearchResult?.recommendation;
+  if (recommendation?.before?.id && recommendation?.after?.id) {
+    return recommendation;
+  }
+
+  return null;
+}
+
+function buildSourceVersionPayload(result = {}) {
+  if (!result || typeof result !== "object" || !result.id) {
+    return null;
+  }
+
+  return {
+    id: result.id,
+    title: result.title ?? "",
+    jurisdiction: result.jurisdiction ?? "",
+    effectiveDate: result.effectiveDate ?? "",
+    promulgationDate: result.promulgationDate ?? "",
+    referenceUrl: result.referenceUrl ?? "",
+    current: result.current === true
+  };
+}
+
 function formatRunTime(value) {
   if (!value) {
     return copy().labels.unknown;
@@ -360,12 +440,33 @@ function latestDiscoverySupported() {
   return state.mode === "live" && currentProvider() === "law-go-public";
 }
 
+function normalizeMunicipalityCodeList(values = []) {
+  const allowedCodes = new Set(MUNICIPALITIES.map((item) => item.code));
+  return [...new Set((Array.isArray(values) ? values : []).filter((value) => allowedCodes.has(value)))];
+}
+
+function hasSameMunicipalitySelection(left = [], right = []) {
+  const normalizedLeft = normalizeMunicipalityCodeList(left).sort();
+  const normalizedRight = normalizeMunicipalityCodeList(right).sort();
+
+  if (normalizedLeft.length !== normalizedRight.length) {
+    return false;
+  }
+
+  return normalizedLeft.every((value, index) => value === normalizedRight[index]);
+}
+
 function formatMunicipalityScope(codes = state.selectedMunicipalities) {
   if (!codes.length) {
     return copy().messages.latestNationwide;
   }
   const names = MUNICIPALITIES.filter((item) => codes.includes(item.code)).map((item) => formatMunicipalityName(item));
   return names.length <= 2 ? names.join(", ") : copy().messages.latestMunicipalityCount(names.length);
+}
+
+function formatMunicipalityScopeDetailed(codes = state.selectedMunicipalities) {
+  const names = MUNICIPALITIES.filter((item) => codes.includes(item.code)).map((item) => formatMunicipalityName(item));
+  return names.join(", ");
 }
 
 function getFileExtension(fileName = "") {
@@ -474,6 +575,7 @@ function clearSourceSearchResultState() {
   }
 
   state.latestSourceSearchResult = null;
+  clearSelectedSourcePair();
   renderSourceSearchFromState();
   renderProvenance();
 }
@@ -803,15 +905,26 @@ function buildProvenanceCards() {
   pushProvenanceItem(searchItems, fields.latestCount, Array.isArray(latestPayload?.results) ? latestPayload.results.length : "");
   pushProvenanceItem(
     searchItems,
+    fields.queryVariants,
+    Array.isArray(searchPayload?.meta?.searchQueries) ? searchPayload.meta.searchQueries.join(" | ") : ""
+  );
+  pushProvenanceItem(
+    searchItems,
     fields.municipalities,
-    latestPayload?.meta?.nationwide
-      ? copy().messages.latestNationwide
-      : Array.isArray(latestPayload?.meta?.municipalityCodes)
-        ? latestPayload.meta.municipalityCodes
-            .map((code) => formatMunicipalityName(MUNICIPALITIES.find((item) => item.code === code) ?? {}))
-            .filter(Boolean)
-            .join(", ")
-        : ""
+    Array.isArray(searchPayload?.meta?.aiSearch?.municipalityCodes) && searchPayload.meta.aiSearch.municipalityCodes.length
+      ? formatMunicipalityScopeDetailed(searchPayload.meta.aiSearch.municipalityCodes)
+      : latestPayload?.meta?.nationwide
+        ? copy().messages.latestNationwide
+        : Array.isArray(latestPayload?.meta?.municipalityCodes)
+          ? formatMunicipalityScopeDetailed(latestPayload.meta.municipalityCodes)
+          : ""
+  );
+  pushProvenanceItem(
+    searchItems,
+    fields.recommendation,
+    searchPayload?.recommendation?.after?.id && searchPayload?.recommendation?.before?.id
+      ? `${searchPayload.recommendation.before.id} -> ${searchPayload.recommendation.after.id}`
+      : ""
   );
 
   const analysisItems = [];
@@ -1042,47 +1155,44 @@ function renderHistoryFromState() {
 
 function applyRecommendedPair(recommendation) {
   if (!recommendation?.before?.id || !recommendation?.after?.id) {
-    return;
+    return false;
   }
-  if (refs.sourceBeforeIdField) {
-    refs.sourceBeforeIdField.value = recommendation.before.id;
-  }
-  if (refs.sourceAfterIdField) {
-    refs.sourceAfterIdField.value = recommendation.after.id;
-  }
-  setSourceSearchStatus(copy().messages.recommendationApplied(recommendation.before.id, recommendation.after.id), "success");
+  setSelectedSourcePair({
+    before: recommendation.before,
+    after: recommendation.after
+  });
+  setSourceSearchStatus(
+    copy().messages.recommendationApplied(
+      formatSourceVersionStatusLabel(recommendation.before),
+      formatSourceVersionStatusLabel(recommendation.after)
+    ),
+    "success"
+  );
+  return true;
 }
 
 function useResultAsBefore(result) {
-  if (refs.sourceBeforeIdField) {
-    refs.sourceBeforeIdField.value = result.id ?? "";
-  }
-  setSourceSearchStatus(copy().messages.selectedBefore(result.id ?? copy().labels.unknown), "success");
+  setSelectedSourcePair({ before: result });
+  setSourceSearchStatus(copy().messages.selectedBefore(formatSourceVersionStatusLabel(result)), "success");
 }
 
 function useResultAsAfter(result) {
-  if (refs.sourceAfterIdField) {
-    refs.sourceAfterIdField.value = result.id ?? "";
-  }
-  setSourceSearchStatus(copy().messages.selectedAfter(result.id ?? copy().labels.unknown), "success");
+  setSelectedSourcePair({ after: result });
+  setSourceSearchStatus(copy().messages.selectedAfter(formatSourceVersionStatusLabel(result)), "success");
 }
 
 function searchLatestPair(result) {
   if (refs.sourceSearchQueryField) {
     refs.sourceSearchQueryField.value = result.title ?? "";
   }
-  if (refs.sourceAfterIdField && result.id) {
-    refs.sourceAfterIdField.value = result.id;
-  }
+  setSelectedSourcePair({ after: result }, { clearMissing: false });
   setSourceSearchStatus(copy().messages.latestPairSearch(result.title ?? copy().labels.unknown), "success");
   void runSourceSearch();
 }
 
 function useLatestAsAfter(result) {
-  if (refs.sourceAfterIdField) {
-    refs.sourceAfterIdField.value = result.id ?? "";
-  }
-  setLatestStatus(copy().messages.latestAfterSelected(result.id ?? copy().labels.unknown), "success");
+  setSelectedSourcePair({ after: result });
+  setLatestStatus(copy().messages.latestAfterSelected(formatSourceVersionStatusLabel(result)), "success");
 }
 
 async function fetchJson(url, init) {
@@ -1252,6 +1362,20 @@ async function loadLatestDiscovery() {
   }
 }
 
+async function syncMunicipalitiesFromSourceSearch(payload) {
+  const explicitCodes = normalizeMunicipalityCodeList(payload?.meta?.aiSearch?.explicitMunicipalityCodes ?? []);
+  if (!explicitCodes.length || hasSameMunicipalitySelection(explicitCodes, state.selectedMunicipalities)) {
+    return;
+  }
+
+  state.selectedMunicipalities = explicitCodes;
+  renderMunicipalityFiltersFromState();
+
+  if (latestDiscoverySupported()) {
+    await loadLatestDiscovery();
+  }
+}
+
 async function runSourceSearch({ auto = false } = {}) {
   if (state.mode !== "live") {
     setSourceSearchStatus(copy().messages.sourceSearchUnavailable, "neutral");
@@ -1285,6 +1409,13 @@ async function runSourceSearch({ auto = false } = {}) {
       return;
     }
     state.latestSourceSearchResult = payload;
+    await syncMunicipalitiesFromSourceSearch(payload);
+    if (payload.recommendation?.before?.id && payload.recommendation?.after?.id) {
+      setSelectedSourcePair({
+        before: payload.recommendation.before,
+        after: payload.recommendation.after
+      });
+    }
     renderSourceSearchFromState();
     renderProvenance();
     setSourceSearchStatus(
@@ -1315,12 +1446,21 @@ function buildAnalyzePayload() {
     const caseId = refs.sourceCaseField?.value.trim() ?? "";
     return { source: caseId ? { provider: "local-fixture", caseId } : { provider: "local-fixture" } };
   }
-  const beforeId = refs.sourceBeforeIdField?.value.trim() ?? "";
-  const afterId = refs.sourceAfterIdField?.value.trim() ?? "";
+  const selectedPair = getResolvedSourcePair();
+  const beforeId = selectedPair?.before?.id ?? "";
+  const afterId = selectedPair?.after?.id ?? "";
   if (!beforeId || !afterId) {
     throw new Error(copy().messages.livePairRequired(formatProviderLabel(currentProvider())));
   }
-  return { source: { provider: currentProvider(), beforeId, afterId } };
+  return {
+    source: {
+      provider: currentProvider(),
+      beforeId,
+      afterId,
+      beforeSelection: buildSourceVersionPayload(selectedPair?.before),
+      afterSelection: buildSourceVersionPayload(selectedPair?.after)
+    }
+  };
 }
 
 async function runAnalyze() {
@@ -1535,6 +1675,7 @@ function setMode(mode, options = {}) {
   clearScheduledSourceSearch();
   invalidateSourceSearchRequests();
   state.mode = mode === "live" ? "live" : "sample";
+  clearSelectedSourcePair();
   if (state.mode === "sample") {
     state.latestSourceSearchResult = null;
     state.latestDiscoveryResult = null;
@@ -1609,6 +1750,7 @@ function attachEventListeners() {
   refs.sourceProviderField?.addEventListener("change", () => {
     clearScheduledSourceSearch();
     invalidateSourceSearchRequests();
+    clearSelectedSourcePair();
     state.latestSourceSearchResult = null;
     state.latestDiscoveryResult = null;
     renderSourceSearchFromState();
@@ -1626,6 +1768,7 @@ function attachEventListeners() {
     if (state.mode !== "live") {
       return;
     }
+    clearSelectedSourcePair();
     scheduleAutoSourceSearch();
   });
   refs.sourceSearchQueryField?.addEventListener("keydown", (event) => {

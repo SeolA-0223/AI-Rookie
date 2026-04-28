@@ -1185,6 +1185,147 @@ test("createLawSource resolves historical ordinance pairs through the public law
   }
 });
 
+test("createLawSource resolves selected law.go.kr history versions even when the requested ordinance ID is the same", async () => {
+  const server = await startMockLawGoPublicServer({
+    documentsById: {
+      "1811191": {
+        ordinSeq: "1811191",
+        ordinId: "2018334",
+        ancYd: "20230522",
+        ancNo: "8751",
+        title: "Seoul Youth Basic Ordinance",
+        gubun: "KLAW",
+        nwYn: "N",
+        expectedClauseRequest: {
+          gubun: "KLAW",
+          nwYn: "N",
+          ancYd: "20230522",
+          ancNo: "8751"
+        },
+        version: "[?쒗뻾 2023. 5. 22.] [議곕? ??751?? 2023. 5. 22., ?쇰?媛쒖젙]",
+        clauses: [
+          {
+            joNo: "000100",
+            oriJoNo: "0001",
+            joBrNo: "00",
+            title: "??議?紐⑹쟻",
+            printTitle: "??議?紐⑹쟻)",
+            text: "泥?뀈?뺤콉??湲곕낯 諛⑺뼢???뺥븳??"
+          },
+          {
+            joNo: "000200",
+            oriJoNo: "0002",
+            joBrNo: "00",
+            title: "??議?泥?뀈??踰붿쐞",
+            printTitle: "??議?泥?뀈??踰붿쐞)",
+            text: "泥?뀈? 19???댁긽 34???댄븯濡?蹂몃떎."
+          }
+        ]
+      },
+      "2054497": {
+        ordinSeq: "2054497",
+        ordinId: "2018334",
+        ancYd: "20250714",
+        ancNo: "9765",
+        title: "Seoul Youth Basic Ordinance",
+        gubun: "KLAW",
+        nwYn: "Y",
+        expectedClauseRequest: {
+          gubun: "KLAW",
+          nwYn: "Y",
+          ancYd: "20250714",
+          ancNo: "9765"
+        },
+        version: "[?쒗뻾 2025. 7. 14.] [議곕? ??765?? 2025. 7. 14., ?쇰?媛쒖젙]",
+        clauses: [
+          {
+            joNo: "000100",
+            oriJoNo: "0001",
+            joBrNo: "00",
+            title: "??議?紐⑹쟻",
+            printTitle: "??議?紐⑹쟻)",
+            text: "泥?뀈?뺤콉怨?吏?먯껜怨꾩쓽 湲곕낯 諛⑺뼢???뺥븳??"
+          },
+          {
+            joNo: "000200",
+            oriJoNo: "0002",
+            joBrNo: "00",
+            title: "??議?泥?뀈??踰붿쐞",
+            printTitle: "??議?泥?뀈??踰붿쐞)",
+            text: "泥?뀈? 19???댁긽 39???댄븯濡?蹂몃떎."
+          }
+        ]
+      }
+    },
+    historyEntriesById: {
+      "2054497": [
+        {
+          id: "2054497",
+          index: 1,
+          title: "Seoul Youth Basic Ordinance",
+          effectiveDateLabel: "2025. 7. 14.",
+          announcementLabel: "議곕? ??765??",
+          promulgationDateLabel: "2025. 7. 14.",
+          amendmentType: "?쇰?媛쒖젙",
+          current: true
+        },
+        {
+          id: "1811191",
+          index: 2,
+          title: "Seoul Youth Basic Ordinance",
+          effectiveDateLabel: "2023. 5. 22.",
+          announcementLabel: "議곕? ??751??",
+          promulgationDateLabel: "2023. 5. 22.",
+          amendmentType: "?쇰?媛쒖젙",
+          current: false
+        }
+      ]
+    }
+  });
+
+  try {
+    const source = createLawSource({
+      provider: "law-go-public",
+      lawGoBaseUrl: server.baseUrl
+    });
+
+    const pair = await source.resolveRegulationPair({
+      beforeId: "2054497",
+      afterId: "2054497",
+      beforeSelection: {
+        id: "2054497",
+        title: "Seoul Youth Basic Ordinance",
+        jurisdiction: "Seoul",
+        effectiveDate: "2023-05-22",
+        promulgationDate: "2023-05-22",
+        current: false
+      },
+      afterSelection: {
+        id: "2054497",
+        title: "Seoul Youth Basic Ordinance",
+        jurisdiction: "Seoul",
+        effectiveDate: "2025-07-14",
+        promulgationDate: "2025-07-14",
+        current: true
+      }
+    });
+
+    assert.equal(pair.meta.provider, "law-go-public");
+    assert.equal(pair.meta.beforeRequestedId, "2054497");
+    assert.equal(pair.meta.afterRequestedId, "2054497");
+    assert.equal(pair.meta.beforeId, "1811191");
+    assert.equal(pair.meta.afterId, "2054497");
+    assert.equal(pair.meta.beforeSelection.current, false);
+    assert.equal(pair.meta.afterSelection.current, true);
+    assert.match(pair.beforeDoc.version, /2023\. 5\. 22/);
+    assert.match(pair.afterDoc.version, /2025\. 7\. 14/);
+    assert.match(pair.beforeDoc.clauses[1].text, /34/);
+    assert.match(pair.afterDoc.clauses[1].text, /39/);
+  } finally {
+    await server.close();
+  }
+});
+
 test("recommendLawSourcePair picks the latest two dated versions from the best-matching ordinance group", () => {
   const recommendation = recommendLawSourcePair(
     [

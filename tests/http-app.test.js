@@ -102,6 +102,91 @@ test("buildSourceSearchPayload returns empty local-fixture search results", asyn
   assert.equal(payload.meta.provider, "local-fixture");
 });
 
+test("buildSourceSearchPayload uses interpreted municipalities and reranked multi-query search results", async () => {
+  const moduleUrl = new URL(`../backend/src/http/app.js?case=search-ai-${Date.now()}`, import.meta.url);
+  const { buildSourceSearchPayload } = await import(moduleUrl);
+  const calls = [];
+  const payload = await buildSourceSearchPayload(
+    {
+      provider: "law-go-public",
+      query: "\uB300\uC804 \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840 \uCC3E\uC544\uC918",
+      limit: 6,
+      municipalities: []
+    },
+    {
+      env: {},
+      fetchImpl: undefined,
+      interpretSourceSearchQueryFn: async () => ({
+        searchQuery: "\uB300\uC804 \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840",
+        keywords: ["\uCCAD\uB144", "\uAE30\uBCF8"],
+        expandedQueries: ["\uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840"],
+        municipalityCodes: ["6300000"],
+        municipalityNames: ["\uB300\uC804\uAD11\uC5ED\uC2DC"],
+        explicitMunicipalityCodes: ["6300000"],
+        explicitMunicipalityNames: ["\uB300\uC804\uAD11\uC5ED\uC2DC"],
+        reasoning: "interpreted",
+        ai: {
+          usedAI: true,
+          provider: "gemini"
+        }
+      }),
+      searchLawSourceFn: async ({ query, municipalities }) => {
+        calls.push({ query, municipalities });
+        if (query === "\uB300\uC804 \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840") {
+          return {
+            results: [
+              {
+                id: "best",
+                title: "\uB300\uC804\uAD11\uC5ED\uC2DC \uCCAD\uB144 \uAE30\uBCF8 \uC870\uB840",
+                jurisdiction: "\uB300\uC804\uAD11\uC5ED\uC2DC"
+              },
+              {
+                id: "other",
+                title: "\uCCAD\uB144 \uC9C0\uC6D0 \uC870\uB840",
+                jurisdiction: "\uC11C\uC6B8\uD2B9\uBCC4\uC2DC"
+              }
+            ],
+            meta: {
+              provider: "law-go-public",
+              mode: "search",
+              municipalityCodes: ["6300000"],
+              municipalityNames: ["\uB300\uC804\uAD11\uC5ED\uC2DC"]
+            }
+          };
+        }
+
+        return {
+          results: [
+            {
+              id: "expanded",
+              title: "\uB300\uC804\uAD11\uC5ED\uC2DC \uCCAD\uB144 \uC815\uCC45 \uC870\uB840",
+              jurisdiction: "\uB300\uC804\uAD11\uC5ED\uC2DC"
+            }
+          ],
+          meta: {
+            provider: "law-go-public",
+            mode: "search"
+          }
+        };
+      },
+      recommendLawSourcePairFn: (results) => ({
+        before: results[1] ?? results[0],
+        after: results[0],
+        reason: "pair",
+        confidence: 0.9
+      })
+    }
+  );
+
+  assert.ok(calls.length >= 2);
+  calls.forEach((call) => assert.deepEqual(call.municipalities, ["6300000"]));
+  assert.equal(payload.results[0].id, "best");
+  assert.equal(payload.meta.aiSearch.usedAI, true);
+  assert.deepEqual(payload.meta.aiSearch.explicitMunicipalityCodes, ["6300000"]);
+  assert.ok(Array.isArray(payload.meta.searchQueries));
+  assert.equal(payload.recommendation.after.id, "best");
+});
+
 test("buildCaseCatalogPayload exposes bundled local fixture cases", async () => {
   const moduleUrl = new URL(`../backend/src/http/app.js?case=catalog-${Date.now()}`, import.meta.url);
   const { buildCaseCatalogPayload } = await import(moduleUrl);

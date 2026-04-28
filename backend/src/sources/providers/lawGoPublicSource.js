@@ -283,6 +283,50 @@ function normalizeOrdinanceId(value) {
   return normalizedValue;
 }
 
+function normalizeOptionalBoolean(value) {
+  if (value === true || value === false) {
+    return value;
+  }
+
+  const normalizedValue = normalizeEnvValue(value).toLowerCase();
+  if (normalizedValue === "y" || normalizedValue === "yes" || normalizedValue === "true" || normalizedValue === "1") {
+    return true;
+  }
+  if (normalizedValue === "n" || normalizedValue === "no" || normalizedValue === "false" || normalizedValue === "0") {
+    return false;
+  }
+
+  return null;
+}
+
+function normalizeVersionSelection(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const id = normalizeOrdinanceId(value.id || value.referenceUrl);
+  const title = normalizeEnvValue(value.title);
+  const jurisdiction = normalizeEnvValue(value.jurisdiction);
+  const effectiveDate = normalizeDateValue(value.effectiveDate);
+  const promulgationDate = normalizeDateValue(value.promulgationDate);
+  const referenceUrl = normalizeEnvValue(value.referenceUrl);
+  const current = normalizeOptionalBoolean(value.current);
+
+  if (!id && !title && !effectiveDate && !promulgationDate && !referenceUrl) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    jurisdiction,
+    effectiveDate,
+    promulgationDate,
+    referenceUrl,
+    current
+  };
+}
+
 function normalizeLawSearchPayload(payload) {
   if (Array.isArray(payload?.OrdinSearch?.law)) {
     return payload.OrdinSearch.law;
@@ -416,6 +460,58 @@ function parseHistoryEntries(historyHtml, baseUrl, seedResult) {
   }
 
   return historyEntries;
+}
+
+function scoreHistoryEntrySelectionMatch(entry, selection) {
+  if (!selection) {
+    return 0;
+  }
+
+  let score = 0;
+
+  if (selection.id && entry.id === selection.id) {
+    score += 2;
+  }
+  if (selection.effectiveDate && entry.effectiveDate === selection.effectiveDate) {
+    score += 8;
+  }
+  if (selection.promulgationDate && entry.promulgationDate === selection.promulgationDate) {
+    score += 8;
+  }
+  if (selection.title && normalizeSearchText(entry.title) === normalizeSearchText(selection.title)) {
+    score += 3;
+  }
+  if (selection.current !== null && selection.current === Boolean(entry.current)) {
+    score += 2;
+  }
+
+  return score;
+}
+
+function findMatchingHistoryEntry(historyEntries = [], selection = null) {
+  const scoredEntries = historyEntries
+    .map((entry) => ({
+      entry,
+      score: scoreHistoryEntrySelectionMatch(entry, selection)
+    }))
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => {
+      if (left.score !== right.score) {
+        return right.score - left.score;
+      }
+
+      return (
+        parseSortableSearchDate(right.entry.effectiveDate) ||
+        parseSortableSearchDate(right.entry.promulgationDate) ||
+        0
+      ) - (
+        parseSortableSearchDate(left.entry.effectiveDate) ||
+        parseSortableSearchDate(left.entry.promulgationDate) ||
+        0
+      );
+    });
+
+  return scoredEntries[0]?.entry ?? null;
 }
 
 function mergeSearchResults(primaryResults, historyResults, limit) {
@@ -1397,6 +1493,53 @@ async function fetchHistoryEntries({ baseUrls, ordinanceId, seedResult }) {
   return [];
 }
 
+async function resolveSelectionToOrdinanceId({
+  baseUrls,
+  label,
+  selection,
+  fallbackId
+}) {
+  const resolvedFallbackId = normalizeOrdinanceId(fallbackId);
+  const normalizedSelection = normalizeVersionSelection(selection);
+  const seedId = normalizedSelection?.id || resolvedFallbackId;
+
+  if (!seedId) {
+    return "";
+  }
+
+  const canDisambiguate = Boolean(
+    normalizedSelection &&
+      (normalizedSelection.effectiveDate ||
+        normalizedSelection.promulgationDate ||
+        normalizedSelection.title ||
+        normalizedSelection.current !== null)
+  );
+
+  if (!canDisambiguate) {
+    return seedId;
+  }
+
+  try {
+    const historyEntries = await fetchHistoryEntries({
+      baseUrls,
+      ordinanceId: seedId,
+      seedResult: {
+        id: seedId,
+        title: normalizedSelection.title,
+        jurisdiction: normalizedSelection.jurisdiction,
+        effectiveDate: normalizedSelection.effectiveDate,
+        promulgationDate: normalizedSelection.promulgationDate,
+        current: normalizedSelection.current === true
+      }
+    });
+
+    const matchedEntry = findMatchingHistoryEntry(historyEntries, normalizedSelection);
+    return matchedEntry?.id || seedId;
+  } catch {
+    return seedId;
+  }
+}
+
 async function fetchRegulationDocument({ baseUrls, ordinanceId, label }) {
   const ordinSeq = normalizeOrdinanceId(ordinanceId);
 
@@ -1784,6 +1927,8 @@ export function createLawGoPublicSource({
       };
     },
     async resolveRegulationPair(input = {}) {
+      const beforeSelection = normalizeVersionSelection(input.beforeSelection);
+      const afterSelection = normalizeVersionSelection(input.afterSelection);
       const beforeId = normalizeOrdinanceId(input.beforeId);
       const afterId = normalizeOrdinanceId(input.afterId);
       const details = [];
@@ -1799,14 +1944,27 @@ export function createLawGoPublicSource({
         throw buildSourceInputError(details);
       }
 
+      const resolvedBeforeId = await resolveSelectionToOrdinanceId({
+        baseUrls: baseUrlCandidates,
+        label: "before",
+        selection: beforeSelection,
+        fallbackId: beforeId
+      });
+      const resolvedAfterId = await resolveSelectionToOrdinanceId({
+        baseUrls: baseUrlCandidates,
+        label: "after",
+        selection: afterSelection,
+        fallbackId: afterId
+      });
+
       const beforeDoc = await fetchRegulationDocument({
         baseUrls: baseUrlCandidates,
-        ordinanceId: beforeId,
+        ordinanceId: resolvedBeforeId,
         label: "before"
       });
       const afterDoc = await fetchRegulationDocument({
         baseUrls: baseUrlCandidates,
-        ordinanceId: afterId,
+        ordinanceId: resolvedAfterId,
         label: "after"
       });
 
@@ -1816,12 +1974,16 @@ export function createLawGoPublicSource({
         meta: {
           provider: "law-go-public",
           mode: "adapter",
-          beforeId,
-          afterId,
+          beforeId: resolvedBeforeId,
+          afterId: resolvedAfterId,
+          beforeRequestedId: beforeId,
+          afterRequestedId: afterId,
+          beforeSelection,
+          afterSelection,
           ocMode,
           baseUrl: resolvedBaseUrl.toString().replace(/\/$/, ""),
-          beforeReferenceUrl: buildReferenceUrl(resolvedBaseUrl, beforeId),
-          afterReferenceUrl: buildReferenceUrl(resolvedBaseUrl, afterId)
+          beforeReferenceUrl: buildReferenceUrl(resolvedBaseUrl, resolvedBeforeId),
+          afterReferenceUrl: buildReferenceUrl(resolvedBaseUrl, resolvedAfterId)
         }
       };
     }

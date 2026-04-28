@@ -7,7 +7,9 @@ import { generateDraftsWithConfiguredAI, getDraftGenerationStatus } from "../gen
 import { localizeDocumentInspection, localizeDocumentText } from "../inspection/documentLocalization.js";
 import { SUPPORTED_DOCUMENT_MEDIA_MIME_TYPES } from "../inspection/documentMediaExtraction.js";
 import { inspectDocumentAgainstLatestOrdinance } from "../inspection/inspectDocumentAgainstLatestOrdinance.js";
+import { enhancePipelineResultWithConfiguredAI } from "../pipeline/enhancePipelineWithGemini.js";
 import { PipelineValidationError, runPipeline } from "../pipeline/runPipeline.js";
+import { interpretSourceSearchQuery, rankInterpretedSearchResults } from "../search/interpretSourceSearchQuery.js";
 import {
   createLawSource,
   discoverLawSource,
@@ -228,6 +230,12 @@ function validateAnalyzeRequest(payload) {
   if (isPlainObject(payload.source) && "caseId" in payload.source && typeof payload.source.caseId !== "string") {
     details.push({ path: "body.source.caseId", message: "must be a string" });
   }
+  if (isPlainObject(payload.source) && "beforeSelection" in payload.source && !isPlainObject(payload.source.beforeSelection)) {
+    details.push({ path: "body.source.beforeSelection", message: "must be an object" });
+  }
+  if (isPlainObject(payload.source) && "afterSelection" in payload.source && !isPlainObject(payload.source.afterSelection)) {
+    details.push({ path: "body.source.afterSelection", message: "must be an object" });
+  }
   if ("source" in payload && ("before" in payload || "after" in payload)) {
     details.push({ path: "body.source", message: "cannot be combined with body.before or body.after" });
   }
@@ -378,6 +386,10 @@ function parseMunicipalityList(value) {
     .filter(Boolean);
 }
 
+function uniqueText(values = []) {
+  return [...new Set(values.filter((value) => typeof value === "string" && value.trim()).map((value) => value.trim()))];
+}
+
 export async function buildAnalyzeInput(payload) {
   if (payload.source) {
     const requestedProvider = resolveLawSourceProvider({
@@ -450,7 +462,16 @@ export async function buildSourceStatusPayload({ provider, probe = false } = {})
   };
 }
 
-export async function buildSourceSearchPayload({ provider, query, limit, municipalities } = {}) {
+export async function buildSourceSearchPayload(
+  { provider, query, limit, municipalities } = {},
+  {
+    env = process.env,
+    fetchImpl = globalThis.fetch,
+    interpretSourceSearchQueryFn = interpretSourceSearchQuery,
+    searchLawSourceFn = searchLawSource,
+    recommendLawSourcePairFn = recommendLawSourcePair
+  } = {}
+) {
   const requestedProvider = resolveLawSourceProvider({ provider });
   const normalizedQuery = typeof query === "string" ? query.trim() : "";
 
@@ -467,21 +488,119 @@ export async function buildSourceSearchPayload({ provider, query, limit, municip
     };
   }
 
-  const searchResult = await searchLawSource({
-    provider: requestedProvider,
-    query: normalizedQuery,
-    limit,
-    municipalities
+  if (requestedProvider === "local-fixture") {
+    const searchResult = await searchLawSourceFn({
+      provider: requestedProvider,
+      query: normalizedQuery,
+      limit,
+      municipalities
+    });
+
+    return {
+      requestedProvider,
+      query: normalizedQuery,
+      results: Array.isArray(searchResult.results) ? searchResult.results : [],
+      recommendation: recommendLawSourcePairFn(searchResult.results, normalizedQuery),
+      meta: searchResult.meta ?? {
+        provider: requestedProvider,
+        mode: "search"
+      }
+    };
+  }
+
+  const interpretation = await interpretSourceSearchQueryFn(
+    {
+      query: normalizedQuery,
+      municipalities
+    },
+    {
+      env,
+      fetchImpl
+    }
+  );
+
+  const effectiveMunicipalities = Array.isArray(interpretation.municipalityCodes) && interpretation.municipalityCodes.length > 0
+    ? interpretation.municipalityCodes
+    : Array.isArray(municipalities)
+      ? municipalities
+      : [];
+  const effectiveLimit = parseSourceSearchLimit(limit);
+  const searchQueries = uniqueText([
+    interpretation.searchQuery,
+    normalizedQuery,
+    ...(Array.isArray(interpretation.expandedQueries) ? interpretation.expandedQueries : [])
+  ]).slice(0, 4);
+
+  const searchBatches = [];
+  let lastSearchError = null;
+
+  for (const queryCandidate of searchQueries) {
+    try {
+      const searchResult = await searchLawSourceFn({
+        provider: requestedProvider,
+        query: queryCandidate,
+        limit: Math.min(Math.max(effectiveLimit, 6), 10),
+        municipalities: effectiveMunicipalities
+      });
+
+      searchBatches.push({
+        query: queryCandidate,
+        results: Array.isArray(searchResult.results) ? searchResult.results : [],
+        meta: searchResult.meta ?? {
+          provider: requestedProvider,
+          mode: "search"
+        }
+      });
+    } catch (error) {
+      lastSearchError = error;
+    }
+  }
+
+  if (searchBatches.length === 0 && lastSearchError) {
+    throw lastSearchError;
+  }
+
+  const primaryBatch = searchBatches.find((batch) => batch.query === interpretation.searchQuery) ?? searchBatches[0] ?? null;
+  const rerankedResults = rankInterpretedSearchResults({
+    interpretation,
+    searchBatches,
+    limit: effectiveLimit
   });
+  const primaryMeta = primaryBatch?.meta ?? {
+    provider: requestedProvider,
+    mode: "search"
+  };
 
   return {
     requestedProvider,
     query: normalizedQuery,
-    results: Array.isArray(searchResult.results) ? searchResult.results : [],
-    recommendation: recommendLawSourcePair(searchResult.results, normalizedQuery),
-    meta: searchResult.meta ?? {
-      provider: requestedProvider,
-      mode: "search"
+    results: rerankedResults,
+    recommendation: recommendLawSourcePairFn(rerankedResults, interpretation.searchQuery || normalizedQuery),
+    meta: {
+      ...primaryMeta,
+      municipalityCodes:
+        Array.isArray(primaryMeta.municipalityCodes) && primaryMeta.municipalityCodes.length > 0
+          ? primaryMeta.municipalityCodes
+          : interpretation.municipalityCodes,
+      municipalityNames:
+        Array.isArray(primaryMeta.municipalityNames) && primaryMeta.municipalityNames.length > 0
+          ? primaryMeta.municipalityNames
+          : interpretation.municipalityNames,
+      reranked: searchQueries.length > 1,
+      searchQueries,
+      aiSearch: {
+        originalQuery: normalizedQuery,
+        interpretedQuery: interpretation.searchQuery,
+        keywords: interpretation.keywords ?? [],
+        expandedQueries: interpretation.expandedQueries ?? [],
+        municipalityCodes: interpretation.municipalityCodes ?? [],
+        municipalityNames: interpretation.municipalityNames ?? [],
+        explicitMunicipalityCodes: interpretation.explicitMunicipalityCodes ?? [],
+        explicitMunicipalityNames: interpretation.explicitMunicipalityNames ?? [],
+        reasoning: interpretation.reasoning ?? "",
+        usedAI: Boolean(interpretation.ai?.usedAI),
+        provider: interpretation.ai?.provider ?? "template"
+      }
     }
   };
 }
@@ -600,14 +719,29 @@ export async function handleAnalyze(req, res) {
 
     const { beforeDoc, afterDoc, internalDocs, sourceMeta } = await buildAnalyzeInput(payload);
     const source = detectRunSource(payload);
-    const result = runPipeline({ beforeDoc, afterDoc, internalDocs });
+    const pipelineResult = runPipeline({ beforeDoc, afterDoc, internalDocs });
+    const coreAnalysis = await enhancePipelineResultWithConfiguredAI({
+      beforeDoc,
+      afterDoc,
+      internalDocs,
+      result: pipelineResult
+    });
+    const result = coreAnalysis.result;
     const draftGeneration = await generateDraftsWithConfiguredAI(result.analysis.changes, result.analysis.risks, {
       fallbackDrafts: result.drafts
     });
 
     result.drafts = draftGeneration.drafts;
     result.meta.inputSource = sourceMeta;
-    result.meta.ai = draftGeneration.meta;
+    result.meta.ai = {
+      provider:
+        coreAnalysis.meta?.provider === "gemini" || draftGeneration.meta?.provider === "gemini"
+          ? "gemini"
+          : "template",
+      usedAI: Boolean(coreAnalysis.meta?.usedAI || draftGeneration.meta?.usedAI),
+      coreAnalysis: coreAnalysis.meta,
+      draftGeneration: draftGeneration.meta
+    };
     const persistence = await analysisStore.saveRun({
       source,
       requestPayload: {
