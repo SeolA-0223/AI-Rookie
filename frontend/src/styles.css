@@ -83,7 +83,7 @@ a {
 .binder-app {
   width: min(1220px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 56px 0 80px;
+  padding: 24px 0 80px;
 }
 
 .binder-header {
@@ -139,7 +139,7 @@ a {
 
 .binder-stage {
   position: relative;
-  padding: 84px 0 28px;
+  padding: 68px 0 28px;
 }
 
 .sheet-back,
@@ -1006,7 +1006,7 @@ pre {
 @media (max-width: 960px) {
   .binder-app {
     width: min(100%, calc(100% - 20px));
-    padding-top: 32px;
+    padding-top: 16px;
   }
 
   .binder-summary {
@@ -1051,7 +1051,7 @@ pre {
   }
 
   .binder-stage {
-    padding-top: 68px;
+    padding-top: 58px;
   }
 
   .page-switch {
