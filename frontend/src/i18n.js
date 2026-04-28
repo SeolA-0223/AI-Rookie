@@ -12,8 +12,8 @@ const KO_COPY = {
     ariaLabel: "언어 전환"
   },
   hero: {
-    eyebrow: "Municipal Ordinance Copilot",
-    title: "AI를 활용한\n지자체 조례 변경 대응 도우미",
+    eyebrow: "지자체 조례 업무",
+    title: "지자체 조례 변경 대응",
     copy: "조례 검색, 최신 조례 열람, 내부 문서 검사와 수정 초안 생성을 한 화면에서 연결합니다."
   },
   pages: {
@@ -337,8 +337,8 @@ const EN_COPY = {
     ariaLabel: "Language switch"
   },
   hero: {
-    eyebrow: "Municipal Ordinance Copilot",
-    title: "AI-Assisted\nMunicipal Ordinance Change Helper",
+    eyebrow: "Municipal Ordinance Desk",
+    title: "Municipal Ordinance Change Response",
     copy: "Search ordinances, browse the latest local laws, and inspect working documents against the latest ordinance."
   },
   pages: {

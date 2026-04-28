@@ -1,55 +1,37 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-28 10:12:56 KST
+Auto-updated: 2026-04-28 12:34:03 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: e339a66 (HEAD -> main, origin/main, origin/HEAD) feat: refine hero header copy and layout
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/24924150725)
+- Latest commit at update time: 122654e (HEAD -> main, origin/main, origin/HEAD) feat: add gemini-guided law search and version selection
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25028413165)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  backend/src/http/app.js
-- A  backend/src/pipeline/enhancePipelineWithGemini.js
-- A  backend/src/search/interpretSourceSearchQuery.js
-- M  backend/src/sources/providers/lawGoPublicSource.js
-- M  data/eval/metrics.json
 - M  frontend/index.html
-- M  frontend/src/app.js
 - M  frontend/src/i18n.js
+- M  frontend/src/styles.css
 - M  index.html
-- A  tests/gemini-core-analysis.test.js
-- M  tests/http-app.test.js
-- M  tests/law-source.test.js
-- A  tests/source-search-ai.test.js
 
 3) Recent Commits (max 8)
-- e339a66 (HEAD -> main, origin/main, origin/HEAD) feat: refine hero header copy and layout
+- 122654e (HEAD -> main, origin/main, origin/HEAD) feat: add gemini-guided law search and version selection
+- e339a66 feat: refine hero header copy and layout
 - 70e47e5 refactor: polish dashboard typography and spacing
 - 4b3a8cb feat: inspect image and pdf documents with gemini
 - 34cd2de feat: add auto ordinance search with municipality scope
 - 0a56b19 fix: broaden curated fallback query variants
 - be53522 fix: strip guidance suffixes from ordinance queries
 - 6a726a4 fix: improve ordinance matching for document inspection
-- 6dffd89 fix: extend gemini request timeout on vercel
 
 4) Staged Files
-- backend/src/http/app.js
-- backend/src/pipeline/enhancePipelineWithGemini.js
-- backend/src/search/interpretSourceSearchQuery.js
-- backend/src/sources/providers/lawGoPublicSource.js
-- data/eval/metrics.json
 - frontend/index.html
-- frontend/src/app.js
 - frontend/src/i18n.js
+- frontend/src/styles.css
 - index.html
-- tests/gemini-core-analysis.test.js
-- tests/http-app.test.js
-- tests/law-source.test.js
-- tests/source-search-ai.test.js
 
 5) Unstaged Files
 - (none)
