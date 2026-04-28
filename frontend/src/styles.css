@@ -636,8 +636,11 @@ a {
   border-radius: 999px;
   background: var(--accent);
   color: #fbf5ee;
+  font-family: "Noto Sans KR", sans-serif;
   font-size: 0.96rem;
   font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .mode-toggle {
@@ -774,6 +777,10 @@ a {
   border: 1px solid rgba(47, 34, 25, 0.1);
   border-radius: 22px;
   background: rgba(255, 250, 244, 0.56);
+}
+
+.action-row + .details-inline {
+  margin-top: 14px;
 }
 
 .details-inline summary,
