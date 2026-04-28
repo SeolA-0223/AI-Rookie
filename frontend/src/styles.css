@@ -1116,6 +1116,10 @@ pre {
   overflow-x: auto;
 }
 
+.panel-footnote + pre {
+  margin-top: 14px;
+}
+
 .sheet-footer {
   margin-top: 22px;
   padding-top: 20px;
