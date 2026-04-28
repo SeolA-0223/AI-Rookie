@@ -1,11 +1,11 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-04-28 13:06:58 KST
+Auto-updated: 2026-04-28 13:11:20 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: e340ab9 (HEAD -> main, origin/main, origin/HEAD) refactor: remove hero intro block
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25032761176)
+- Latest commit at update time: b1f8c29 (HEAD -> main, origin/main, origin/HEAD) feat: add sticky sidebar navigation
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25033335068)
 - PR link: (not applicable on main)
 
 2) Working Tree
@@ -14,24 +14,22 @@ Auto-updated: 2026-04-28 13:06:58 KST
 - ## main...origin/main
 - M  frontend/index.html
 - M  frontend/src/app.js
-- M  frontend/src/i18n.js
 - M  frontend/src/styles.css
 - M  index.html
 
 3) Recent Commits (max 8)
-- e340ab9 (HEAD -> main, origin/main, origin/HEAD) refactor: remove hero intro block
+- b1f8c29 (HEAD -> main, origin/main, origin/HEAD) feat: add sticky sidebar navigation
+- e340ab9 refactor: remove hero intro block
 - a0d9a50 refactor: simplify hero title and typography
 - 122654e feat: add gemini-guided law search and version selection
 - e339a66 feat: refine hero header copy and layout
 - 70e47e5 refactor: polish dashboard typography and spacing
 - 4b3a8cb feat: inspect image and pdf documents with gemini
 - 34cd2de feat: add auto ordinance search with municipality scope
-- 0a56b19 fix: broaden curated fallback query variants
 
 4) Staged Files
 - frontend/index.html
 - frontend/src/app.js
-- frontend/src/i18n.js
 - frontend/src/styles.css
 - index.html
 

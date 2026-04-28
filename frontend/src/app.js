@@ -828,6 +828,7 @@ function renderSidebarState() {
   for (const group of refs.sidebarGroups) {
     const active = group.dataset.sidebarPage === state.page;
     group.classList.toggle("is-current", active);
+    group.setAttribute("aria-hidden", String(!active));
   }
 
   for (const link of refs.sidebarLinks) {

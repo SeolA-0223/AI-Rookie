@@ -161,8 +161,8 @@ a {
 }
 
 .quick-sidebar-inner {
-  max-height: calc(100vh - 36px);
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   padding: 18px 16px;
   border: 1px solid var(--line);
   border-radius: 26px;
@@ -180,6 +180,14 @@ a {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+.quick-sidebar-group {
+  display: none;
+}
+
+.quick-sidebar-group.is-current {
+  display: block;
 }
 
 .quick-sidebar-group + .quick-sidebar-group {
