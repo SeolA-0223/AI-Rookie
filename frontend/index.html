@@ -17,9 +17,8 @@
       <div class="workspace-shell">
         <aside class="quick-sidebar" aria-label="빠른 이동">
           <div class="quick-sidebar-inner">
-            <p class="quick-sidebar-title" data-i18n="sidebar.title">빠른 이동</p>
+            <p id="quick-sidebar-title" class="quick-sidebar-title">빠른 이동 - 조례검색</p>
             <section class="quick-sidebar-group is-current" data-sidebar-page="search">
-              <p class="quick-sidebar-label" data-i18n="sidebar.search.title">조례검색</p>
               <div class="quick-sidebar-nav">
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="guide-panel" data-i18n="sidebar.search.guide">가이드</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="source-panel" data-i18n="sidebar.search.source">조례 검색</button>
@@ -28,10 +27,13 @@
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="risk-panel" data-i18n="sidebar.search.risk">위험 우선 순위</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="draft-panel" data-i18n="sidebar.search.draft">비교 결과 초안</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="sheet-front" data-i18n="sidebar.search.top">맨 위로</button>
+                <div class="quick-sidebar-locale-bar" role="group" aria-label="언어 전환">
+                  <button class="quick-sidebar-locale-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
+                  <button class="quick-sidebar-locale-btn" type="button" data-locale="en" aria-pressed="false">English</button>
+                </div>
               </div>
             </section>
             <section class="quick-sidebar-group" data-sidebar-page="inspect">
-              <p class="quick-sidebar-label" data-i18n="sidebar.inspect.title">문서 작성</p>
               <div class="quick-sidebar-nav">
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="guide-panel" data-i18n="sidebar.inspect.guide">가이드</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-input-panel" data-i18n="sidebar.inspect.input">문서 검사</button>
@@ -41,6 +43,10 @@
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-checklist-panel" data-i18n="sidebar.inspect.checklist">검토 체크리스트</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-draft-panel" data-i18n="sidebar.inspect.draft">수정본 초안</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="sheet-front" data-i18n="sidebar.inspect.top">맨 위로</button>
+                <div class="quick-sidebar-locale-bar" role="group" aria-label="언어 전환">
+                  <button class="quick-sidebar-locale-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
+                  <button class="quick-sidebar-locale-btn" type="button" data-locale="en" aria-pressed="false">English</button>
+                </div>
               </div>
             </section>
           </div>

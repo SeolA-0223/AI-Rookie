@@ -47,7 +47,7 @@ const KO_COPY = {
     ]
   },
   sidebar: {
-    title: "빠른 이동",
+    title: "빠른이동",
     search: {
       title: "조례검색",
       guide: "가이드",
@@ -59,7 +59,7 @@ const KO_COPY = {
       top: "맨 위로"
     },
     inspect: {
-      title: "문서 작성",
+      title: "문서검사",
       guide: "가이드",
       input: "문서 검사",
       match: "판정된 최신 조례",
@@ -408,7 +408,7 @@ const EN_COPY = {
       top: "Back To Top"
     },
     inspect: {
-      title: "Document Writing",
+      title: "Document Review",
       guide: "Guide",
       input: "Document Review",
       match: "Matched Latest Ordinance",

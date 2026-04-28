@@ -85,6 +85,7 @@ const MUNICIPALITY_EN_LABELS = new Map([
 
 const refs = {
   sheetFront: $("sheet-front"),
+  quickSidebarTitleView: $("quick-sidebar-title"),
   pageCurrentView: $("page-current"),
   pageCurrentLabelView: $("page-current-label"),
   sheetFooterCopyView: $("sheet-footer-copy"),
@@ -208,6 +209,18 @@ function loadStoredLocale() {
 }
 
 const copy = () => getCopy(state.locale);
+
+function getSidebarPageTitle(page = state.page) {
+  return page === "inspect" ? copy().sidebar.inspect.title : copy().sidebar.search.title;
+}
+
+function renderSidebarHeader() {
+  if (!refs.quickSidebarTitleView) {
+    return;
+  }
+
+  refs.quickSidebarTitleView.textContent = `${copy().sidebar.title} - ${getSidebarPageTitle()}`;
+}
 
 function saveLocale(locale) {
   try {
@@ -1017,6 +1030,7 @@ function applyStaticCopy() {
     refs.documentTranslationNoteView.textContent = documentTranslationCopy().note;
   }
   renderDocumentFileName();
+  renderSidebarHeader();
 }
 
 function setPage(page) {
@@ -1045,6 +1059,7 @@ function setPage(page) {
   if (refs.sheetFooterCopyView) {
     refs.sheetFooterCopyView.textContent = state.page === "search" ? copy().binder.footerSearch : copy().binder.footerInspect;
   }
+  renderSidebarHeader();
   for (const [button, name] of [[refs.pageSearchButton, "search"], [refs.pageInspectButton, "inspect"]]) {
     if (!button) {
       continue;

@@ -206,6 +206,15 @@ a {
   margin-top: 10px;
 }
 
+.quick-sidebar-locale-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(47, 34, 25, 0.1);
+}
+
 .quick-sidebar-link {
   width: 100%;
   padding: 10px 12px;
@@ -232,6 +241,34 @@ a {
   border-color: rgba(142, 77, 57, 0.34);
   background: linear-gradient(180deg, rgba(255, 245, 236, 0.98), rgba(241, 223, 204, 0.96));
   box-shadow: 0 8px 18px rgba(50, 31, 20, 0.08);
+}
+
+.quick-sidebar-locale-btn {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(47, 34, 25, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 251, 246, 0.72);
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.quick-sidebar-locale-btn:hover,
+.quick-sidebar-locale-btn:focus-visible {
+  color: var(--ink);
+  background: rgba(255, 249, 241, 0.98);
+  border-color: rgba(142, 77, 57, 0.28);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.quick-sidebar-locale-btn[aria-pressed="true"] {
+  border-color: rgba(142, 77, 57, 0.34);
+  background: var(--accent);
+  color: #f9f3eb;
 }
 
 .sheet-back,
