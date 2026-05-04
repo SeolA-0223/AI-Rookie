@@ -526,6 +526,12 @@ a {
   max-width: 58ch;
 }
 
+.guide-subtitle {
+  width: max-content;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
 .step-card h3,
 .setup-card h3,
 .search-result h3,
@@ -1160,6 +1166,11 @@ pre {
   .binder-app {
     width: min(100%, calc(100% - 20px));
     padding-top: 16px;
+  }
+
+  .guide-subtitle {
+    width: auto;
+    white-space: normal;
   }
 
   .workspace-shell {
