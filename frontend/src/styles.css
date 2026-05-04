@@ -541,8 +541,8 @@ a {
 }
 
 .guide-subtitle {
-  max-width: 58ch;
-  white-space: normal;
+  max-width: none;
+  white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
 }
