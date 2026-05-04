@@ -1006,7 +1006,7 @@ async function resolveLatestOrdinanceV2({
     detection,
     recommendation
   });
-  const matchedCandidate = findLatestMatchedResult(rankedCandidates, recommendation);
+  const matchedCandidate = rankedCandidates[0] ?? null;
 
   if (!matchedCandidate) {
     if (bundledFallback) {

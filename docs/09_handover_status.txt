@@ -1,41 +1,44 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-05-04 22:45:13 KST
+Auto-updated: 2026-05-05 00:37:11 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 66a5779 (HEAD -> main, origin/main, origin/HEAD) feat: make ordinance draft panel collapsible
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25302075684)
+- Latest commit at update time: 652df88 (HEAD -> main, origin/main, origin/HEAD) style: promote ordinance draft summary heading
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25322611989)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  frontend/index.html
-- M  frontend/src/styles.css
-- M  index.html
+- M  backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
+- M data/eval/metrics.json
+- D data/test-documents/daejeon-donggu-youth-basic-guide.md
+- M  tests/document-inspection-ranking.test.js
+- ?? "data/test-documents/\353\214\200\354\240\204\352\264\221\354\227\255\354\213\234 \354\262\255\353\205\204 \352\270\260\353\263\270 \354\241\260\353\241\200(\355\205\214\354\212\244\355\212\270.ver).jpg"
+- ?? "data/test-documents/\353\214\200\354\240\204\352\264\221\354\227\255\354\213\234 \354\262\255\353\205\204 \352\270\260\353\263\270 \354\241\260\353\241\200(\355\205\214\354\212\244\355\212\270.ver).md"
 
 3) Recent Commits (max 8)
-- 66a5779 (HEAD -> main, origin/main, origin/HEAD) feat: make ordinance draft panel collapsible
+- 652df88 (HEAD -> main, origin/main, origin/HEAD) style: promote ordinance draft summary heading
+- 66a5779 feat: make ordinance draft panel collapsible
 - 2e7650f style: keep guide subtitle on one line
 - d38cc4d style: restyle guide panel heading
 - fa153a4 style: align guide subtitle with panel copy
 - 96d6578 style: align guide subtitle within panel
 - 8180452 style: keep guide subtitle within panel
 - c2b92b5 style: keep guide subtitle on one line
-- 41a47db refactor: simplify guide header and top navigation
 
 4) Staged Files
-- frontend/index.html
-- frontend/src/styles.css
-- index.html
+- backend/src/inspection/inspectDocumentAgainstLatestOrdinance.js
+- tests/document-inspection-ranking.test.js
 
 5) Unstaged Files
 - (none)
 
 6) Untracked Files
-- (none)
+- "data/test-documents/\353\214\200\354\240\204\352\264\221\354\227\255\354\213\234 \354\262\255\353\205\204 \352\270\260\353\263\270 \354\241\260\353\241\200(\355\205\214\354\212\244\355\212\270.ver).jpg"
+- "data/test-documents/\353\214\200\354\240\204\352\264\221\354\227\255\354\213\234 \354\262\255\353\205\204 \352\270\260\353\263\270 \354\241\260\353\241\200(\355\205\214\354\212\244\355\212\270.ver).md"
 
 7) Manual Notes
 ### [MANUAL NOTES START]

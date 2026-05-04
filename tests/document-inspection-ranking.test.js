@@ -83,3 +83,100 @@ test("document inspection prefers title search matches over unrelated discovery 
   assert.equal(result.meta.search.route, "search");
   assert.deepEqual(result.meta.search.consideredRoutes, ["search", "discover"]);
 });
+
+test("document inspection keeps the top-ranked exact title match even when pair recommendation points to another ordinance", async () => {
+  const cityMatch = {
+    id: "2098227",
+    title: "대전광역시 청년 기본 조례",
+    jurisdiction: "대전광역시",
+    promulgationDate: "2025-12-26",
+    effectiveDate: "2025-12-26",
+    referenceUrl: "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2098227",
+    current: false
+  };
+  const districtBeforeMatch = {
+    id: "2046185",
+    title: "대전광역시 대덕구 청년 기본 조례",
+    jurisdiction: "대전광역시 대덕구",
+    promulgationDate: "2025-06-27",
+    effectiveDate: "2025-07-01",
+    referenceUrl: "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2046185",
+    current: false
+  };
+  const districtAfterMatch = {
+    id: "2121017",
+    title: "대전광역시 대덕구 청년 기본 조례",
+    jurisdiction: "대전광역시 대덕구",
+    promulgationDate: "2026-04-10",
+    effectiveDate: "2026-04-10",
+    referenceUrl: "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2121017",
+    current: true
+  };
+
+  const result = await inspectDocumentAgainstLatestOrdinance(
+    {
+      documentText: "# 대전광역시 청년 기본 조례 운영 안내문\n\n대전광역시 청년 기본 조례상 청년은 만 19세 이상 34세 이하인 사람으로 본다.",
+      fileName: "daejeon-youth-guide.md",
+      municipalities: ["6300000"]
+    },
+    {
+      env: {},
+      discoverLawSourceFn: async () => ({
+        results: [],
+        meta: {
+          mode: "discover",
+          route: "discover"
+        }
+      }),
+      searchLawSourceFn: async () => ({
+        results: [cityMatch, districtAfterMatch, districtBeforeMatch],
+        meta: {
+          mode: "search",
+          route: "search"
+        }
+      }),
+      readLawSourceDocumentFn: async ({ id }) => ({
+        document: {
+          title: id === cityMatch.id ? cityMatch.title : districtAfterMatch.title,
+          version: "최신본",
+          clauses: [
+            {
+              id: "c1",
+              title: "청년 정의",
+              text: "청년은 만 19세 이상 34세 이하인 사람으로 본다."
+            }
+          ]
+        },
+        meta: {
+          id,
+          referenceUrl: `https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=${id}`
+        }
+      }),
+      recommendLawSourcePairFn: () => ({
+        before: {
+          id: districtBeforeMatch.id,
+          title: districtBeforeMatch.title,
+          jurisdiction: districtBeforeMatch.jurisdiction,
+          effectiveDate: districtBeforeMatch.effectiveDate,
+          promulgationDate: districtBeforeMatch.promulgationDate
+        },
+        after: {
+          id: districtAfterMatch.id,
+          title: districtAfterMatch.title,
+          jurisdiction: districtAfterMatch.jurisdiction,
+          effectiveDate: districtAfterMatch.effectiveDate,
+          promulgationDate: districtAfterMatch.promulgationDate
+        },
+        confidence: "high",
+        matchCount: 2,
+        reason: "Matched the district ordinance pair.",
+        strategy: "timeline-heuristic"
+      })
+    }
+  );
+
+  assert.equal(result.ordinance.matched.id, cityMatch.id);
+  assert.equal(result.ordinance.matched.title, cityMatch.title);
+  assert.equal(result.meta.search.route, "search");
+  assert.equal(result.ordinance.candidates[0].id, cityMatch.id);
+});
