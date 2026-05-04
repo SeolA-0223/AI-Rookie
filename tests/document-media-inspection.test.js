@@ -59,6 +59,13 @@ test("inspectDocumentAgainstLatestOrdinance reads image media with Gemini before
       documentType: "notice"
     },
     {
+      searchQuery: "Daejeon Dong-gu Youth Basic Ordinance",
+      municipalityHints: ["Daejeon Dong-gu"],
+      keywords: ["youth", "basic ordinance", "support"],
+      expandedQueries: ["Daejeon youth basic ordinance", "Youth basic ordinance"],
+      reasoning: "Search interpretation kept the detected ordinance title."
+    },
+    {
       summary: "The uploaded notice mostly matches the latest ordinance, but the review flow still produced a revision draft.",
       reasoning: "Compared the extracted age rule and support context against the latest ordinance clauses.",
       riskLevel: "medium",
@@ -145,6 +152,6 @@ test("inspectDocumentAgainstLatestOrdinance reads image media with Gemini before
   assert.ok(result.review.issues.length >= 1);
   assert.equal(result.download.fileName, "notice.png-revision.md");
   assert.deepEqual(discoverArgs?.municipalities, ["6300000"]);
-  assert.equal(geminiBodies.length, 3);
+  assert.equal(geminiBodies.length, 4);
   assert.equal(geminiBodies[0]?.contents?.[0]?.parts?.[1]?.inline_data?.mime_type, "image/png");
 });

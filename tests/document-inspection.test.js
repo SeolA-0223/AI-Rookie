@@ -189,6 +189,13 @@ test("inspectDocumentAgainstLatestOrdinance uses Gemini output when configured",
       documentType: "guide"
     },
     {
+      searchQuery: "서울특별시 청년 기본 조례",
+      municipalityHints: ["서울특별시"],
+      keywords: ["청년", "기본", "조례"],
+      expandedQueries: ["청년 기본 조례", "서울특별시 청년 조례"],
+      reasoning: "Search interpretation kept the explicit ordinance title and municipality hint."
+    },
+    {
       summary: "문서의 연령 기준이 최신 조례와 다릅니다.",
       reasoning: "泥?뀈 ?곕졊 湲곗??낅젰 臾몄꽌? 理쒖떊 議곕? ??2 議곕?鍮꾧탳?ㅼ뒿?덈떎.",
       riskLevel: "high",

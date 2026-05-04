@@ -7,6 +7,7 @@ import {
   searchLawSource,
   SourceResolutionError
 } from "../sources/lawSource.js";
+import { interpretSourceSearchQuery } from "../search/interpretSourceSearchQuery.js";
 import { LAW_GO_MUNICIPALITIES, getMunicipalityNames, normalizeMunicipalityCodes } from "../sources/providers/lawGoMunicipalities.js";
 import { requestGeminiJson } from "../ai/geminiJson.js";
 import { extractDocumentTextFromMedia } from "./documentMediaExtraction.js";
@@ -750,7 +751,7 @@ function getSelectedInspectionRoute(candidate, detection) {
   return routes[0] ?? "discover";
 }
 
-function buildInspectionQueryCandidates(detection) {
+function buildInspectionQueryCandidates(detection, searchInterpretation = null) {
   const rawTitle = normalizeText(detection?.ordinanceTitleQuery);
   const strippedTitle = stripInspectionTitleSuffixes(rawTitle);
   const cleanedTitle = cleanDetectedOrdinanceTitleHint(rawTitle);
@@ -764,7 +765,14 @@ function buildInspectionQueryCandidates(detection) {
     )
     .join(" ");
 
-  return unique([rawTitle, strippedTitle, cleanedTitle, keywordQuery]).filter(Boolean).slice(0, 4);
+  const interpretedQuery = normalizeText(searchInterpretation?.searchQuery);
+  const expandedQueries = Array.isArray(searchInterpretation?.expandedQueries)
+    ? searchInterpretation.expandedQueries.map(normalizeText)
+    : [];
+
+  return unique([rawTitle, strippedTitle, cleanedTitle, interpretedQuery, ...expandedQueries, keywordQuery])
+    .filter(Boolean)
+    .slice(0, 6);
 }
 
 async function detectApplicableOrdinance({
@@ -981,6 +989,7 @@ async function resolveLatestOrdinanceV2({
   provider,
   detection,
   documentText,
+  searchInterpretation,
   discoverLawSourceFn,
   searchLawSourceFn,
   readLawSourceDocumentFn,
@@ -990,7 +999,7 @@ async function resolveLatestOrdinanceV2({
     ordinanceTitleQuery: detection.ordinanceTitleQuery,
     documentText
   });
-  const queryCandidates = buildInspectionQueryCandidates(detection);
+  const queryCandidates = buildInspectionQueryCandidates(detection, searchInterpretation);
   let discovery = { results: [], meta: { route: "discover" } };
   let discoveryError = null;
   let search = { results: [], meta: { route: "search" } };
@@ -1193,11 +1202,22 @@ export async function inspectDocumentAgainstLatestOrdinance(
     env,
     fetchImpl
   });
+  const searchInterpretation = await interpretSourceSearchQuery(
+    {
+      query: detection.ordinanceTitleQuery,
+      municipalities: detection.municipalityCodes
+    },
+    {
+      env,
+      fetchImpl
+    }
+  );
 
   const ordinance = await resolveLatestOrdinanceV2({
     provider,
     detection,
     documentText: normalizedDocumentText,
+    searchInterpretation,
     discoverLawSourceFn,
     searchLawSourceFn,
     readLawSourceDocumentFn,
