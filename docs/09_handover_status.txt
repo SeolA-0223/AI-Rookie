@@ -1,31 +1,33 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-05-04 13:37:42 KST
+Auto-updated: 2026-05-04 14:06:09 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: d38cc4d (HEAD -> main, origin/main, origin/HEAD) style: restyle guide panel heading
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25301124729)
+- Latest commit at update time: 2e7650f (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle on one line
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25301300011)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  frontend/src/styles.css
+- M  frontend/index.html
+- M  index.html
 
 3) Recent Commits (max 8)
-- d38cc4d (HEAD -> main, origin/main, origin/HEAD) style: restyle guide panel heading
+- 2e7650f (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle on one line
+- d38cc4d style: restyle guide panel heading
 - fa153a4 style: align guide subtitle with panel copy
 - 96d6578 style: align guide subtitle within panel
 - 8180452 style: keep guide subtitle within panel
 - c2b92b5 style: keep guide subtitle on one line
 - 41a47db refactor: simplify guide header and top navigation
 - 7434f7f style: separate sidebar title from navigation
-- 71a2deb style: space ordinance draft note from preview
 
 4) Staged Files
-- frontend/src/styles.css
+- frontend/index.html
+- index.html
 
 5) Unstaged Files
 - (none)
