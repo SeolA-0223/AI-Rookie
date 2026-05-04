@@ -527,9 +527,12 @@ a {
 }
 
 .guide-subtitle {
-  width: max-content;
-  max-width: 100%;
+  max-width: none;
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .step-card h3,

@@ -1,35 +1,31 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-05-04 11:39:47 KST
+Auto-updated: 2026-05-04 11:51:51 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: 41a47db (HEAD -> main, origin/main, origin/HEAD) refactor: simplify guide header and top navigation
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25298246389)
+- Latest commit at update time: c2b92b5 (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle on one line
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25298372060)
 - PR link: (not applicable on main)
 
 2) Working Tree
 - Clean: no
 - git status --short --branch
 - ## main...origin/main
-- M  frontend/index.html
 - M  frontend/src/styles.css
-- M  index.html
 
 3) Recent Commits (max 8)
-- 41a47db (HEAD -> main, origin/main, origin/HEAD) refactor: simplify guide header and top navigation
+- c2b92b5 (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle on one line
+- 41a47db refactor: simplify guide header and top navigation
 - 7434f7f style: separate sidebar title from navigation
 - 71a2deb style: space ordinance draft note from preview
 - 3806fe3 style: add spacing before source provenance details
 - b241750 style: align sidebar with binder sheet
 - 8a86208 refactor: simplify sidebar navigation controls
 - 2cf9fbf fix: add source-localize vercel entrypoint
-- b5cacde feat: localize ordinance search and restore korean views
 
 4) Staged Files
-- frontend/index.html
 - frontend/src/styles.css
-- index.html
 
 5) Unstaged Files
 - (none)
