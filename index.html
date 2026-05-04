@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="./frontend/src/styles.css" />
   </head>
   <body>
+    <div id="page-top-anchor" aria-hidden="true"></div>
     <main class="binder-app">
       <div class="workspace-shell">
         <aside class="quick-sidebar" aria-label="빠른 이동">
@@ -26,7 +27,7 @@
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="impact-panel" data-i18n="sidebar.search.impact">영향 문서</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="risk-panel" data-i18n="sidebar.search.risk">위험 우선 순위</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="draft-panel" data-i18n="sidebar.search.draft">비교 결과 초안</button>
-                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="sheet-front" data-i18n="sidebar.search.top">맨 위로</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="search" data-target-id="page-top-anchor" data-i18n="sidebar.search.top">맨 위로</button>
                 <div class="quick-sidebar-locale-bar" role="group" aria-label="언어 전환">
                   <button class="quick-sidebar-locale-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
                   <button class="quick-sidebar-locale-btn" type="button" data-locale="en" aria-pressed="false">English</button>
@@ -42,7 +43,7 @@
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-issues-panel" data-i18n="sidebar.inspect.issues">수정 필요 항목</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-checklist-panel" data-i18n="sidebar.inspect.checklist">검토 체크리스트</button>
                 <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="document-draft-panel" data-i18n="sidebar.inspect.draft">수정본 초안</button>
-                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="sheet-front" data-i18n="sidebar.inspect.top">맨 위로</button>
+                <button class="quick-sidebar-link" type="button" data-page-target="inspect" data-target-id="page-top-anchor" data-i18n="sidebar.inspect.top">맨 위로</button>
                 <div class="quick-sidebar-locale-bar" role="group" aria-label="언어 전환">
                   <button class="quick-sidebar-locale-btn" type="button" data-locale="ko" aria-pressed="true">한국어</button>
                   <button class="quick-sidebar-locale-btn" type="button" data-locale="en" aria-pressed="false">English</button>
@@ -99,7 +100,6 @@
               <div class="panel-heading">
                 <div>
                   <p class="eyebrow" data-i18n="guide.eyebrow">가이드</p>
-                  <h2 data-i18n="guide.title">처음 쓰는 사용자를 위한 3단계</h2>
                 </div>
                 <p class="subtle" data-i18n="guide.subtitle">
                   조례 검색 페이지에서 조례를 찾고, 문서 검사 페이지에서 최신 조례 기준으로 문서를 점검할 수 있습니다.
