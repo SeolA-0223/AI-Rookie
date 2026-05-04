@@ -819,6 +819,12 @@ a {
   font-weight: 800;
 }
 
+.details-panel-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.1vw, 1.92rem);
+  line-height: 1.08;
+}
+
 .details-inline summary::-webkit-details-marker,
 .details-panel > summary::-webkit-details-marker {
   display: none;
