@@ -120,6 +120,19 @@ function unique(values = []) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function stripInspectionTitleSuffixes(value) {
+  return normalizeText(value)
+    .replace(/^#+\s*/, "")
+    .replace(/\((?:\uD14C\uC2A4\uD2B8\uC6A9|\uCD08\uC548|\uC608\uC2DC|test[^)]*)\)\s*$/iu, "")
+    .replace(
+      /\s*(?:\uC6B4\uC601\s+)?(?:\uC548\uB0B4\uBB38|\uC548\uB0B4\uC11C|\uAC00\uC774\uB4DC|\uACF5\uACE0\uBB38?|\uD64D\uBCF4\uBB38|\uD64D\uBCF4|\uAC80\uD1A0\uC6A9|\uD14C\uC2A4\uD2B8\uC6A9|\uCD08\uC548)\s*$/u,
+      ""
+    )
+    .replace(/\s*(?:\uC6B4\uC601|\uC5C5\uBB34|\uAC80\uD1A0)\s*$/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function cleanOrdinanceTitleHint(value) {
   return normalizeText(value)
     .replace(/^#+\s*/, "")
@@ -737,6 +750,23 @@ function getSelectedInspectionRoute(candidate, detection) {
   return routes[0] ?? "discover";
 }
 
+function buildInspectionQueryCandidates(detection) {
+  const rawTitle = normalizeText(detection?.ordinanceTitleQuery);
+  const strippedTitle = stripInspectionTitleSuffixes(rawTitle);
+  const cleanedTitle = cleanDetectedOrdinanceTitleHint(rawTitle);
+  const keywordQuery = unique([
+    ...(Array.isArray(detection?.municipalityHints) ? detection.municipalityHints : []).slice(0, 1),
+    ...(Array.isArray(detection?.keywords) ? detection.keywords.map(normalizeText) : [])
+  ])
+    .filter((value) =>
+      value &&
+      !/^(?:\uC6B4\uC601|\uC5C5\uBB34|\uAC80\uD1A0|\uC548\uB0B4\uBB38|\uC548\uB0B4\uC11C|\uAC00\uC774\uB4DC|\uACF5\uACE0\uBB38?|\uD64D\uBCF4|\uD64D\uBCF4\uBB38|\uCD08\uC548|\uD14C\uC2A4\uD2B8\uC6A9)$/u.test(value)
+    )
+    .join(" ");
+
+  return unique([rawTitle, strippedTitle, cleanedTitle, keywordQuery]).filter(Boolean).slice(0, 4);
+}
+
 async function detectApplicableOrdinance({
   documentText,
   requestedMunicipalities,
@@ -960,31 +990,60 @@ async function resolveLatestOrdinanceV2({
     ordinanceTitleQuery: detection.ordinanceTitleQuery,
     documentText
   });
+  const queryCandidates = buildInspectionQueryCandidates(detection);
   let discovery = { results: [], meta: { route: "discover" } };
   let discoveryError = null;
   let search = { results: [], meta: { route: "search" } };
   let searchError = null;
 
-  try {
-    discovery = await discoverLawSourceFn({
-      provider,
-      query: detection.ordinanceTitleQuery,
-      limit: 8,
-      municipalities: detection.municipalityCodes
-    });
-  } catch (error) {
-    discoveryError = error;
+  for (const queryCandidate of queryCandidates) {
+    try {
+      const candidateDiscovery = await discoverLawSourceFn({
+        provider,
+        query: queryCandidate,
+        limit: 8,
+        municipalities: detection.municipalityCodes
+      });
+
+      discovery = {
+        ...candidateDiscovery,
+        meta: {
+          ...(candidateDiscovery.meta ?? {}),
+          queryUsed: queryCandidate
+        }
+      };
+
+      if (Array.isArray(candidateDiscovery.results) && candidateDiscovery.results.length > 0) {
+        break;
+      }
+    } catch (error) {
+      discoveryError = error;
+    }
   }
 
-  try {
-    search = await searchLawSourceFn({
-      provider,
-      query: detection.ordinanceTitleQuery,
-      limit: 8,
-      municipalities: detection.municipalityCodes
-    });
-  } catch (error) {
-    searchError = error;
+  for (const queryCandidate of queryCandidates) {
+    try {
+      const candidateSearch = await searchLawSourceFn({
+        provider,
+        query: queryCandidate,
+        limit: 8,
+        municipalities: detection.municipalityCodes
+      });
+
+      search = {
+        ...candidateSearch,
+        meta: {
+          ...(candidateSearch.meta ?? {}),
+          queryUsed: queryCandidate
+        }
+      };
+
+      if (Array.isArray(candidateSearch.results) && candidateSearch.results.length > 0) {
+        break;
+      }
+    } catch (error) {
+      searchError = error;
+    }
   }
 
   const discoveryCandidates = Array.isArray(discovery.results) ? discovery.results : [];

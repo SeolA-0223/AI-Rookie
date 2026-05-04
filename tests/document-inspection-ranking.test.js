@@ -180,3 +180,71 @@ test("document inspection keeps the top-ranked exact title match even when pair 
   assert.equal(result.meta.search.route, "search");
   assert.equal(result.ordinance.candidates[0].id, cityMatch.id);
 });
+
+test("document inspection retries a cleaned ordinance query when the raw guide title search fails", async () => {
+  const searchQueries = [];
+  const cityMatch = {
+    id: "2098227",
+    title: "대전광역시 청년 기본 조례",
+    jurisdiction: "대전광역시",
+    promulgationDate: "2025-12-26",
+    effectiveDate: "2025-12-26",
+    referenceUrl: "https://www.law.go.kr/LSW/ordinInfoP.do?ordinSeq=2098227",
+    current: false
+  };
+
+  const result = await inspectDocumentAgainstLatestOrdinance(
+    {
+      documentText: "# 대전광역시 청년 기본 조례 운영 안내문\n\n대전광역시 청년 기본 조례상 청년은 만 19세 이상 34세 이하인 사람으로 본다.",
+      fileName: "daejeon-youth-guide.md",
+      municipalities: ["6300000"]
+    },
+    {
+      env: {},
+      discoverLawSourceFn: async () => ({
+        results: [],
+        meta: {
+          mode: "discover",
+          route: "discover"
+        }
+      }),
+      searchLawSourceFn: async (input) => {
+        searchQueries.push(input.query);
+        if (searchQueries.length === 1) {
+          throw new Error("first search query failed");
+        }
+
+        return {
+          results: [cityMatch],
+          meta: {
+            mode: "search",
+            route: "search"
+          }
+        };
+      },
+      readLawSourceDocumentFn: async () => ({
+        document: {
+          title: cityMatch.title,
+          version: "최신본",
+          clauses: [
+            {
+              id: "c1",
+              title: "청년 정의",
+              text: "청년은 만 19세 이상 34세 이하인 사람으로 본다."
+            }
+          ]
+        },
+        meta: {
+          id: cityMatch.id,
+          referenceUrl: cityMatch.referenceUrl
+        }
+      }),
+      recommendLawSourcePairFn: () => null
+    }
+  );
+
+  assert.ok(searchQueries.length >= 2);
+  assert.notEqual(searchQueries[1], searchQueries[0]);
+  assert.equal(result.ordinance.matched.id, cityMatch.id);
+  assert.equal(result.meta.search.route, "search");
+});
