@@ -1,11 +1,11 @@
 [AI-Rookie Auto Handover]
-Auto-updated: 2026-05-04 11:51:51 KST
+Auto-updated: 2026-05-04 12:19:14 KST
 
 1) Branch Sync
 - Current branch: main
 - Upstream: origin/main
-- Latest commit at update time: c2b92b5 (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle on one line
-- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25298372060)
+- Latest commit at update time: 8180452 (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle within panel
+- Latest CI run: CI: completed/success (https://github.com/SeolA-0223/AI-Rookie/actions/runs/25298655205)
 - PR link: (not applicable on main)
 
 2) Working Tree
@@ -15,14 +15,14 @@ Auto-updated: 2026-05-04 11:51:51 KST
 - M  frontend/src/styles.css
 
 3) Recent Commits (max 8)
-- c2b92b5 (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle on one line
+- 8180452 (HEAD -> main, origin/main, origin/HEAD) style: keep guide subtitle within panel
+- c2b92b5 style: keep guide subtitle on one line
 - 41a47db refactor: simplify guide header and top navigation
 - 7434f7f style: separate sidebar title from navigation
 - 71a2deb style: space ordinance draft note from preview
 - 3806fe3 style: add spacing before source provenance details
 - b241750 style: align sidebar with binder sheet
 - 8a86208 refactor: simplify sidebar navigation controls
-- 2cf9fbf fix: add source-localize vercel entrypoint
 
 4) Staged Files
 - frontend/src/styles.css
